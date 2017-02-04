@@ -99,12 +99,9 @@ def processWebPage(tagHandler):
 def get_params(params):
     param = {}
     if len(params) >= 2:
-        cleanedparams = params.rsplit('?', 1)
-        if len(cleanedparams) == 2:
-            cleanedparams = cleanedparams[1]
-        else:
-            cleanedparams = params.replace('?', '')
-        param = dict(urllib2.urlparse.parse_qsl(cleanedparams))
+        if len(params) == 2:
+            params = params[1]
+        param = dict(urllib2.urlparse.parse_qsl(params))
     return param
 
 
@@ -582,7 +579,8 @@ except:
 
 
 pluginhandle = int(sys.argv[1])
-params = get_params(sys.argv[2])
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
 mode = params.get('mode', None)
 if mode:
     exec(mode)
@@ -590,9 +588,9 @@ else:
     # params['url'] = URL_BASE
     addDir('搜索', '', 'search()')
     addDir('排行榜', 'http://yinyue.kuwo.cn/billboard_%E9%9B%AA%E7%A2%A7%E6%98%8E%E6%98%9F%E6%A6%9C.htm', 'processWebPage(boardPage)')
-    addDir('歌手', 'http://www.kuwo.cn/mingxing/', 'processWebPage(artistPage)')
+    addDir('歌手', 'http://www.kuwo.cn/mingxing', 'processWebPage(artistPage)')
     addDir('分类', 'http://yinyue.kuwo.cn/category.htm', 'processWebPage(hotPage)')
-    addDir('专辑', 'http://www.kuwo.cn/album/', 'processWebPage(albumPage)')
+    addDir('专辑', 'http://www.kuwo.cn/album', 'processWebPage(albumPage)')
     addDir('淘歌单', 'http://fang.kuwo.cn/p/st/PlCat', 'processWebPage(playlistPage)');
 
     endDir()

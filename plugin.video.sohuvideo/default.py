@@ -120,7 +120,7 @@ def searchDict(dlist, idx):
 # 年份 p4_p5
 # 篇幅 p5_p6
 # 年龄 p6_p7
-# 
+#
 ##################################################################################
 def getcatList(listpage, title, page):
     c1 = '<dt>%s</dt>\s*<dd class="sort-tag">(.+?)</dd>' % (title)
@@ -153,7 +153,7 @@ def getList24(listpage):
 # - Video Search
 # - 电视直播
 # - video list as per [CHANNEL_LIST]
-##################################################################################    
+##################################################################################
 def rootList():
     # force sohu to give cookie; must use cookie for some categories fast response else timeout
     #http://pv.sohu.com/suv/?t?=1342163482 447275_1920_1200?r?=
@@ -202,8 +202,9 @@ def rootList():
 # p10: page
 # p11:
 ##################################################################################
-def progList(name, id, page, cat, area, year, p5, p6, p11, order):
-    url = 'http://so.tv.sohu.com/list_p1'+id+'_p2'+cat+'_p3'+area+'_p4'+year+'_p5'+p5+'_p6'+p6+'_p7'+order
+def progList(name, page, cat, area, year, p5, p6, p11, order):
+    url = 'http://so.tv.sohu.com/list_p1'+CHANNEL_LIST[name] + \
+            '_p2'+cat+'_p3'+area+'_p4'+year+'_p5'+p5+'_p6'+p6+'_p7'+order
     if name in ('电影', '电视剧'):
         url += '_p82_p9_2d1'
     else:
@@ -307,7 +308,8 @@ def progList(name, id, page, cat, area, year, p5, p6, p11, order):
             lxstr += '[/COLOR]'
 
         li = xbmcgui.ListItem(name+'（第'+str(currpage)+'/'+str(totalpages)+'页）【' + lxstr + '/[COLOR FF00FFFF]' + searchDict(ORDER_LIST,order) + '[/COLOR]】（按此选择）')
-        u = sys.argv[0]+"?mode=4&name="+urllib.quote_plus(name)+"&id="+id+"&cat="+cat+"&area="+area+"&year="+year+"&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+"&listpage="+urllib.quote_plus(listpage)
+        u = sys.argv[0]+"?mode=4&name="+urllib.quote_plus(name)+ \
+                "&id="+CHANNEL_LIST[name]+"&cat="+cat+"&area="+area+"&year="+year+"&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+"&listpage="+urllib.quote_plus(listpage)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
 
         for i in range(0, len(match)):
@@ -375,7 +377,10 @@ def progList(name, id, page, cat, area, year, p5, p6, p11, order):
         if matchpages:
             for num in matchpages:
                 li = xbmcgui.ListItem("... 第" + num + "页")
-                u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+"&id="+id+"&page="+str(num)+"&cat="+cat+"&area="+area+"&year="+year+"&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+order
+                u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+ \
+                        "&id="+CHANNEL_LIST[name] + "&page="+str(num)+ \
+                        "&cat="+cat+"&area="+area+"&year="+year+\
+                        "&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+order
                 xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
 
         xbmcplugin.setContent(pluginhandle, 'movies')
@@ -389,7 +394,7 @@ def progList(name, id, page, cat, area, year, p5, p6, p11, order):
 # - Video series list
 # - user selectable pages
 ##################################################################################
-def seriesList(name, id, url, thumb):
+def seriesList(name, url, thumb):
     link = getHttpData(url)
     if url.find('.html') > 0:
         match0 = re.compile('var playlistId\s*=\s*"(.+?)";', re.DOTALL).findall(link)
@@ -430,14 +435,8 @@ def seriesList(name, id, url, thumb):
                 p_thumb = item['videoBigPic'].encode('utf-8')
                 p_plot = item['videoDesc'].encode('utf-8')
                 p_rating = item['videoScore']
-                if isinstance(item['videoVoters'], int):
-                    p_votes = item['videoVoters']
-                else:
-                    p_votes = int(item['videoVoters'])
-                if isinstance(item['playOrder'], int):
-                    p_order = item['playOrder']
-                else:
-                    p_order = int(item['playOrder'])
+                p_votes = int(item['videoVoters'])
+                p_order = int(item['playOrder'])
                 if 'videoPublishTime' in item:
                     p_time = item['videoPublishTime']
                     p_date = datetime.date.fromtimestamp(float(p_time)/1000).strftime('%d.%m.%Y')
@@ -482,17 +481,19 @@ def seriesList(name, id, url, thumb):
                     else:
                         urlKey = p_url
                     # print urlKey
-                    p_thumb = thumb
                     try:
                         p_thumb = thumbDict[urlKey]
                     except:
-                        pass
+                        p_thumb = thumb
                     #title = re.compile('title="(.+?)"').findall(item)
                     #if len(title)>0:
                         #p_name = title[0]
                     p_name = name + '第' + item[1].strip() + '集'
                     li = xbmcgui.ListItem(p_name, iconImage=p_thumb, thumbnailImage=p_thumb)
-                    u = sys.argv[0] + "?mode=3&name="+urllib.quote_plus(p_name)+"&id="+id+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(p_thumb)
+                    u = sys.argv[0] + "?mode=3&name="+urllib.quote_plus(p_name)+\
+                            "&id="+CHANNEL_LIST[name]+\
+                            "&url="+urllib.quote_plus(p_url)+\
+                            "&thumb="+urllib.quote_plus(p_thumb)
                     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
@@ -514,7 +515,7 @@ def setupList(list, title, origitem):
                 item = list[sel][0]
             return True, item  # item changed
 
-    return False, origitem     # item not changed 
+    return False, origitem     # item not changed
 
 
 ##################################################################################
@@ -524,7 +525,7 @@ def setupList(list, title, origitem):
 # - 按年份 (Year)
 # - 排序方式 (Selection Order) etc
 ##################################################################################
-def performChanges(name, id, cat, area, year, p5, p6, p11, order, listpage):
+def performChanges(name, cat, area, year, p5, p6, p11, order, listpage):
     change = False
     if name != '音乐':
         if name == '教育':
@@ -555,7 +556,7 @@ def performChanges(name, id, cat, area, year, p5, p6, p11, order, listpage):
 
     change, order = setupList(ORDER_LIST, '排序方式', order)
     if change:
-        progList(name, id, '1', cat, area, year, p5, p6, p11, order)
+        progList(name, '1', cat, area, year, p5, p6, p11, order)
 
 
 ##################################################################################
@@ -578,8 +579,7 @@ def sohuSearchList(name, url, page):
     #########################################################################
     matchp = re.compile('<div class="ssItem cfix">(.+?)<div class="alike">').findall(link)
     totalItems = len(matchp)
-    k = 0
-    for i in range(0, len(matchp)):
+    for i in range(0, totalItems):
         vlink = matchp[i]
         if vlink.find('<em class="pay"></em>') > 0:
             continue
@@ -615,11 +615,11 @@ def sohuSearchList(name, url, page):
             p_type = ' ' + p_type
             mode = '3'
 
-        k += 1
-        p_list = str(k) + ': ' + p_name + p_type + p_label
+        p_list = str(i+1) + ': ' + p_name + p_type + p_label
         li = xbmcgui.ListItem(p_list, iconImage=p_thumb, thumbnailImage=p_thumb)
-        u = sys.argv[0] + "?mode=" + mode + "&name=" + urllib.quote_plus(p_name) + "&id=101" + "&url=" + urllib.quote_plus(p_url) + "&thumb=" + urllib.quote_plus(p_thumb)
-
+        u = sys.argv[0] + "?mode=" + mode + "&name=" + \
+                urllib.quote_plus(p_name) + "&id=101" + \
+                "&url=" + urllib.quote_plus(p_url) + "&thumb=" + urllib.quote_plus(p_thumb)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, isTeleplay, totalItems)
 
     xbmcplugin.setContent(pluginhandle, 'movies')
@@ -664,7 +664,7 @@ def PlayVideo(name, url, thumb):
         match1 = re.compile('data-vid="([^"]+)"').search(link)
         if not match1:
             dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__,'节目暂不能播放')
+            ok = dialog.ok(__addonname__, '节目暂不能播放')
             return
         p_vid = match1.group(1)
     if p_vid.find(',') > 0:
@@ -679,13 +679,13 @@ def PlayVideo(name, url, thumb):
         return
     ratelist = []
     if match.group(4) != '0':
-        ratelist.append(['原画', '4'])
+        ratelist.append(['原画', 4])
     if match.group(3) != '0':
-        ratelist.append(['超清', '3'])
+        ratelist.append(['超清', 3])
     if match.group(2) != '0':
-        ratelist.append(['高清', '2'])
+        ratelist.append(['高清', 2])
     if match.group(1) != '0':
-        ratelist.append(['流畅', '1'])
+        ratelist.append(['流畅', 1])
     if level == 4:
         dialog = xbmcgui.Dialog()
         list = [x[0] for x in ratelist]
@@ -698,13 +698,14 @@ def PlayVideo(name, url, thumb):
             else:
                 rate = ratelist[sel][1]
     else:
-        rate = int(ratelist[0][1])
+        rate = ratelist[0][1]
         if rate > level + 1:
             rate = level + 1
-    if match.group(int(rate)) != str(p_vid):
-        link = getHttpData('http://hot.vrs.sohu.com/vrs_flash.action?vid='+match.group(int(rate)))
 
-    hqvid = match.group(int(rate))
+    hqvid = match.group(rate)
+    if hqvid != str(p_vid):
+        link = getHttpData('http://hot.vrs.sohu.com/vrs_flash.action?vid='+hqvid)
+
     info = simplejson.loads(link)
     host = info['allot']
     prot = info['prot']
@@ -745,7 +746,8 @@ def LiveChannel():
             id = str(item['STATION_ID'])
             i += 1
             li = xbmcgui.ListItem(str(i) + '. ' + p_name, iconImage='', thumbnailImage=p_thumb)
-            u = sys.argv[0] + "?mode=11&name=" + urllib.quote_plus(p_name) + "&id=" + urllib.quote_plus(id)+ "&thumb=" + urllib.quote_plus(p_thumb)
+            u = sys.argv[0] + "?mode=11&name=" + urllib.quote_plus(p_name) + \
+                    "&id=" + urllib.quote_plus(id)+ "&thumb=" + urllib.quote_plus(p_thumb)
             xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
 
     xbmcplugin.setContent(pluginhandle, 'movies')
@@ -766,26 +768,6 @@ def LivePlay(name, id, thumb):
     xbmc.Player().play(url, li)
 
 
-##################################################################################
-# Routine to extra parameters from xbmc
-##################################################################################
-def get_params():
-    param = []
-    paramstring = sys.argv[2]
-    if len(paramstring) >= 2:
-        params = sys.argv[2]
-        cleanedparams = params.replace('?', '')
-        if (params[len(params) - 1] == '/'):
-            params = params[0:len(params) - 2]
-        pairsofparams = cleanedparams.split('&')
-        param = {}
-        for i in range(len(pairsofparams)):
-            splitparams = pairsofparams[i].split('=')
-            if (len(splitparams)) == 2:
-                param[splitparams[0]] = splitparams[1]
-    return param
-
-
 def initTypes(p, default):
     try:
         var = urllib.unquote_plus(params[p])
@@ -796,13 +778,15 @@ def initTypes(p, default):
 # main programs goes here #########################################
 pluginhandle = int(sys.argv[1])
 
-params = get_params()
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
+
 try:
     mode = int(params["mode"])
 except:
     mode = None
 name = initTypes('name', None)
-id = initTypes('id', None)
+id = initTypes('id', '')
 cat = initTypes('cat', '')
 area = initTypes('area', '')
 year = initTypes('year', '')
@@ -818,13 +802,13 @@ thumb = initTypes('thumb', None)
 if mode is None:
     rootList()
 elif mode == 1:
-    progList(name, id, page, cat, area, year, p5, p6, p11, order)
+    progList(name, page, cat, area, year, p5, p6, p11, order)
 elif mode == 2:
-    seriesList(name, id, url, thumb)
+    seriesList(name, url, thumb)
 elif mode == 3:
     PlayVideo(name, url, thumb)
 elif mode == 4:
-    performChanges(name, id, cat, area, year, p5, p6, p11, order, listpage)
+    performChanges(name, cat, area, year, p5, p6, p11, order, listpage)
 elif mode == 10:
     LiveChannel()
 elif mode == 11:
