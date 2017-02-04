@@ -195,21 +195,6 @@ def updateListSEL(name, type, cat, filtrs, page, listpage):
 
 
 ##################################################################################
-def rootList():
-    totalItems = len(CHANNEL_LIST)
-    cat = "全部"
-    # for i, type, name in enumerate(CHANNEL_LIST):
-    i = 0
-    for type, name in CHANNEL_LIST:
-        i += 1
-        ilist = "[COLOR FF00FFFF]%s. %s[/COLOR]" % (i, name)
-        li = xbmcgui.ListItem(ilist)
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+"&type="+urllib.quote_plus(type)+"&cat="+cat+"&filtrs=&page=1"+"&listpage="
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True, totalItems)
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-##################################################################################
 def progList(name, type, cat, filtrs, page, listpage):
     if page is None: page = 1
     # p_url = 'http://list.funshion.com/%s/pg-%s%s/'
@@ -233,24 +218,24 @@ def progList(name, type, cat, filtrs, page, listpage):
         cat = updateListSEL(name, type, cat, filtrs, 0, listpage)
     else:
         url = p_url % (type, filtrs, page)
-        link=getHttpData(url)
+        link = getHttpData(url)
 
     # Fetch & build video titles list for user selection, highlight user selected filtrs
     li = xbmcgui.ListItem(name + '（第' + str(page) + '页）【' + cat + '】（按此选择)')
     u = sys.argv[0]+"?mode=10&name="+urllib.quote_plus(name)+"&type="+type+"&cat="+urllib.quote_plus(cat)+"&filtrs="+urllib.quote_plus(filtrs)+"&page=1"+"&listpage="+urllib.quote_plus(listpage)
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
     if link == None: return
     # Movie, Video, Series, Variety & Music types need different routines
     if name in SERIES_LIST:
         isdir = True
-        mode = 2
+        mode = '2'
     elif name in MOVIE_LIST:
         isdir = False
-        mode = 3
+        mode = '3'
     else: # 娱乐,新闻,体育,搞笑,时尚,生活,旅游,科技
         isdir = False
-        mode = 4
+        mode = '4'
         playlist = xbmc.PlayList(0) # use Music playlist for temporary storage
         playlist.clear()
 
@@ -292,26 +277,26 @@ def progList(name, type, cat, filtrs, page, listpage):
             p_name1 += ' (' + p_desp + ')'
 
         li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
-        u = sys.argv[0]+"?mode="+str(mode)+"&name="+urllib.quote_plus(p_name1)+"&id="+urllib.quote_plus(p_id)+"&thumb="+urllib.quote_plus(p_thumb)+"&type="+urllib.quote_plus(type)
+        u = sys.argv[0]+"?mode="+mode+"&name="+urllib.quote_plus(p_name1)+"&id="+urllib.quote_plus(p_id)+"&thumb="+urllib.quote_plus(p_thumb)+"&type="+urllib.quote_plus(type)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, isdir, totalItems)
-        if (mode == 4):
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, isdir, totalItems)
+        if (mode == '4'):
             playlist.add(p_id, li)
 
     # Construct page selection
     match = re.compile('<div class="pager-wrap fix">(.+?)</div>', re.DOTALL).findall(link)
     if match:
         match1 = re.compile("<a[\s]+?href='.+?'>(\d+)</a>", re.DOTALL).findall(match[0])
-        plist=[str(page)]
+        plist = [str(page)]
         for num in match1:
             if (num not in plist):
                 plist.append(num)
                 li = xbmcgui.ListItem("... 第" + num + "页")
                 u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+"&type="+urllib.quote_plus(type)+"&cat="+urllib.quote_plus(cat)+"&filtrs="+urllib.quote_plus(filtrs)+"&page="+num+"&listpage="+urllib.quote_plus(listpage)
-                xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True, totalItems)
+                xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    xbmcplugin.setContent(pluginhandle, 'movies')
+    xbmcplugin.endOfDirectory(pluginhandle)
 
 
 ##################################################################################
@@ -338,9 +323,9 @@ def seriesList(name, id, thumb):
 
         li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + "?mode=3&name=" + urllib.quote_plus(p_name) + "&id=" + urllib.quote_plus(id)+ "&thumb=" + urllib.quote_plus(p_thumb) + "&id2=" + urllib.quote_plus(p_id2)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
-    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
+    xbmcplugin.setContent(pluginhandle, 'episodes')
+    xbmcplugin.endOfDirectory(pluginhandle)
 
 
 ##################################################################################
@@ -542,60 +527,42 @@ def PlayVideo2(name, id, thumb, type):
         if videoplaycont == 'false':
             break
 
+#  main program goes here #
+pluginhandle = int(sys.argv[1])
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
 
-##################################################################################
-def get_params():
-    param = []
-    paramstring = sys.argv[2]
-    if len(paramstring) >= 2:
-        params = sys.argv[2]
-        cleanedparams = params.replace('?', '')
-        if (params[len(params) - 1] == '/'):
-            params = params[0:len(params) - 2]
-        pairsofparams = cleanedparams.split('&')
-        param = {}
-        for i in range(len(pairsofparams)):
-            splitparams = {}
-            splitparams = pairsofparams[i].split('=')
-            if (len(splitparams)) == 2:
-                param[splitparams[0]] = splitparams[1]
-    return param
+name = params.get('name')
+type = params.get('type', '')
+id2 = params.get('id2', '1')
+filtrs = params.get('filtrs', '')
+page = params.get('page')
+id = params.get('id')
+thumb = params.get('thumb')
+listpage = params.get('listpage')
+cat = params.get('cat', '')
 
-
-def initTypes(p, default):
-    try:
-        var = urllib.unquote_plus(params[p])
-    except:
-        var = default
-    return var
-
-
-params = get_params()
-
-try:
-    mode = int(params['mode'])
-except:
-    mode = None
-
-name = initTypes('name', None)
-type = initTypes('type', '')
-id2 = initTypes('id2', '1')
-filtrs = initTypes('filtrs', '')
-page = initTypes('page', None)
-id = initTypes('id', None)
-thumb = initTypes('thumb', None)
-listpage = initTypes('listpage', None)
-cat = initTypes('cat', '')
-
+mode = params.get('mode')
 if mode is None:
-    rootList()
-elif mode == 1:
+    totalItems = len(CHANNEL_LIST)
+    cat = "全部"
+    # for i, type, name in enumerate(CHANNEL_LIST):
+    i = 0
+    for type, name in CHANNEL_LIST:
+        i += 1
+        ilist = "[COLOR FF00FFFF]%s. %s[/COLOR]" % (i, name)
+        li = xbmcgui.ListItem(ilist)
+        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+"&type="+urllib.quote_plus(type)+"&cat="+cat+"&filtrs=&page=1"+"&listpage="
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
+    xbmcplugin.endOfDirectory(pluginhandle)
+
+elif mode == '1':
     progList(name, type, cat, filtrs, page, listpage)
-elif mode == 2:
+elif mode == '2':
     seriesList(name, id, thumb)
-elif mode == 3:
+elif mode == '3':
     PlayVideo(name, id, thumb, id2)
-elif mode == 4:
+elif mode == '4':
     PlayVideo2(name, id, thumb, type)
-elif mode == 10:
+elif mode == '10':
     updateListSEL(name, type, cat, filtrs, page, listpage)

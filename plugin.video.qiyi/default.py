@@ -1,6 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, string, sys, os, gzip, StringIO
-from uuid import uuid4
+import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, sys, os, gzip, StringIO
 from random import random, randint
 from math import floor
 import hashlib
@@ -29,8 +28,7 @@ PAYTYPE_LIST = [['', '全部影片'],
                 ['0', '免费影片'],
                 ['1', '会员免费'],
                 ['2', '付费点播']]
-UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
-#UserAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+UserAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 
 
 def GetHttpData(url):
@@ -109,27 +107,13 @@ def getareaList(listpage, name, area):
 
 
 def getyearList(listpage, name, year):
-    match = re.compile('<h3>年代：</h3>(.*?)</ul>', re.DOTALL).findall(listpage)
+    match = re.compile('<h3>我的年代：</h3>(.*?)</ul>', re.DOTALL).findall(listpage)
     yearlist = re.compile('/www/' + CHANNEL_LIST[name] + '/\d*-\d*---------\d*-([\d_]*)-[^>]+>(.*?)</a>').findall(match[0])
     match1 = re.compile('<a href="#">(.*?)</a>').search(match[0])
     if match1:
         yearlist.append((year, match1.group(1)))
     return yearlist
 
-
-def rootList():
-    for name in CHANNEL_LIST:
-        li = xbmcgui.ListItem(name)
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name) + \
-            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-            "&cat="+urllib.quote_plus("") + \
-            "&area="+urllib.quote_plus("") + \
-            "&year="+urllib.quote_plus("") + \
-            "&order="+urllib.quote_plus("11") + \
-            "&page="+urllib.quote_plus("1") + \
-            "&paytype="+urllib.quote_plus("0")
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-    xbmcplugin.endOfDirectory(pluginhandle)
 
 #         id   c1   c2   c3   c4   c5     c11  c12   c14
 # 电影     1 area  cat                paytype year order
@@ -350,10 +334,7 @@ def seriesList(name, id, thumb, page):
             xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
     else:
         url = 'http://cache.video.qiyi.com/avlist/%s/%s/' % (id, page)
-        print "============= BEFORE ============="
-        print url
         link = GetHttpData(url)
-        print "============= AFTER  ============="
         data = link[link.find('=')+1:]
         json_response = simplejson.loads(data)
         totalItems = len(json_response['data']['vlist']) + 1
@@ -517,56 +498,42 @@ def performChanges(name, listpage, cat, area, year, order, paytype):
     if change:
         progList(name, '1', cat, area, year, order, paytype)
 
-
-def initTypes(p, default):
-    try:
-        var = urllib.unquote_plus(params[p])
-    except:
-        var = default
-    return var
-
-
-def get_params():
-    param = []
-    paramstring = sys.argv[2][1:]
-    if len(paramstring) >= 2:
-        cleanedparams = sys.argv[2][1:]
-        pairsofparams = cleanedparams.split('&')
-        param = {}
-        for i in range(len(pairsofparams)):
-            splitparams = {}
-            splitparams = pairsofparams[i].split('=')
-            if (len(splitparams)) == 2:
-                param[splitparams[0]] = splitparams[1]
-    return param
-
+#  main program begins here #########
 pluginhandle = int(sys.argv[1])
-params = get_params()
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
 
-thumb = initTypes('thumb', None)
-url = initTypes('url', None)
-page = initTypes('page', '1')
-cat = initTypes('cat', '')
-id = initTypes('id', None)
-name = initTypes('name', None)
-area = initTypes('area', '')
-year = initTypes('year', '')
-order = initTypes('order', '3')
-num = initTypes('num', '1')
-paytype = initTypes('paytype', '0')
-try:
-    mode = int(params["mode"])
-except:
-    mode = None
+thumb = params.get('thumb')
+url = params.get('url')
+page = params.get('page', '1')
+cat = params.get('cat', '')
+id = params.get('id')
+name = params.get('name')
+area = params.get('area', '')
+year = params.get('year', '')
+order = params.get('order', '3')
+paytype = params.get('paytype', '0')
+mode = params.get('mode')
 
 if mode is None:
-    rootList()
-elif mode == 1:
+    for name in CHANNEL_LIST:
+        li = xbmcgui.ListItem(name)
+        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name) + \
+            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
+            "&cat="+urllib.quote_plus("") + \
+            "&area="+urllib.quote_plus("") + \
+            "&year="+urllib.quote_plus("") + \
+            "&order="+urllib.quote_plus("11") + \
+            "&page="+urllib.quote_plus("1") + \
+            "&paytype="+urllib.quote_plus("0")
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
+    xbmcplugin.endOfDirectory(pluginhandle)
+
+elif mode == '1':
     progList(name, page, cat, area, year, order, paytype)
-elif mode == 2:
-    print name, thumb
+elif mode == '2':
     seriesList(name, id, thumb, page)
-elif mode == 3:
+elif mode == '3':
     PlayVideo(name, id, thumb)
-elif mode == 4:
+elif mode == '4':
     performChanges(name, page, cat, area, year, order, paytype)
