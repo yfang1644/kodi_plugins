@@ -4,20 +4,6 @@ import xbmc,xbmcplugin,xbmcgui
 import kugou
 
 
-def getParams():
-    param = {}
-    params = sys.argv[2]
-    if len(params) >= 2:
-        cleanedparams = params.rsplit('?', 1)
-        if len(cleanedparams) == 2:
-            cleanedparams = cleanedparams[1]
-        else:
-            cleanedparams = params.replace('?', '')
-        param = dict(urllib2.urlparse.parse_qsl(cleanedparams))
-    print(param)
-    return param
-
-
 # 显示 酷狗FM 的相应的专辑
 def index(page):
     currpage = int(page)
@@ -34,19 +20,19 @@ def index(page):
         xbmcplugin.addDirectoryItem(handle, url, li, True)
     # 设置分页
     if currpage > 1:
-        linkpage = currpage-1
+        linkpage = currpage - 1
         prevLi = xbmcgui.ListItem('上一页 【[COLOR FF00FF00]%s[/COLOR]/[COLOR FFFF0000]%s[/COLOR]】'%(linkpage,totalPages))
         u = "%s?act=index&page=%s" % (plugin_url, linkpage)
         xbmcplugin.addDirectoryItem(handle, u, prevLi, True)
     if currpage < totalPages:
-        linkpage = currpage+1
+        linkpage = currpage + 1
         nextLi = xbmcgui.ListItem('下一页 【[COLOR FF00FF00]%s[/COLOR]/[COLOR FFFF0000]%s[/COLOR]】'%(linkpage,totalPages))
         u = "%s?act=index&page=%s" % (plugin_url, linkpage)
         xbmcplugin.addDirectoryItem(handle, u, nextLi, True)
     xbmcplugin.endOfDirectory(handle)
 
 
-#获得相应电台的歌曲的列表
+# 获得相应电台的歌曲的列表
 def getPlayList(fmid, icon):
     title = '播放当前专辑所有歌曲'
     listitemAll = xbmcgui.ListItem(title, iconImage=icon)
@@ -77,10 +63,10 @@ def playList(fmid, t):
     xbmc.Player().play(playlist)
 
 
-#播放音乐
+# 播放音乐
 def play(hashId, title):
     playlist = xbmc.PlayList(0)
-    playlist.clear() #中止播放列表
+    playlist.clear()          # 中止播放列表
     xbmc.Player().stop()
     mp3path = kugou.getSongInfo(hashId)
     icon = kugou.getSingerPic(title, 100)
@@ -91,8 +77,9 @@ def play(hashId, title):
 
 plugin_url = sys.argv[0]
 handle = int(sys.argv[1])
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
 
-params = getParams()
 act = params.get('act', 'index')
 fmid = params.get("fmid", '')
 

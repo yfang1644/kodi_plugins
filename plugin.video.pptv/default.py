@@ -327,8 +327,8 @@ def GetPPTVVideoList(url, only_filter=False):
     # get non-live videos
     video_list = []
     videos = parseDOM(unicode(data, 'utf-8', 'ignore'), 'a', attrs={'class': 'ui-list-ct'})
-    video_names = parseDOM(unicode(data, 'utf-8', 'ignore'), 'a', attrs={'class' : 'ui-list-ct' }, ret='title')
-    video_links = parseDOM(unicode(data, 'utf-8', 'ignore'), 'a', attrs={'class': 'ui-list-ct' }, ret='href')
+    video_names = parseDOM(unicode(data, 'utf-8', 'ignore'), 'a', attrs={'class': 'ui-list-ct'}, ret='title')
+    video_links = parseDOM(unicode(data, 'utf-8', 'ignore'), 'a', attrs={'class': 'ui-list-ct'}, ret='href')
     for i in range(len(videos)):
         tmp = CheckValidList(parseDOM(videos[i], 'p', attrs={'class': 'ui-pic'}))
         spcs = []
@@ -345,11 +345,11 @@ def GetPPTVVideoList(url, only_filter=False):
         if len(mask) > 0:
             spcs.append('(' + mask + ')')
         video_list.append({
-            'link' : video_links[i].encode('utf-8'),
-            'name' : video_names[i].encode('utf-8'),
-            'image' : CheckValidList(parseDOM(videos[i], 'img', ret='data-src2')).encode('utf-8'),
-            'isdir' : 1,
-            'spc' : ' '.join(spcs)
+            'link': video_links[i].encode('utf-8'),
+            'name': video_names[i].encode('utf-8'),
+            'image': CheckValidList(parseDOM(videos[i], 'img', ret='data-src2')).encode('utf-8'),
+            'isdir': 1,
+            'spc': ' '.join(spcs)
         })
 
     # get TV list
@@ -373,11 +373,11 @@ def GetPPTVVideoList(url, only_filter=False):
                 else:
                     spc = parseDOM(j, 'span')[-1].encode('utf-8')
                 video_list.append({
-                    'link' : link,
-                    'name' : name,
-                    'image' : image,
-                    'isdir' : 0,
-                    'spc' : (len(spc) > 0 and '(' + spc + ')' or '')
+                    'link': link,
+                    'name': name,
+                    'image': image,
+                    'isdir': 0,
+                    'spc': (len(spc) > 0 and '(' + spc + ')' or '')
                 })
     elif url in PPTV_LIVE_TYPES:
         tmp = GetHttpData(PPTV_SUBJECT_LIST + 'date=' + datetime.datetime.now().strftime('%Y-%m-%d') + '&type=' + PPTV_LIVE_TYPES[url])
@@ -396,11 +396,11 @@ def GetPPTVVideoList(url, only_filter=False):
                 link = re.sub('".*$', '', CheckValidList(parseDOM(slist[0], 'a', ret='href'))).encode('utf-8')
                 spc = i.encode('utf-8') + ' ' + re.sub('\n.*', '', re.sub('<[^>]*>', '', k)).encode('utf-8')
                 video_list.append({
-                    'link' : link,
-                    'name' : name,
-                    'image' : image,
-                    'isdir' : 0,
-                    'spc' : (len(spc) > 0 and '(' + spc + ')' or '')
+                    'link': link,
+                    'name': name,
+                    'image': image,
+                    'isdir': 0,
+                    'spc': (len(spc) > 0 and '(' + spc + ')' or '')
                 })
 
     # get page lists
@@ -456,11 +456,11 @@ def GetPPTVEpisodesList(name, url, thumb):
                 image = re.sub('\[SN\]', str(video['sn']), ppvideos['data']['picUrlFormat'])
                 image = re.sub('\[PIC\]', str(video['cid']), image)
                 video_list.append({
-                    'link' : link.encode('utf-8'),
-                    'name' : video['title'].encode('utf-8'),
-                    'image' : image.encode('utf-8'),
-                    'isdir' : -1,
-                    'spc' : ''
+                    'link': link.encode('utf-8'),
+                    'name': video['title'].encode('utf-8'),
+                    'image': image.encode('utf-8'),
+                    'isdir': -1,
+                    'spc': ''
                 })
             return (None, video_list, None)
 
@@ -468,7 +468,11 @@ def GetPPTVEpisodesList(name, url, thumb):
     tmp = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'p', attrs={'class': 'btn_play'}))
     if len(tmp) > 0:
         links = parseDOM(tmp, 'a', ret='href')
-        return (None, [ { 'link' : i.encode('utf-8'), 'name' : name, 'image' : thumb, 'isdir' : 0, 'spc' : '' } for i in links], None)
+        return (None, [{'link': i.encode('utf-8'),
+                        'name': name,
+                        'image': thumb,
+                        'isdir': 0,
+                        'spc': '' } for i in links], None)
     else:
         return None
 
@@ -547,8 +551,8 @@ def GetPPTVVideoURL_Flash(url, quality):
         return []
     downparseurl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'form', attrs={'name': 'mform'}, ret='action'))
     # get hidden values in form
-    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type' : 'hidden' }, ret='name')
-    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type' : 'hidden' }, ret='value')
+    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='name')
+    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='value')
     if min(len(input_names), len(input_names)) <= 0:
         return []
 
@@ -683,11 +687,11 @@ def GetPPTVSearchList(url, matchnameonly=None):
         tinfos = parseDOM(slink[0], 'span', attrs={'class': 'msk-txt'})
         spcs.extend(['(' + re.sub('<\?.*$', '', i.encode('utf-8').strip()) + ')' for i in tinfos])
         video_list.append({
-            'link' : CheckValidList(links).encode('utf-8'),
-            'name' : sname,
-            'image' : CheckValidList(images).encode('utf-8'),
-            'isdir' : (len(child) > 0 and 1 or -1),
-            'spc' : ' '.join(spcs)
+            'link': CheckValidList(links).encode('utf-8'),
+            'name': sname,
+            'image': CheckValidList(images).encode('utf-8'),
+            'isdir': (len(child) > 0 and 1 or -1),
+            'spc': ' '.join(spcs)
         })
 
     # find nothing for specified video name
@@ -696,24 +700,6 @@ def GetPPTVSearchList(url, matchnameonly=None):
     return (None, video_list, None)
 
 ##### PPTV functions end #####
-
-
-def get_params():
-    param = []
-    paramstring = sys.argv[2]
-    if len(paramstring) >= 2:
-        params = sys.argv[2]
-        cleanedparams = params.replace('?', '')
-        if (params[len(params) - 1] == '/'):
-            params = params[0:len(params) - 2]
-        pairsofparams = cleanedparams.split('&')
-        param = {}
-        for i in range(len(pairsofparams)):
-            splitparams = {}
-            splitparams = pairsofparams[i].split('=')
-            if (len(splitparams)) == 2:
-                param[splitparams[0]] = splitparams[1]
-    return param
 
 
 def showSearchEntry(total_items):
@@ -748,7 +734,7 @@ def listVideo(name, url, list_ret):
         # contribute first/previous/next/last page link and name
         page_links = [pages_attr['first_page_link'], pages_attr['prev_page_link'], pages_attr['next_page_link'], pages_attr['last_page_link']]
         page_strs = [
-            '[COLOR FFFF0000]' + PPTV_FIRST_PAGE + '[/COLOR] - ' + PPTV_TTH + ' 1 ' + PPTV_PAGE, 
+            '[COLOR FFFF0000]' + PPTV_FIRST_PAGE + '[/COLOR] - ' + PPTV_TTH + ' 1 ' + PPTV_PAGE,
             '[COLOR FFFF0000]' + PPTV_PREV_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['selected_page'] - 1) + ' ' + PPTV_PAGE,
             '[COLOR FFFF0000]' + PPTV_NEXT_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['selected_page'] + 1) + ' ' + PPTV_PAGE,
             '[COLOR FFFF0000]' + PPTV_LAST_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['last_page']) + ' ' + PPTV_PAGE
@@ -847,33 +833,15 @@ def searchPPTV():
             xbmc.executebuiltin('Container.Update(%s)' % u)
 
 
-params = get_params()
-mode = None
-name = None
-url = None
-thumb = None
-key = None
-
-try:
-    name = urllib.unquote_plus(params['name'])
-except:
-    pass
-try:
-    url = urllib.unquote_plus(params['url'])
-except:
-    pass
-try:
-    thumb = urllib.unquote_plus(params['thumb'])
-except:
-    pass
-try:
-    mode = params['mode']
-except:
-    pass
-try:
-    key = params['key']
-except:
-    pass
+# main programs goes here #########################################
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
+         
+mode = params.get('mode')
+name = params.get('name')
+url = params.get('url')
+thumb = params.get('thumb')
+key = params.get('key')
 
 if mode is None:
     listRoot()

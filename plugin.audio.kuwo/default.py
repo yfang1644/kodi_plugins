@@ -1,110 +1,125 @@
 # -*- coding: utf-8 -*-
+import sys
+import urllib2
+import urllib
+import time
+import re
+import xbmc
+import xbmcplugin
+import xbmcgui
+from bs4 import BeautifulSoup
 
-import music
-import xbmc, xbmcgui, xbmcplugin
-import urllib, urllib2, sys
+URL_BASE = 'http://www.kuwo.cn/www/category/index'
+UserAgent = 'Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20100101 Firefox/8.0'
 
 
-def addList(lists):
-    #name, mode, url, icon, info
-    n = len(lists)
-    plugin = sys.argv[0]
-    handle = int(sys.argv[1])
-    for i in lists:
-        name = i[0]
-        mode = i[1] if len(i) > 1 else music.MODE_NONE
-        isFolder = music.isFolder(mode)
-        query = {"mode": mode}
-        if len(i) > 2:
-            query["url"] = i[2]
-        li = xbmcgui.ListItem(name)
-        if len(i) > 3:
-            icon = i[3]
-            query['icon'] = icon
-            li.setIconImage(icon)
-        if len(i) > 4:
-            info = i[4]
-            query.update(info)
-            li.setInfo(type="Music", infoLabels=info)
-            isFolder = False
-        u = "%s?%s" % (plugin, urllib.urlencode(query))
-        xbmcplugin.addDirectoryItem(handle, u, li, isFolder, n)
+def getUrlTree(url):
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', UserAgent)
+
+    response = urllib2.urlopen(req)
+    httpdata = response.read()
+    if response.headers.get('content-encoding', None) == 'gzip':
+        httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
+
+    response.close()
+    match = re.compile('encoding=(.+?)"').findall(httpdata)
+    if not match:
+        match = re.compile('meta charset="(.+?)"').findall(httpdata)
+    if match:
+        charset = match[0].lower()
+    if (charset != 'utf-8') and (charset != 'utf8'):
+        httpdata = unicode(httpdata, charset).encode('utf8')
+
+    # BeautifulSoup handles encoding, thus skip transcoding here.
+
+    tree = BeautifulSoup(httpdata, "html.parser")
+    return tree
+
+
+def rootList():
+    tree = getUrlTree(URL_BASE)
+
+    h2 = tree.find_all('h2')
+
+    xbmcplugin.setContent(handle, 'albums')
+    n = len(h2)
+    for i in range(0, n):
+        li = xbmcgui.ListItem(h2[i].string)
+        print  h2[i]['data-catid']
+        url = plugin_url+"?&act=sublist&title="+"&hash="
+        xbmcplugin.addDirectoryItem(handle, url, li, False, n)
     xbmcplugin.endOfDirectory(handle)
 
 
-def play(name, mode, url, icon, info):
-    li = xbmcgui.ListItem(name)
-    li.setInfo(type='Music', infoLabels=info)
-    li.setThumbnailImage(icon)
-    url = music.getSongUrl(url)
-    xbmc.Player().play(url, li)
+def subList():
 
 
-def playSong(params):
-    name = params['title']
-    icon = params['icon']
-    mode = params['mode']
-    url = params['url']
-    info = {'title': name, 'artist': params['artist'], 'album': params['album']}
-    play(name, mode, url, icon, info)
+#获得相应电台的歌曲的列表
+def getPlayList(fmid, icon):
+    title = '播放当前专辑所有歌曲'
+    listitemAll = xbmcgui.ListItem(title, iconImage=icon)
+    listitemAll.setInfo(type="Music", infoLabels={"Title": title})
+    t = int(time.time())
+    query = {'act': 'playList', 'fmid': fmid, 'time': t}
+    listUrl = '%s?%s' % (plugin_url, urllib.urlencode(query))
+    xbmcplugin.addDirectoryItem(handle, listUrl, listitemAll, False)
+    songs = kugou.getSongs(fmid, t)
+    # 判断songs是否存在
+    if songs:
+        for song in songs:
+            listitem = xbmcgui.ListItem(song['name'])
+            listitem.setInfo(type="Music", infoLabels={"Title": song['name'], })
+            url = plugin_url+"?act=play&title="+song['name'].encode('utf-8')+"&hash="+urllib.quote_plus(song['hash'].encode('utf-8'))
+            xbmcplugin.addDirectoryItem(handle, url, listitem, False)
+        xbmcplugin.endOfDirectory(handle)
 
 
-def playList(url):
-    song = music.getPlayList(url)[0]
-    if len(song) == 5:
-        play(*song)
-    else:
-        xbmcgui.Dialog().notification(url, song[0], xbmcgui.NOTIFICATION_ERROR)
+#播放当前Fm列表里的歌曲
+def playList(fmid, t):
+    playlist = xbmc.PlayList(0)
+    playlist.clear()
+    for song in kugou.getSongs(fmid, t):
+        listitem = xbmcgui.ListItem(song['name'])
+        listitem.setInfo(type="Music", infoLabels={"Title": song['name']})
+        playlist.add(kugou.getSongInfo(song['hash']), listitem)
+    xbmc.Player().play(playlist)
 
 
-def get_keyword():
-    try:
-        import ChineseKeyboard as m
-    except:
-        m = xbmc
-    keyboard = m.Keyboard('', '请输入歌名,专辑或歌手进行搜索,支持简拼.')
-    #xbmc.sleep(1500)
-    keyboard.doModal()
-    if keyboard.isConfirmed():
-        keyword = keyboard.getText()
-        return keyword
+#播放音乐
+def play(hashId, title):
+    playlist = xbmc.PlayList(0)
+    playlist.clear() #中止播放列表
+    xbmc.Player().stop()
+    mp3path = kugou.getSongInfo(hashId)
+    icon = kugou.getSingerPic(title, 100)
+    thumbnail = kugou.getSingerPic(title, 200)
+    listitem=xbmcgui.ListItem(title, iconImage=icon, thumbnailImage=thumbnail)
+    listitem.setInfo(type="Music", infoLabels={"Title": title})
+    xbmc.Player().play(mp3path, listitem)
+
+plugin_url = sys.argv[0]
+handle = int(sys.argv[1])
+
+params = sys.argv[2][1:]
+params = dict(urllib2.urlparse.parse_qsl(params))
+
+act = params.get('act', 'index')
+fmid = params.get("fmid", '')
 
 
-def search():
-    q = get_keyword()
-    print 'q', q
-    if q:
-        url = music.getSearchUrl(q)
-        return music.getSearchList(url)
-    else:
-        return []
-
-
-def get_params():         # get part of the url, help to judge the param of the url, direcdory
-    param = {}
-    params = sys.argv[2]
-    if len(params) >= 2:
-        cleanedparams = params.rsplit('?', 1)
-        if len(cleanedparams) == 2:
-            cleanedparams = cleanedparams[1]
-        else:
-            cleanedparams = params.replace('?', '')
-        param = dict(urllib2.urlparse.parse_qsl(cleanedparams))
-    return param
-
-paramlist = get_params()
-mode = paramlist.get("mode", music.MODE_MENU)
-url = paramlist.get("url", "")
-
-l = []
-
-if mode == music.MODE_SONG:
-    playSong(paramlist)
-elif mode == music.MODE_PLAYLIST:
-    playList(url)
-elif mode == music.MODE_SEARCH:
-    l = search()
-else:
-    l = music.getList(mode, url)
-if l:
-    addList(l)
+if act == 'index':
+    page = params.get('page', 1)
+    rootList()
+elif act = 'sublist'
+    subList()
+elif act == 'list':
+    icon = params.get('icon', '')
+    getPlayList(fmid, icon)
+elif act == 'playList':
+    t = params.get('time', 0)
+    playList(fmid, t)
+elif act == 'play':
+    hashId = urllib.unquote_plus(params['hash'])
+    title = params.get('title', '')
+    play(hashId, title)

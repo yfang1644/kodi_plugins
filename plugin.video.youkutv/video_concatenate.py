@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import socket, select, threading, urllib2, time, struct
+import socket, select, threading, time, struct
 
 class flv:
     @staticmethod
@@ -23,7 +23,7 @@ class flv:
 
         #Calculate the size of new header
         count = struct.unpack('>I', original_header[offset_count: offset_count + 4])[0]
-        offset_times_end = offset_positions + 30 + 2 * 9 * count 
+        offset_times_end = offset_positions + 30 + 2 * 9 * count
         script_len += 2 * 9 * (len(positions) - count)     #Each position and time takes 9 bytes
         count = len(positions)
 
@@ -44,7 +44,7 @@ class flv:
 
         #Data before filepositions
         header += original_header[offset_durations + 17: offset_positions]
-        
+
         #New filepositions
         header += 'filepositions'
         header += struct.pack('B', 0x0A)
@@ -53,7 +53,7 @@ class flv:
             header += struct.pack('B', 0x00)
             header += struct.pack('>d', p)
         header += struct.pack('BB', 0x00, 0x05)
-        
+
         #New times
         header += 'times'
         header += struct.pack('B', 0x0A)
@@ -69,7 +69,6 @@ class flv:
         header += struct.pack('>I', script_len)
 
         return header
-
 
     @staticmethod
     def find_index(data):
@@ -101,7 +100,6 @@ class flv:
 
         return positions, times
 
-
     @staticmethod
     def find_info(data):
         i = data.find('duration')
@@ -119,7 +117,7 @@ class flv:
         while offset + 15 < len(data):
             t, s1, s2, s3 = struct.unpack('BBBB', data[offset: offset + 4])
             size = (s1 << 16) | (s2 << 8) | s3
-            
+
             if offset + 15 + size > len(data):
                 return False, [], 0, [], []
 
@@ -130,7 +128,6 @@ class flv:
             offset += 15 + size
 
         return False, [], 0, [], []
-
 
     @staticmethod
     def modify_timestamp(data, starting_timestamp):
@@ -144,7 +141,7 @@ class flv:
             if t != 8 and t != 9 and t != 0x12:
                 #Data incorrect
                 return data
-            
+
             if offset + 15 + size > len(data):
                 return ready_data
 
@@ -156,7 +153,7 @@ class flv:
             s2 = (modified_timestamp >> 8) & 0xFF
             s3 = modified_timestamp & 0xFF
 
-            ready_data += data[offset: offset + 4] 
+            ready_data += data[offset: offset + 4]
             ready_data += struct.pack('BBBB', s1, s2, s3, s4)
             ready_data += data[offset + 8: offset + 15 + size]
 
@@ -164,16 +161,14 @@ class flv:
 
         return ready_data
 
+
 class video_concatenate:
-    def __init__(self, 
-                 bind_address = ('0.0.0.0', 0),
-                 user_agent = 'video_concatenate',
-                 exit_timeout = 1,
-                 mss = 1460,
-                 debug = True,
-                ):
-
-
+    def __init__(self,
+                 bind_address=('0.0.0.0', 0),
+                 user_agent='video_concatenate',
+                 exit_timeout=1,
+                 mss=1460,
+                 debug=True):
         self.server = None
         self.agent_server = None
         self.agent_client = None
@@ -186,18 +181,15 @@ class video_concatenate:
                        'ua': user_agent,
                        'timeout': exit_timeout,
                        'mss': mss,
-                       'debug': debug,
-                      }
+                       'debug': debug}
 
-        self.thread = threading.Thread(target = self._run)
+        self.thread = threading.Thread(target=self._run)
         self.running = False
-
-
 
     def _cleanup(self):
         if self.server:
             self.log('server closed.')
-            s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.bind(('', 0))
             try:
                 s.connect(self.server.getsockname())
@@ -215,11 +207,9 @@ class video_concatenate:
             self.agent_client.close()
             self.agent_client = None
 
-
     def __del__(self):
         self.log('Service deleted')
         self.stop()
-
 
     def _get_info(self, urls, timeout):
         infos = []
@@ -274,7 +264,7 @@ class video_concatenate:
                         t = data[i:].split('\r\n')[0].replace(' ', '').split(':')[1]
 
                     ret, header, duration, positions, times = flv.find_info(data)
-                    if ret == False:
+                    if ret is False:
                         continue
 
                     info.append(length)
@@ -299,10 +289,10 @@ class video_concatenate:
         if len(urls) == 0:
             return 0, [], 0, 0, 0, 0, 0
 
-        #Get info concurrently. 
-        for url in  urls:
+        #Get info concurrently.
+        for url in urls:
             infos.append([])
-            t = threading.Thread(target = __get_info, args = [url, infos[-1]])
+            t = threading.Thread(target=__get_info, args=[url, infos[-1]])
             t.start()
             threads.append(t)
 
@@ -331,7 +321,7 @@ class video_concatenate:
 
             info = infos[i]
             length = info[0]
-            
+
             if i != 0:
                 length -= len(info[2])
                 for j in range(len(info[4])):
@@ -351,7 +341,6 @@ class video_concatenate:
                            'starting_bytes': total_size,
                            'starting_ms': int(total_seconds * 1000)})
 
-
             durations.append(info[3])
 
             total_size += length
@@ -368,7 +357,6 @@ class video_concatenate:
 
         return increased, videos, header, total_size, total_seconds, positions, times
 
-
     def _resp_head(self, starting_bytes, content_type):
         self.log('responde starting bytes: %d' % (starting_bytes))
         header = 'HTTP/1.1 206 Partial Content\r\n' \
@@ -376,14 +364,13 @@ class video_concatenate:
                  'Accept-Ranges: bytes\r\n'         \
                  'Content-Length: %d\r\n'           \
                  'Content-Range: bytes %d-%d/%d\r\n'\
-                 'Connection: close\r\n\r\n' % (content_type, 
+                 'Connection: close\r\n\r\n' % (content_type,
                                                 self.total_size - starting_bytes,
                                                 starting_bytes,
                                                 self.total_size - 1,
                                                 self.total_size)
 
         return header
-
 
     def _send_get(self, s, starting_bytes, url):
         self.log('send GET request(%d) to %s' % (starting_bytes, url))
@@ -398,7 +385,6 @@ class video_concatenate:
                'Host: %s\r\n'
                'User-Agent: %s\r\n'
                'Accept: */*\r\n\r\n' % (path, starting_bytes, host, self.config['ua']))
-
 
     def _find_starting(self, data):
         requested_start = 0
@@ -439,7 +425,6 @@ class video_concatenate:
 
         return requested_start, relative_start, index, int(requested_start - keyframe_start)
 
-
     def _connect_to_url(self, url):
         #Get host and path
         port = 80
@@ -457,7 +442,6 @@ class video_concatenate:
         except:
             pass
         return s
-
 
     def _run(self):
         self.log('running')
@@ -483,12 +467,12 @@ class video_concatenate:
                     arr.remove(s)
             s.close()
 
-        while True: 
+        while True:
             while None in inputs:
                 inputs.remove(None)
             while None in outputs:
                 outputs.remove(None)
-                
+
             if len(inputs) == 0:
                 self.log('no inputs')
                 break
@@ -503,7 +487,7 @@ class video_concatenate:
                 self.log('Stopped')
                 break
 
-            if not readable and not writable and self.agent_server == None and self.agent_client == None:
+            if not readable and not writable and self.agent_server is None and self.agent_client is None:
                 #Timeouts
                 self.log('select timeout')
                 break
@@ -570,7 +554,7 @@ class video_concatenate:
                     ready = True
 
                     #Skip header
-                    if skip_header == True:
+                    if skip_header:
                         i = recv_buffer.find('\r\n\r\n')
                         if i == -1:
                             self.log('header not complete')
@@ -581,7 +565,7 @@ class video_concatenate:
                             skip_header = False
 
                     #Skip meta data
-                    if ready == True and skip_meta == True:
+                    if ready and skip_meta:
                         if len(recv_buffer) < self.videos[index]['header_offset']:
                             ready = False
                             self.log('meta not complete (%d < %d)' % (len(recv_buffer), self.videos[index]['header_offset']))
@@ -590,7 +574,7 @@ class video_concatenate:
                             recv_buffer = recv_buffer[self.videos[index]['header_offset']:]
                             skip_meta = False
 
-                    if ready == True and skip_bytes > 0:
+                    if ready and skip_bytes > 0:
                         if len(recv_buffer) > skip_bytes:
                             recv_buffer = recv_buffer[skip_bytes:]
                             skip_bytes = 0
@@ -599,7 +583,7 @@ class video_concatenate:
                             recv_buffer = ''
                             ready = False
 
-                    if ready == True and modify_timestamp == True:
+                    if ready and modify_timestamp:
                         ready_data = flv.modify_timestamp(recv_buffer, self.videos[index]['starting_ms'])
                     else:
                         ready_data = recv_buffer
@@ -608,7 +592,7 @@ class video_concatenate:
                     if len(ready_data) == 0:
                         ready = False
 
-                    if ready == False:
+                    if ready is False:
                         continue
 
                     #Receive buffer is ready
@@ -643,7 +627,7 @@ class video_concatenate:
                         tmp = self.agent_server.recv(self.config['mss'])
                     except:
                         tmp = None
-                    
+
                     if not tmp:
                         #Local closed the socket
                         _clean_socket(self.agent_server)
@@ -743,8 +727,7 @@ class video_concatenate:
                 if s in inputs:
                     inputs.remove(s)
 
-
-        if self.running == True:
+        if self.running is True:
             #Cleanup
             self.server.close()
             self.server = None
@@ -752,15 +735,13 @@ class video_concatenate:
 
         self.log('thread exit')
 
-
     #APIs
     def log(self, s):
         if self.config['debug'] == 1:
             print('[%s][video_concatenate]%s' % (time.time(), s))
 
-
     #Start agent thread
-    def start(self, urls, get_timeout = 30):
+    def start(self, urls, get_timeout=30):
         self.stop()
         self.running = True
 
@@ -784,15 +765,13 @@ class video_concatenate:
         #Set video variables
 
         #Start thread.
-        self.thread = threading.Thread(target = self._run)
+        self.thread = threading.Thread(target=self._run)
         self.thread.start()
-
 
     def stop(self):
         self.running = False
         self._cleanup()
         self.thread = None
-
 
     def get_port(self):
         try:
@@ -800,11 +779,10 @@ class video_concatenate:
         except:
             return 0
 
-
 if __name__ == '__main__':
     urls = [line.rstrip('\n') for line in open('urls.txt')]
     urls = urls[0:]
-    vc = video_concatenate(('0.0.0.0', 7777), exit_timeout = 10)
+    vc = video_concatenate(('0.0.0.0', 7777), exit_timeout=10)
     vc.start(urls)
     #vc.stop()
 

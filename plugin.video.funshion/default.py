@@ -20,27 +20,27 @@ __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cookieFile    = __profile__ + 'cookies.funshion'
 
 #CHANNEL_LIST = [['电影','movie'],['电视剧','tv'],['动漫','cartoon'],['综艺','variety'],['新闻','news'],['娱乐','ent'],['体育','sports'],['搞笑','joke'],['时尚','fashion'],['生活','life'],['旅游','tour'],['科技','tech']]
-CHANNEL_LIST = [['c-e794b5e5bdb1', '电影'],
-                ['c-e794b5e8a786e589a7', '电视剧'],
-                ['c-e58aa8e6bcab', '动漫'],
-                ['c-e7bbbce889ba', '综艺'],
-                ['c-e5beaee794b5e5bdb1', '微电影'],
-                ['c-e99fb3e4b990', '音乐'],
-                ['c-e7baaae5bd95e78987', '纪录片'],
-                ['c-e5a8b1e4b990', '娱乐'],
-                ['c-e4bd93e882b2', '体育'],
-                ['c-e6909ee7ac91', '搞笑'],
-                ['c-e696b0e997bb', '新闻'],
-                ['c-e69785e6b8b8', '旅游'],
-                ['c-e6b1bde8bda6', '汽车'],
-                ['c-e6b8b8e6888f', '游戏'],
-                ['c-e7be8ee5a5b3', '美女'],
-                ['c-e697b6e5b09a', '时尚'],
-                ['c-e6af8de5a9b4', '母婴'],
-                ['c-e581a5e5bab7', '健康'],
-                ['c-e7a791e68a80', '科技'],
-                ['c-e7949fe6b4bb', '生活'],
-                ['c-e5869be4ba8b', '军事']]
+CHANNEL_LIST = {'电影': 'c-e794b5e5bdb1',
+                '电视剧': 'c-e794b5e8a786e589a7',
+                '动漫': 'c-e58aa8e6bcab',
+                '综艺': 'c-e7bbbce889ba',
+                '微电影': 'c-e5beaee794b5e5bdb1',
+                '音乐': 'c-e99fb3e4b990',
+                '纪录片': 'c-e7baaae5bd95e78987',
+                '娱乐': 'c-e5a8b1e4b990',
+                '体育': 'c-e4bd93e882b2',
+                '搞笑': 'c-e6909ee7ac91',
+                '新闻': 'c-e696b0e997bb',
+                '旅游': 'c-e69785e6b8b8',
+                '汽车': 'c-e6b1bde8bda6',
+                '游戏': 'c-e6b8b8e6888f',
+                '美女': 'c-e7be8ee5a5b3',
+                '时尚': 'c-e697b6e5b09a',
+                '母婴': 'c-e6af8de5a9b4',
+                '健康': 'c-e581a5e5bab7',
+                '科技': 'c-e7a791e68a80',
+                '生活': 'c-e7949fe6b4bb',
+                '军事': 'c-e5869be4ba8b'}
 
 SERIES_LIST = {'电视剧', '动漫', '综艺'}
 MOVIE_LIST = {'电影', '微电影'}
@@ -48,9 +48,6 @@ COLOR_LIST = ['[COLOR FFFF0000]','[COLOR FF00FF00]','[COLOR FFFFFF00]','[COLOR F
 
 RES_LIST = [['tv','标清'], ['dvd','高清'], ['high-dvd','超清']]
 LANG_LIST = [['chi','国语'], ['arm','粤语'], ['und','原声']]
-TYPES1 = ('movie','tv','cartoon','variety') # 电影,电视剧,动漫,综艺
-TYPES2 = ('ent','video') # 娱乐, 视频
-TYPES3 = ('ent','news','sports','joke','fashion','life','tour','tech') # 娱乐,新闻,体育,搞笑,时尚,生活,旅游,科技
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 
 
@@ -75,7 +72,7 @@ def getHttpData(url):
         charset = response.headers.getparam('charset')
         response.close()
     except:
-        log( "%s (%d) [%s]" % (
+        log("%s (%d) [%s]" % (
                sys.exc_info()[2].tb_frame.f_code.co_name,
                sys.exc_info()[2].tb_lineno,
                sys.exc_info()[1]
@@ -165,7 +162,7 @@ def updateListSEL(name, type, cat, filtrs, page, listpage):
     selection = ''
     for icat, title in enumerate(titlelist):
         # skip video category selection
-        if (title == "分类"):
+        if title == "分类":
             continue
         fltrList = [x[0] for x in catlist[icat]]
         list = [x[1] for x in catlist[icat]]
@@ -179,7 +176,7 @@ def updateListSEL(name, type, cat, filtrs, page, listpage):
             else:           # default for first time entry
                 sel = 0
         ctype = catlist[icat][sel][1]
-        if (ctype == '全部'):
+        if ctype == '全部':
             ctype += title
         cat += COLOR_LIST[icat % 5] + ctype + '[/COLOR]|'
         selx = catlist[icat][sel][0]
@@ -188,15 +185,16 @@ def updateListSEL(name, type, cat, filtrs, page, listpage):
     filtrs = selection
     cat = cat[:-1]
 
-    if (not page):
-        return(cat)
+    if not page:
+        return cat
     else:
         progList(name, type, cat, filtrs, page, listpage)
 
 
 ##################################################################################
 def progList(name, type, cat, filtrs, page, listpage):
-    if page is None: page = 1
+    if page is None:
+        page = 1
     # p_url = 'http://list.funshion.com/%s/pg-%s%s/'
     ## p_url = 'http://www.funshion.com/list/%s/pg-%s%s/'
 
@@ -205,7 +203,7 @@ def progList(name, type, cat, filtrs, page, listpage):
     else:
         p_url = "http://www.fun.tv/retrieve/%s%s.pg-%s"
 
-    if  (listpage == None):
+    if listpage is None:
         url = p_url % (type, '', page)
         link = getHttpData(url)
 
@@ -225,7 +223,8 @@ def progList(name, type, cat, filtrs, page, listpage):
     u = sys.argv[0]+"?mode=10&name="+urllib.quote_plus(name)+"&type="+type+"&cat="+urllib.quote_plus(cat)+"&filtrs="+urllib.quote_plus(filtrs)+"&page=1"+"&listpage="+urllib.quote_plus(listpage)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
-    if link == None: return
+    if link is None:
+        return
     # Movie, Video, Series, Variety & Music types need different routines
     if name in SERIES_LIST:
         isdir = True
@@ -233,7 +232,7 @@ def progList(name, type, cat, filtrs, page, listpage):
     elif name in MOVIE_LIST:
         isdir = False
         mode = '3'
-    else: # 娱乐,新闻,体育,搞笑,时尚,生活,旅游,科技
+    else:    # 娱乐,新闻,体育,搞笑,时尚,生活,旅游,科技
         isdir = False
         mode = '4'
         playlist = xbmc.PlayList(0) # use Music playlist for temporary storage
@@ -280,7 +279,7 @@ def progList(name, type, cat, filtrs, page, listpage):
         u = sys.argv[0]+"?mode="+mode+"&name="+urllib.quote_plus(p_name1)+"&id="+urllib.quote_plus(p_id)+"&thumb="+urllib.quote_plus(p_thumb)+"&type="+urllib.quote_plus(type)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, isdir, totalItems)
-        if (mode == '4'):
+        if mode == '4':
             playlist.add(p_id, li)
 
     # Construct page selection
@@ -357,7 +356,7 @@ def selResolution(items):
 
 ##################################################################################
 def PlayVideo(name, id, thumb, id2):
-    if (id2 == '1'):
+    if id2 == '1':
         # url = 'http://api.funshion.com/ajax/get_webplayinfo/%s/%s/mp4' % (id, id2)
         url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4' % (id)
         link = getHttpData(url)
@@ -382,7 +381,7 @@ def PlayVideo(name, id, thumb, id2):
     link = getHttpData(url)
     json_response = simplejson.loads(link)
     if json_response['return'].encode('utf-8') == 'succ':
-        listitem = xbmcgui.ListItem(name,thumbnailImage=thumb)
+        listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
 
         #xbmc.Player().play(json_response['playlist'][0]['urls'][0], listitem)
         # Randomly pick a server to stream video
@@ -415,7 +414,7 @@ def PlayVideox(name, id, thumb, id2):
     lang_select = int(__addon__.getSetting('lang_select'))    # 默认|每次选择|自动首选
     if lang_select != 0 and len(langlist) > 1:
         if lang_select == 1:
-            list = [searchDict(LANG_LIST,x) for x in langlist]
+            list = [searchDict(LANG_LIST, x) for x in langlist]
             sel = xbmcgui.Dialog().select('选择语言', list)
             if sel == -1:
                 return
@@ -546,13 +545,17 @@ mode = params.get('mode')
 if mode is None:
     totalItems = len(CHANNEL_LIST)
     cat = "全部"
-    # for i, type, name in enumerate(CHANNEL_LIST):
     i = 0
-    for type, name in CHANNEL_LIST:
+    for name in CHANNEL_LIST:
         i += 1
         ilist = "[COLOR FF00FFFF]%s. %s[/COLOR]" % (i, name)
         li = xbmcgui.ListItem(ilist)
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+"&type="+urllib.quote_plus(type)+"&cat="+cat+"&filtrs=&page=1"+"&listpage="
+        u = sys.argv[0]+"?mode=1&" + \
+                        "name="+urllib.quote_plus(name) + \
+                        "&type="+urllib.quote_plus(CHANNEL_LIST[name]) + \
+                        "&cat="+cat + \
+                        "&filtrs=&page=1" + \
+                        "&listpage="
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
     xbmcplugin.endOfDirectory(pluginhandle)
 

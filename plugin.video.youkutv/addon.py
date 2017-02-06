@@ -2,7 +2,7 @@
 # default.py
 
 import xbmcgui, xbmcaddon, xbmc
-import json, sys, urllib, urllib2, gzip, StringIO, re, os, time, threading, socket, base64, math, cookielib
+import json, sys, urllib, urllib2, gzip, StringIO, re, os, time, threading, socket, base64, cookielib
 from video_concatenate import video_concatenate
 try:
    import StorageServer
@@ -81,6 +81,39 @@ ACTION_MOUSE_MOVE     = 107
 ACTION_CONTEXT_MENU   = 117
 
 
+def GetHttpData(url):
+    print '************** URL'
+    print url
+    print '************** URL'
+    try:
+        req = urllib2.Request(url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
+                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
+                              'Chrome/28.0.1500.71 Safari/537.36'))
+        req.add_header('Accept-encoding', 'gzip')
+        if (url.find('play.youku.com') != -1):
+            req.add_header('referer', 'http://static.youku.com')
+        response = urllib2.urlopen(req)
+        httpdata = response.read()
+        if response.headers.get('content-encoding', None) == 'gzip':
+            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
+        response.close()
+        match = re.compile('encodingt=(.+?)"').findall(httpdata)
+        if len(match) <= 0:
+            match = re.compile('meta charset="(.+?)"').findall(httpdata)
+        if len(match) > 0:
+            charset = match[0].lower()
+            if (charset != 'utf-8') and (charset != 'utf8'):
+                httpdata = unicode(httpdata, charset).encode('utf8')
+    except:
+        if xbmcgui.Dialog().yesno('错误', '网络超时，是否继续？'):
+            return GetHttpData(url)
+        log('Frech fail')
+        httpdata = '{"status": "Fail"}'
+
+    return httpdata
+
+
 class MyPlayer(xbmc.Player):
     def __init__(self):
         self.vid = None
@@ -156,7 +189,7 @@ class MyPlayer(xbmc.Player):
         vc.stop()
 
     def onPlayBackStopped(self):
-        cache.set(self.vid, repr({'offset':self.last, 'startpos':self.lastpos}))
+        cache.set(self.vid, repr({'offset': self.last, 'startpos': self.lastpos}))
         vc.stop()
 
     def updateHistory(self, check=True, base=-1):
@@ -174,37 +207,6 @@ class MyPlayer(xbmc.Player):
                 self.base = base
 
             self.lastpos = xbmc.PlayList(1).getposition()
-
-
-def GetHttpData(url):
-    log('Frech: ' + url)
-    try:
-        req = urllib2.Request(url)
-        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
-                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
-                              'Chrome/28.0.1500.71 Safari/537.36'))
-        req.add_header('Accept-encoding', 'gzip')
-        if (url.find('play.youku.com') != -1):
-            req.add_header('referer', 'http://static.youku.com')
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        if response.headers.get('content-encoding', None) == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        response.close()
-        match = re.compile('encodingt=(.+?)"').findall(httpdata)
-        if len(match) <= 0:
-            match = re.compile('meta charset="(.+?)"').findall(httpdata)
-        if len(match) > 0:
-            charset = match[0].lower()
-            if (charset != 'utf-8') and (charset != 'utf8'):
-                httpdata = unicode(httpdata, charset).encode('utf8')
-    except:
-        if xbmcgui.Dialog().yesno('错误', '网络超时，是否继续？'):
-            return GetHttpData(url)
-        log('Frech fail')
-        httpdata = '{"status": "Fail"}'
-
-    return httpdata
 
 
 class BaseWindowDialog(xbmcgui.WindowXMLDialog):
@@ -1785,7 +1787,7 @@ class VstSession:
         setting = __addon__.getSetting(key)
         if not setting:
             return default
-        if type(default) == type(0):
+        if isinstance(default, int):
             return int(float(setting))
         elif isinstance(default, bool):
             return setting == 'true'
@@ -1802,9 +1804,9 @@ class youkuDecoder:
         seed = float(seed)
         for i in range(len(source)):
             seed = (seed * 211 + 30031) % 65536
-            index = math.floor(seed / 65536 * len(source))
-            mixed.append(source[int(index)])
-            source.remove(source[int(index)])
+            index = int(seed / 65536 * len(source))
+            mixed.append(source[index])
+            source.remove(source[index])
         return mixed
 
     def getFileId(self, fileId, seed):

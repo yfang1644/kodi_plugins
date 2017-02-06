@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 
 import music
-import xbmc, xbmcgui, xbmcplugin
-import urllib, urllib2, sys
+import xbmc
+import xbmcgui
+import xbmcplugin
+import urllib
+import urllib2
+import sys
+
 
 def addList(lists):
-    #name, mode, url, icon, info
+    # name, mode, url, icon, info
     n = len(lists)
     plugin = sys.argv[0]
     handle = int(sys.argv[1])
@@ -14,7 +19,8 @@ def addList(lists):
         mode = i[1] if len(i) > 1 else music.MODE_NONE
         isFolder = music.isFolder(mode)
         query = {"mode": mode}
-        if len(i) > 2: query["url"] = i[2]
+        if len(i) > 2:
+            query["url"] = i[2]
         li = xbmcgui.ListItem(name)
         if len(i) > 3:
             icon = i[3]
@@ -23,11 +29,12 @@ def addList(lists):
         if len(i) > 4:
             info = i[4]
             query.update(info)
-            li.setInfo(type="Music",infoLabels=info)
+            li.setInfo(type="Music", infoLabels=info)
             isFolder = False
         u = "%s?%s" % (plugin, urllib.urlencode(query))
         xbmcplugin.addDirectoryItem(handle, u, li, isFolder, n)
     xbmcplugin.endOfDirectory(handle)
+
 
 def play(name, mode, url, icon, info):
     li = xbmcgui.ListItem(name)
@@ -36,13 +43,17 @@ def play(name, mode, url, icon, info):
     url = music.getSongUrl(url)
     xbmc.Player().play(url, li)
 
+
 def playSong(params):
     name = params['title']
     icon = params['icon']
     mode = params['mode']
     url = params['url']
-    info = {'title': name, 'artist': params['artist'], 'album': params['album']}
+    info = {'title': name,
+            'artist': params['artist'],
+            'album': params['album']}
     play(name, mode, url, icon, info)
+
 
 def playList(url):
     song = music.getPlayList(url)[0]
@@ -51,17 +62,19 @@ def playList(url):
     else:
         xbmcgui.Dialog().notification(url, song[0], xbmcgui.NOTIFICATION_ERROR)
 
+
 def get_keyword():
     try:
         import ChineseKeyboard as m
     except:
         m = xbmc
-    keyboard = m.Keyboard('','请输入歌名,专辑或歌手进行搜索,支持简拼.')
-    #xbmc.sleep(1500)
+    keyboard = m.Keyboard('', '请输入歌名,专辑或歌手进行搜索,支持简拼.')
+    # xbmc.sleep(1500)
     keyboard.doModal()
     if keyboard.isConfirmed():
         keyword = keyboard.getText()
         return keyword
+
 
 def search():
     q = get_keyword()
@@ -72,20 +85,9 @@ def search():
     else:
         return []
 
-def get_params():         # get part of the url, help to judge the param of the url, direcdory
-    param = {}
-    params = sys.argv[2]
-    if len(params) >= 2:
-        cleanedparams = params.rsplit('?',1)
-        if len(cleanedparams) == 2:
-            cleanedparams = cleanedparams[1]
-        else:
-            cleanedparams = params.replace('?','')
-        param = dict(urllib2.urlparse.parse_qsl(cleanedparams))
-    print(param)
-    return param
 
-paramlist = get_params()
+params = sys.argv[2][1:]
+paramlist = dict(urllib2.urlparse.parse_qsl(params))
 mode = paramlist.get("mode", music.MODE_MENU)
 url = paramlist.get("url", "")
 

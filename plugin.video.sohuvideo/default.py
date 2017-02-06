@@ -177,8 +177,8 @@ def rootList():
             order = '7'
         li = xbmcgui.ListItem(name)
         u = sys.argv[0] + "?mode=1&name=" + urllib.quote_plus(name) + \
-                "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-                "&page=1"+"&cat="+"&area="+"&year="+"&p5="+"&p6="+"&p11="+"&order="+order
+            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
+            "&page=1"+"&cat="+"&area="+"&year="+"&p5="+"&p6="+"&p11="+"&order="+order
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
     xbmcplugin.endOfDirectory(pluginhandle)
 
@@ -343,10 +343,10 @@ def progList(name, page, cat, area, year, p5, p6, p11, order):
 
             if name in ('电视剧', '动漫', '综艺', '纪录片', '教育'):
                 p_dir = True
-                mode = 2
+                mode = '2'
             else:
                 p_dir = False
-                mode = 3
+                mode = '3'
 
             match1 = re.compile('<span class="maskTx">(.+?)</span>').search(match[i])
             if match1:
@@ -369,7 +369,7 @@ def progList(name, page, cat, area, year, p5, p6, p11, order):
                 p_res = 0
 
             li = xbmcgui.ListItem(str(i + 1) + '. ' + p_name1, iconImage='', thumbnailImage=p_thumb)
-            u = sys.argv[0]+"?mode="+str(mode)+"&name="+urllib.quote_plus(p_name)+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(p_thumb)+"&id="+urllib.quote_plus(str(i))
+            u = sys.argv[0]+"?mode="+mode+"&name="+urllib.quote_plus(p_name)+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(p_thumb)+"&id="+urllib.quote_plus(str(i))
             li.setInfo(type="Video", infoLabels ={"Title": p_name, "Director": p_director, "Genre":p_genre, "Plot":p_plot, "Year":p_year, "Rating":p_rating, "Votes":p_votes})
             xbmcplugin.addDirectoryItem(pluginhandle, u, li, p_dir, totalItems)
 
@@ -768,52 +768,42 @@ def LivePlay(name, id, thumb):
     xbmc.Player().play(url, li)
 
 
-def initTypes(p, default):
-    try:
-        var = urllib.unquote_plus(params[p])
-    except:
-        var = default
-    return var
-
 # main programs goes here #########################################
 pluginhandle = int(sys.argv[1])
 
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
-try:
-    mode = int(params["mode"])
-except:
-    mode = None
-name = initTypes('name', None)
-id = initTypes('id', '')
-cat = initTypes('cat', '')
-area = initTypes('area', '')
-year = initTypes('year', '')
-order = initTypes('order', '')
-page = initTypes('page', '')
-p5 = initTypes('p5', '')
-p6 = initTypes('p6', '')
-p11 = initTypes('p11', '')
-listpage = initTypes('listpage', '')
-url = initTypes('url', None)
-thumb = initTypes('thumb', None)
+name = params.get('name')
+id = params.get('id', '')
+cat = params.get('cat', '')
+area = params.get('area', '')
+year = params.get('year', '')
+order = params.get('order', '')
+page = params.get('page', '')
+p5 = params.get('p5', '')
+p6 = params.get('p6', '')
+p11 = params.get('p11', '')
+listpage = params.get('listpage', '')
+url = params.get('url')
+thumb = params.get('thumb')
 
+mode = params.get('mode')
 if mode is None:
     rootList()
-elif mode == 1:
+elif mode == '1':
     progList(name, page, cat, area, year, p5, p6, p11, order)
-elif mode == 2:
+elif mode == '2':
     seriesList(name, url, thumb)
-elif mode == 3:
+elif mode == '3':
     PlayVideo(name, url, thumb)
-elif mode == 4:
+elif mode == '4':
     performChanges(name, cat, area, year, p5, p6, p11, order, listpage)
-elif mode == 10:
+elif mode == '10':
     LiveChannel()
-elif mode == 11:
+elif mode == '11':
     LivePlay(name, id, thumb)
-elif mode == 21:
+elif mode == '21':
     searchSohu()
-elif mode == 22:
+elif mode == '22':
     sohuSearchList(name, url, page)

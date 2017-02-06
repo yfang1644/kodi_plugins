@@ -21,6 +21,7 @@ dialog = xbmcgui.Dialog()
 filters = plugin.get_storage('ftcache', TTL=1440)
 epcache = plugin.get_storage('epcache', TTL=1440)
 
+
 @plugin.route('/')
 def showcatalog():
     """
@@ -47,6 +48,7 @@ def showcatalog():
     epcache[url] = menus
     return menus
 
+
 @plugin.route('/searchvideo/<url>')
 def searchvideo(url):
     """
@@ -59,11 +61,13 @@ def searchvideo(url):
               ('http://www.letv.com', 'letv'),
               ('http://v.pps.tv', 'pps'),
               ('http://www.tudou.com', 'tudou')]
-    kb = Keyboard('',u'请输入搜索关键字')
+    kb = Keyboard('', u'请输入搜索关键字')
     kb.doModal()
-    if not kb.isConfirmed(): return
+    if not kb.isConfirmed():
+        return
     sstr = kb.getText()
-    if not sstr: return
+    if not sstr:
+        return
     url = url + urllib2.quote(sstr)
     result = _http(url)
     movstr = re.findall(r'<div class="item">(.*?)<!--item end-->', result, re.S)
@@ -111,18 +115,20 @@ def searchvideo(url):
                 'thumbnail': vitem.group(2),})
     return menus
 
+
 @plugin.route('/showsearch/<url>')
 def showsearch(url):
     """
     url: 0 is url, 1 is play site, 2 is title
     """
     items = eval(url)
-    if len(items)>100:
+    if len(items) > 100:
         items = sorted(list(set(items)), key=lambda item: int(item[2]))
     menus = [{'label': item[2],
               'path': plugin.url_for('playsearch', url=item[0], source=item[1]),
           } for item in items]
     return menus
+
 
 @plugin.route('/movies/<url>')
 def showmovie(url):
@@ -136,15 +142,18 @@ def showmovie(url):
     if 'change' in url:
         url = key
         for k, v in filters[key].iteritems():
-            if '筛选' in k: continue
+            if '筛选' in k:
+                continue
             fts = [m[1] for m in v]
             selitem = dialog.select(k, fts)
-            if selitem is -1: return
-            url = '{0}{1}'.format(url,v[selitem][0])
-        url='{0}.html'.format(url)
+            if selitem is -1:
+                return
+            url = '{0}{1}'.format(url, v[selitem][0])
+        url = '{0}.html'.format(url)
         print '*'*80, url
 
-    if url in epcache: return epcache[url]
+    if url in epcache:
+        return epcache[url]
 
     result = _http(url)
 
@@ -187,12 +196,14 @@ def showmovie(url):
     if pagestr:
         pre = re.findall(r'class="prev" title="(.*?)">\s*<a href="(.*?)"',
                          pagestr.group(1))
-        if pre: movies.append(('', pre[0][0], '',
-                               'http://www.youku.com{0}'.format(pre[0][1])))
+        if pre:
+            movies.append(('', pre[0][0], '',
+                           'http://www.youku.com{0}'.format(pre[0][1])))
         nex = re.findall(r'class="next" title="(.*?)">\s*<a href="(.*?)"',
                          pagestr.group(1))
-        if nex: movies.append(('', nex[0][0], '',
-                               'http://www.youku.com{0}'.format(nex[0][1])))
+        if nex:
+            movies.append(('', nex[0][0], '',
+                           'http://www.youku.com{0}'.format(nex[0][1])))
         cpg = re.findall(r'class="current">.*?>(\d+)<', pagestr.group(1))
         tpg = re.findall(r'class="pass".*?>(\d+)<', pagestr.group(1), re.S)
 
@@ -209,18 +220,20 @@ def showmovie(url):
         menus.append({
             'label': '{0}. {1}【{2}】'.format(seq, m[1], m[2]).decode(
                 'utf-8') if m[0] else m[1].decode('utf-8'),
-            'path': plugin.url_for(routeaddr[0][1] ,url=m[3]),
+            'path': plugin.url_for(routeaddr[0][1], url=m[3]),
             'thumbnail': m[0],
         })
     epcache[url] = menus
     return menus
+
 
 @plugin.route('/episodes/<url>')
 def showepisode(url):
     """
     show episodes list
     """
-    if url in epcache: return epcache[url]
+    if url in epcache:
+        return epcache[url]
     result = _http(url)
     episodestr = re.search(r'id="episode_wrap">(.*?)<div id="point_wrap',
                            result, re.S)
@@ -257,6 +270,7 @@ def showepisode(url):
         epcache[url] = menus
         return menus
 
+
 @plugin.route('/play/<url>')
 @plugin.route('/play/<url>/<source>', name='playsearch')
 def playmovie(url, source='youku'):
@@ -273,10 +287,12 @@ def playmovie(url, source='youku'):
         xbmcgui.Dialog().ok(
             '提示框', '不支持的播放源,目前支持youku/sohu/qq/iqiyi/pps/letv/tudou')
         return
-    if 'cancel' in movurl: return
-    listitem=xbmcgui.ListItem()
+    if 'cancel' in movurl:
+        return
+    listitem = xbmcgui.ListItem()
     listitem.setInfo(type="Video", infoLabels={'Title': 'c'})
     xbmc.Player().play(movurl, listitem)
+
 
 @plugin.route('/clscache')
 def clscache():
@@ -285,6 +301,7 @@ def clscache():
     xbmcgui.Dialog().ok(
         '提示框', '清除成功')
     return
+
 
 def _http(url):
     """
@@ -466,14 +483,15 @@ class PlayUtil(object):
         if sel is -1: return 'cancel'
         qtypid = vtyps[qtyps[sels[sel]]]
         for i in range(1, int(infoj['vl']['vi'][0]['cl']['fc'])):
-            fn = '%s.p%s.%s.mp4' % (vid, qtypid%10000, str(i))
+            fn = '%s.p%s.%s.mp4' % (vid, qtypid % 10000, str(i))
             sinfo = _http(
                 '{0}getkey?format={1}&filename={2}&vid={3}&otype=json'.format(
                     murl, qtypid, fn, vid))
             skey = json.loads(sinfo.split('=')[1][:-1])['key']
             surl = urllib2.urlopen(
                 '%s%s?vkey=%s' % (urlpre, fn, skey), timeout=30).geturl()
-            if not surl: break
+            if not surl:
+                break
             surls.append(surl)
         movurl = 'stack://{0}'.format(' , '.join(surls))
         return movurl
@@ -492,14 +510,14 @@ class PlayUtil(object):
         mixed = []
         for i in range(len(source)):
             seed = (seed * 211 + 30031) % 65536
-            index =  seed * len(source) / 65536
+            index = seed * len(source) / 65536
             mixed.append(source[index])
             source = source.replace(source[index],"")
         mixstr = ''.join(mixed)
         attr = streamid[:-1].split('*')
         res = ""
         for item in attr:
-            res +=  mixstr[int(item)]
+            res += mixstr[int(item)]
         return res
 
     def trans_e(self, a, c):

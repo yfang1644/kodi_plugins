@@ -32,8 +32,30 @@ __cwd__       = xbmc.translatePath( __settings__.getAddonInfo('path') )
 cookieFile = __profile__ + 'cookies.ppstream'
 
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
-VIDEO_LIST = [['c_movie','电影'],['c_tv','电视剧'],['c_zy','综艺'],['c_anime','动漫']]
-UGC_LIST = [['c20','搞笑'],['c14','生活'],['c15','时尚'],['c18','母婴'],['c10','原创'],['c8','科技'],['c7','汽车'],['c12','游戏'],['c17','美食'],['c19','教育'],['c5','财经'],['c4','焦点'],['c25','纪录片'],['c21','女性'],['c16','旅游'],['c11','音乐'],['c9','娱乐'],['c6','体育']]
+VIDEO_LIST = [
+    ['c_movie','电影'],
+    ['c_tv','电视剧'],
+    ['c_zy','综艺'],
+    ['c_anime','动漫']]
+UGC_LIST = [
+    ['c20','搞笑'],
+    ['c14','生活'],
+    ['c15','时尚'],
+    ['c18','母婴'],
+    ['c10','原创'],
+    ['c8','科技'],
+    ['c7','汽车'],
+    ['c12','游戏'],
+    ['c17','美食'],
+    ['c19','教育'],
+    ['c5','财经'],
+    ['c4','焦点'],
+    ['c25','纪录片'],
+    ['c21','女性'],
+    ['c16','旅游'],
+    ['c11','音乐'],
+    ['c9','娱乐'],
+    ['c6','体育']]
 SORT_LIST = [['','播放最多'],['_o_2','评分最高'],['_o_3','最近更新']]
 USORT_DATE = [['t1','不限'],['t3','一周'],['t4','一月']]
 USORT_ORDER = [['o1','默认'],['o3','最多播放'],['o2','最新更新']]
@@ -41,7 +63,10 @@ COLOR_LIST = ['[COLOR FFFF0000]','[COLOR FF00FF00]','[COLOR FFFFFF00]','[COLOR F
 # MPLAYER_LIST = [['10','PPS网络电视'],['99','SMG'],['43','优酷'],['44','土豆'],['45','奇艺'],['46','搜狐'],['47','新浪'],['48','乐视']]
 MPLAYER_LIST = [['10','pps'],['43','youku'],['44','tudou'],['45','iqiyi'],['45','iqiyi_new'],['46','sohu'],['47','sina'],['48','letv'],\
                 ['99','56'],['99','SMG'],['99','qq']]
-VIDEO_RES = [["标清",'sd'],["高清",'hd'],["普通",''],["未注","null"]]
+VIDEO_RES = [["标清",'sd'],
+             ["高清",'hd'],
+             ["普通",''],
+             ["未注","null"]]
 RES_LIST = ['high', 'super']
 
 datelist = [['default','全部'],['today','今日'],['week','本周'],['month','本月']]
@@ -803,7 +828,7 @@ def searchPPS():
 
         # url='http://so.pps.tv/search?k='+urllib.quote(keyword)+'&from=1'
         url='http://so.iqiyi.com/pps/?q=%s' % urllib.quote(keyword)
-        ppsSearchList(keyword,url,'1')
+        ppsSearchList(keyword, url, '1')
     else:
         return
 
@@ -1128,7 +1153,7 @@ def PlayVideoYouku(name, url, thumb):
 ##################################################################################
 # Todou Video Player
 ##################################################################################
-def PlayVideoTudou(name,url, thumb):
+def PlayVideoTudou(name, url,  thumb):
     res = 0
     link = getHttpData(url)
     match = re.compile('(var pageConfig = |itemData=)\{(.+?)\};', re.DOTALL).search(link)
@@ -1427,7 +1452,7 @@ def PlayVideoSohu(name, url, thumb):
 ##################################################################################
 # Sina Video Player
 ##################################################################################
-def PlayVideoSina(name,url,thumb):
+def PlayVideoSina(name, url, thumb):
     link = getHttpData(url)
     match = re.compile(' vid:\'(.+?)\',').findall(link)
     vid=match[0]
@@ -1605,7 +1630,7 @@ elif mode == 4:
 elif mode == 6:
     updateListSeries(name, url, thumb, listpage)
 elif mode == 10:
-    PlayVideo(name,url,thumb)
+    PlayVideo(name, url, thumb)
 
 elif mode == 11:
     progListUgc(name, id, page, cat, year, order)
@@ -1628,22 +1653,22 @@ elif mode == 31:
 elif mode == 32:
     ppsSearchList(name, url, page)
 elif mode == 33:
-    episodeList(name,url,thumb)
+    episodeList(name, url, thumb)
 
 elif mode == 42:
-    PlayVideoSmgbb(name,url,thumb)
+    PlayVideoSmgbb(name, url, thumb)
 elif mode == 43:
-    PlayVideoYouku(name,url,thumb)
+    PlayVideoYouku(name, url, thumb)
 elif mode == 44:
-    PlayVideoTudou(name,url,thumb)
+    PlayVideoTudou(name, url, thumb)
 elif mode == 45:
-    PlayVideoQiyi(name,url,thumb)
+    PlayVideoQiyi(name, url, thumb)
 elif mode == 46:
-    PlayVideoSohu(name,url,thumb)
+    PlayVideoSohu(name, url, thumb)
 elif mode == 47:
-    PlayVideoSina(name,url,thumb)
+    PlayVideoSina(name, url, thumb)
 elif mode == 48:
-    PlayVideoLetv(name,url,thumb)
+    PlayVideoLetv(name, url, thumb)
 
 elif mode == 99:
     searchUndefined(name, url)

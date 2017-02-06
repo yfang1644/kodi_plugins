@@ -40,21 +40,25 @@ MODE_SEARCH = "search"
 MODE_SEARCH_LIST = "search_list"
 
 #name, mode, url, icon, info
-menu = [('搜索', MODE_SEARCH), 
-        ('歌手', MODE_SINGER_GROUP), 
+menu = [('搜索', MODE_SEARCH),
+        ('歌手', MODE_SINGER_GROUP),
         ('排行榜', MODE_RANK),
         ('标签', MODE_TAG_LIST, tagHtml),
         ('曲风', MODE_TAG_LIST, genreHtml),
         ('随便一听', MODE_RAND)]
 
+
 def getMenu():
     return menu
+
 
 def isFolder(mode):
     return mode not in (MODE_NONE, MODE_SONG, MODE_PLAYLIST)
 
-def request(url, soup = True, album = False):
-    if not url.startswith('http'): url = webHtml + url
+
+def request(url, soup=True, album=False):
+    if not url.startswith('http'):
+        url = webHtml + url
     print('request', url)
     req = urllib2.Request(url)           # create one connection
     try:
@@ -67,26 +71,32 @@ def request(url, soup = True, album = False):
         return
     return BeautifulSoup(cont, 'html.parser') if soup else cont
 
+
 def getSongUrl(url):
-    if not url: return
+    if not url:
+        return
     req = urllib2.Request(songBasehtml + url)
     req.add_header("Cookie", "PIN=cnGQFFSRmPRxcDj2aUSnAg==")
     url = urllib2.urlopen(req).geturl()
     return url
 
-def getSearchUrl(q, domain = "song"):
+
+def getSearchUrl(q, domain="song"):
     return "%s/%s?q=%s" % (searchHtml, domain, q)
+
 
 def href(a):
     return a['href'].encode('utf-8')
 
-def bannerItem(h, soup = True):
+
+def bannerItem(h, soup=True):
     if soup:
         h = h.text.encode('utf-8')
     h = '[COLOR FFDEB887]【%s】[/COLOR]' % h
     return (h,)
 
-def linkItem(a, mode, link = True, baseurl = '', title = ''):
+
+def linkItem(a, mode, link=True, baseurl='', title=''):
     if title:
         name = title.encode('utf-8')
     else:
@@ -95,12 +105,14 @@ def linkItem(a, mode, link = True, baseurl = '', title = ''):
         name = '[COLOR FF1E90FF]%s[/COLOR]' % (name)
     return (name, mode, baseurl + href(a))
 
+
 def singerItem(a):
     name = a.text.encode('utf-8')
     mode = MODE_SINGER
     url = href(a)
     icon = getSingerIcon(url)
     return (name, mode, url, icon)
+
 
 def playItem(a):
     name = a.text.encode('utf-8')
@@ -109,6 +121,7 @@ def playItem(a):
     icon = ''
     d = {'title': name}
     return (name, mode, url, icon, d)
+
 
 def songItem(title, url, artist, album, icon):
     title = title.encode('utf-8')
@@ -124,14 +137,18 @@ def songItem(title, url, artist, album, icon):
         name = title
     return (name, mode, url, icon, d)
 
+
 def pageList(tree, mode, lists):
     soup = tree.find('div', {'class': 'cPages'})
     if soup:
         a = soup.find('a', text='上一页')
-        if a: lists.insert(0, linkItem(a, mode))
+        if a:
+            lists.insert(0, linkItem(a, mode))
         a = soup.find('a', text='下一页')
-        if a: lists.append(linkItem(a, mode))
+        if a:
+            lists.append(linkItem(a, mode))
     return lists
+
 
 def albumList(soup):
     lists = []
@@ -139,7 +156,8 @@ def albumList(soup):
     if soup:
         for li in soup.find_all('li'):
             albumName = li.find('span', {'class': 'albumName'})
-            if not albumName: continue
+            if not albumName:
+                continue
             singerName = li.find('span', {'class': 'singerName'})
             albumDate = li.find('span', {'class': 'albumDate'})
             albumPic = li.find('img', {'class': 'albumPic'})
@@ -157,6 +175,7 @@ def albumList(soup):
             lists.append((name, mode, url, icon))
     return lists
 
+
 def singerList(soup):
     lists = []
     for i in soup.find_all(['a', 'li'], {'class': 'singerName'}):
@@ -164,11 +183,13 @@ def singerList(soup):
         lists.append(singerItem(a))
     return lists
 
+
 def songList(soup):
     lists = []
     for li in soup.find_all('li'):
         lists.append(playItem(li.a))
     return lists
+
 
 def getSongList(url):
     lists = []
@@ -183,14 +204,16 @@ def getSongList(url):
         lists.append(bannerItem('该歌手不存在或者由于版权到期而下线!', False))
     return lists
 
+
 def getAlbumList(url):
     lists = []
-    tree = request(url, album = True)
+    tree = request(url, album=True)
     soup = tree.find('div', {'class': 'albumList'})
     lists += albumList(soup)
     mode = MODE_ALBUMLIST
     lists = pageList(tree, mode, lists)
     return lists
+
 
 def getSingerList(url):
     lists = []
@@ -203,6 +226,7 @@ def getSingerList(url):
     mode = MODE_SINGERLIST
     lists = pageList(tree, mode, lists)
     return lists
+
 
 def getPlayList(url):
     lists = []
@@ -218,11 +242,13 @@ def getPlayList(url):
         lists.append(bannerItem('该歌曲不存在或者由于版权到期而下线!', False))
     return lists
 
+
 def getRand():
     lists = []
     resHttpData = request(randHtml, False)
     match = re.search("Jsonp\((.*?)\)    </script>", resHttpData)
-    if not match: return
+    if not match:
+        return
     info = json.loads(match.group(1))
     result = info.get('results', [])
     for i in result:
@@ -234,10 +260,11 @@ def getRand():
         lists.append(songItem(title, url, artist, album, icon))
     return lists
 
-def getSingerGroup(url = SingerHtml):
+
+def getSingerGroup(url=SingerHtml):
     lists = []
     tree = request(url)
-    soup = tree.find_all('div', {'class':'group-menu-component'})
+    soup = tree.find_all('div', {'class': 'group-menu-component'})
     for i in soup:
         for a in i.find_all('a'):
             url = href(a)
@@ -248,17 +275,21 @@ def getSingerGroup(url = SingerHtml):
             lists.append(item)
     return lists
 
-def getSingerIcon(url, size = 210):
+
+def getSingerIcon(url, size=210):
     match = re.search("singer_(.*?)\.html", url)
-    if not match: return
+    if not match:
+        return
     num = match.group(1)
     return "%s%d_%s.jpg" % (imgBaseHtml, size, num)
+
 
 def getRankIcon(url):
     icon = webHtml + rankImgBaseHtml + url.replace('/rank', '').replace('.html', '.png')
     return icon
 
-def getSingerAll(url = SingerHtml):
+
+def getSingerAll(url=SingerHtml):
     lists = []
     tree = request(url)
     soup = tree.find('div', {'class': 'singerCommend'})
@@ -275,9 +306,10 @@ def getSingerAll(url = SingerHtml):
             lists.append(singerItem(a))
     return lists
 
+
 def getSinger(url):
     lists = []
-    tree = request(url, album = True)
+    tree = request(url, album=True)
     if tree:
         soup = tree.find('dl', {'class': 'singerInfo'})
         a = soup.find('a', {'class': 'allSong'})
@@ -300,6 +332,7 @@ def getSinger(url):
         lists.append(bannerItem('该歌手不存在或者由于版权到期而下线!', False))
     return lists
 
+
 def getRank():
     lists = []
     tree = request(rankHtml)
@@ -310,17 +343,24 @@ def getRank():
             name = a.text.encode('utf-8')
             url = href(a)
             icon = getRankIcon(url)
-            if '唱片' in name or '专辑' in name: mode = MODE_ALBUMLIST
-            elif '歌手' in name: mode = MODE_SINGERLIST
-            else: mode = MODE_SONGLIST
+            if u'唱片' in name or u'专辑' in name:
+                mode = MODE_ALBUMLIST
+            elif u'歌手' in name:
+                mode = MODE_SINGERLIST
+            else:
+                mode = MODE_SONGLIST
             lists.append((name, mode, url, icon))
     return lists
 
+
 def getTagList(url):
     lists = []
-    if url == tagHtml: tag = 'allTagList'
-    elif url == genreHtml: tag = 'allGenre'
-    else: return
+    if url == tagHtml:
+        tag = 'allTagList'
+    elif url == genreHtml:
+        tag = 'allGenre'
+    else:
+        return
     tree = request(url)
     soup = tree.find('div', {'class': tag})
     for dl in soup.find_all('dl'):
@@ -329,15 +369,17 @@ def getTagList(url):
             lists.append(linkItem(a, MODE_TAG, False))
     return lists
 
+
 def tagHeadList(soup, mode):
     head = soup.find_previous_sibling()
     if head:
         return [linkItem(head.p.a, mode), bannerItem(head.h3)]
     return []
 
+
 def getTag(url):
     lists = []
-    tree = request(url, album = True)
+    tree = request(url, album=True)
     if tree:
         soups = tree.find_all('div', {'class': [MODE_SONGLIST, MODE_ALBUMLIST, MODE_SINGERLIST]})
         for soup in soups:
@@ -346,6 +388,7 @@ def getTag(url):
             func = globals()[className]
             lists += func(soup)
     return lists
+
 
 def getSearchList(url):
     lists = []
@@ -373,10 +416,13 @@ def getSearchList(url):
         if soup:
             baseurl = url.split('?')[0]
             a = soup.find('a', text='«上一页')
-            if a: lists.insert(0, linkItem(a, mode, True, baseurl))
+            if a:
+                lists.insert(0, linkItem(a, mode, True, baseurl))
             a = soup.find('a', text='下一页»')
-            if a: lists.append(linkItem(a, mode, True, baseurl))
+            if a:
+                lists.append(linkItem(a, mode, True, baseurl))
     return lists
+
 
 def getList(mode, url):
     l = []

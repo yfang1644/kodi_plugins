@@ -40,12 +40,10 @@ MODE_SEARCH = "search"
 MODE_SEARCH_LIST = "search_list"
 
 #name, mode, url, icon, info
-menu = [('搜索', MODE_SEARCH),
+menu = [('搜索', MODE_SEARCH_LIST),
         ('歌手', MODE_SINGER_GROUP),
         ('排行榜', MODE_RANK),
-        ('标签', MODE_TAG_LIST, tagHtml),
-        ('曲风', MODE_TAG_LIST, genreHtml),
-        ('随便一听', MODE_RAND)]
+        ('标签', MODE_TAG_LIST, tagHtml)]
 
 
 def getMenu():

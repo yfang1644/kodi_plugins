@@ -7,9 +7,6 @@ import xbmcplugin
 import xbmcaddon
 
 
-def build_url(query):
-    return base_url + '?' + urllib.urlencode(query)
-
 base_url = sys.argv[0]
 addon_handle = int(sys.argv[1])
 args = urlparse.parse_qs(sys.argv[2][1:])
@@ -17,6 +14,10 @@ addon = xbmcaddon.Addon()
 pwd_path = addon.getAddonInfo('path')
 
 xbmcplugin.setContent(addon_handle, 'movies')
+
+
+def build_url(query):
+    return base_url + '?' + urllib.urlencode(query)
 
 mode = args.get('mode', None)
 
