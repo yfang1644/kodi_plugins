@@ -1,7 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 
 
-import urllib2, urllib, re, string, sys, os, gzip, StringIO, urlparse, math
+import urllib2, urllib, re, gzip, StringIO, urlparse
 from random import random
 import base64, time, cookielib
 import json as simplejson
@@ -10,7 +10,7 @@ import json as simplejson
 # except ImportError:
 #    import json as simplejson
 
-    
+
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
 RUNFLAG = 0
@@ -103,9 +103,9 @@ class YOUKU_DR:
         seed = float(seed)
         for i in range(len(source)):
             seed = (seed * 211 + 30031) % 65536
-            index = math.floor(seed / 65536 * len(source))
-            mixed.append(source[int(index)])
-            source.remove(source[int(index)])
+            index = int(seed / 65536 * len(source)
+            mixed.append(source[index])
+            source.remove(source[index])
         return mixed
 
     def getFileId(self, fileId, seed):

@@ -9,10 +9,10 @@ import urllib2
 import httplib
 import base64
 import time
-from StringIO import StringIO
-from xbmcswift2 import xbmc
+import StringIO
+import xbmc
 from xbmcswift2 import Plugin
-from xbmcswift2 import xbmcgui
+import xbmcgui
 from collections_backport import OrderedDict
 from ChineseKeyboard import Keyboard
 
@@ -77,14 +77,17 @@ def searchvideo(url):
     menus = []
     site = None
     for movitem in movstr:
-        if 'p_ispaid' in movitem or 'nosource' in movitem: continue
+        if 'p_ispaid' in movitem or 'nosource' in movitem:
+            continue
         psrc = re.compile(r'pgm-source(.*?)</div>', re.S).search(movitem)
-        if not psrc: continue
+        if not psrc:
+            continue
         for k in source:
             if k[0] in psrc.group(1):
                 site = k
                 break
-        if not site: continue
+        if not site:
+            continue
         vitem = vitempat.search(movitem)
 
         if 'class="movie"' in movitem:
@@ -150,7 +153,6 @@ def showmovie(url):
                 return
             url = '{0}{1}'.format(url, v[selitem][0])
         url = '{0}.html'.format(url)
-        print '*'*80, url
 
     if url in epcache:
         return epcache[url]
@@ -313,12 +315,12 @@ def _http(url):
                           'Chrome/28.0.1500.71 Safari/537.36'))
     req.add_header('Accept-encoding', 'gzip')
     rsp = urllib2.urlopen(req, timeout=30)
+    data = rsp.read()
     if rsp.info().get('Content-Encoding') == 'gzip':
-        buf = StringIO(rsp.read())
-        f = gzip.GzipFile(fileobj=buf)
-        data = f.read()
-    else:
-        data = rsp.read()
+        if data[-1] == '\n':
+            data = data[:-1]
+        data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
+
     rsp.close()
     return data
 
@@ -340,14 +342,14 @@ class PlayUtil(object):
         moviesurl="http://v.youku.com/player/getPlayList/VideoIDS/{0}/ctype/12/ev/1".format(
             vid)
         result = _http(moviesurl)
-        movinfo = json.loads(result.replace('\r\n',''))
+        movinfo = json.loads(result.replace('\r\n', ''))
         movdat = movinfo['data'][0]
         streamfids = movdat['streamfileids']
         stype = 'flv'
 
         # user select streamtype
         if len(streamfids) > 1:
-            selstypes = [k for k,v in stypes.iteritems() if v in streamfids]
+            selstypes = [k for k, v in stypes.iteritems() if v in streamfids]
             selitem = dialog.select('清晰度', selstypes)
             if selitem is -1: return 'cancle'
             stype = stypes[selstypes[selitem]]
@@ -446,7 +448,6 @@ class PlayUtil(object):
         self.url = 'http://v.youku.com/v_show/id_{0}.html'.format(vcode)
         self.youku()
 
-
     def letv(self):
         vid = self.url.split('/')[-1][:-5]
         infoxml = _http('http://www.letv.com/v_xml/{0}.xml'.format(vid))
@@ -457,10 +458,11 @@ class PlayUtil(object):
         qtyps = [('1080P', '1080p'), ('超清', '720p'), ('高清', '1300'),
                  ('标清', '1000'), ('流畅', '350')]
         sel = dialog.select('清晰度', [q[0] for q in qtyps])
-        if sel is -1: return 'cancel'
+        if sel is -1:
+            return 'cancel'
         sinfo = streams[qtyps[sel][1]]
         resp = urllib2.urlopen('http://g3.letv.cn/{0}'.format(
-            sinfo[2].replace('\\','')), timeout=30)
+            sinfo[2].replace('\\', '')), timeout=30)
         movurl = resp.geturl()
         return movurl
 
@@ -474,13 +476,14 @@ class PlayUtil(object):
             ('1080P', 'fhd'), ('超清', 'shd'), ('高清', 'hd'), ('标清', 'sd')))
         #python 2.7 syntax
         #vtyps = {v['name']:v['id'] for v in infoj['fl']['fi']}
-        vtyps = dict((v['name'],v['id']) for v in infoj['fl']['fi'])
+        vtyps = dict((v['name'], v['id']) for v in infoj['fl']['fi'])
         qtypid = vtyps['sd']
-        sels = [k for k,v in qtyps.iteritems() if v in vtyps]
+        sels = [k for k, v in qtyps.iteritems() if v in vtyps]
         sel = dialog.select('清晰度', sels)
         surls = []
         urlpre = infoj['vl']['vi'][0]['ul']['ui'][-1]['url']
-        if sel is -1: return 'cancel'
+        if sel is -1:
+            return 'cancel'
         qtypid = vtyps[qtyps[sels[sel]]]
         for i in range(1, int(infoj['vl']['vi'][0]['cl']['fc'])):
             fn = '%s.p%s.%s.mp4' % (vid, qtypid % 10000, str(i))

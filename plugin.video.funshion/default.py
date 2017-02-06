@@ -2,8 +2,8 @@
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, string, sys, os, gzip, StringIO
 import math, os.path, httplib, time
 from random import randrange
-import cookielib
 import simplejson
+UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
 
 ########################################################################
@@ -17,7 +17,6 @@ import simplejson
 __addon__     = xbmcaddon.Addon()
 __addonname__ = __addon__.getAddonInfo('name')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-cookieFile    = __profile__ + 'cookies.funshion'
 
 #CHANNEL_LIST = [['电影','movie'],['电视剧','tv'],['动漫','cartoon'],['综艺','variety'],['新闻','news'],['娱乐','ent'],['体育','sports'],['搞笑','joke'],['时尚','fashion'],['生活','life'],['旅游','tour'],['科技','tech']]
 CHANNEL_LIST = {'电影': 'c-e794b5e5bdb1',
@@ -60,10 +59,17 @@ def log(txt):
 
 ########################################################################
 def getHttpData(url):
-    print "url-link: " + url
+    print url
     log("%s::url - %s" % (sys._getframe().f_code.co_name, url))
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    headers = {"Accept":"application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
+               "Accept-Charset": "GBK,utf-8;q=0.7,*;q=0.3",
+               "Accept-Encoding": "gzip",
+               "Accept-Language": "zh-CN,zh;q=0.8",
+               "Cache-Control": "max-age=0",
+               "Connection": "keep-alive",
+               "User-Agent": UserAgent_IPAD}
+
+    req = urllib2.Request(url, headers=headers)
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()
@@ -194,11 +200,11 @@ def updateListSEL(name, type, cat, filtrs, page, listpage):
 ##################################################################################
 def progList(name, type, cat, filtrs, page, listpage):
     if page is None:
-        page = 1
+        page = '1'
     # p_url = 'http://list.funshion.com/%s/pg-%s%s/'
     ## p_url = 'http://www.funshion.com/list/%s/pg-%s%s/'
 
-    if (name in SERIES_LIST) or (name in MOVIE_LIST):
+    if name in (SERIES_LIST | MOVIE_LIST):
         p_url = "http://www.fun.tv/retrieve/%s.n-e5bdb1e78987%s.pg-%s"
     else:
         p_url = "http://www.fun.tv/retrieve/%s%s.pg-%s"
@@ -219,7 +225,7 @@ def progList(name, type, cat, filtrs, page, listpage):
         link = getHttpData(url)
 
     # Fetch & build video titles list for user selection, highlight user selected filtrs
-    li = xbmcgui.ListItem(name + '（第' + str(page) + '页）【' + cat + '】（按此选择)')
+    li = xbmcgui.ListItem(name + '（第' + page + '页）【' + cat + '】（按此选择)')
     u = sys.argv[0]+"?mode=10&name="+urllib.quote_plus(name)+"&type="+type+"&cat="+urllib.quote_plus(cat)+"&filtrs="+urllib.quote_plus(filtrs)+"&page=1"+"&listpage="+urllib.quote_plus(listpage)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
@@ -286,7 +292,7 @@ def progList(name, type, cat, filtrs, page, listpage):
     match = re.compile('<div class="pager-wrap fix">(.+?)</div>', re.DOTALL).findall(link)
     if match:
         match1 = re.compile("<a[\s]+?href='.+?'>(\d+)</a>", re.DOTALL).findall(match[0])
-        plist = [str(page)]
+        plist = [page]
         for num in match1:
             if (num not in plist):
                 plist.append(num)

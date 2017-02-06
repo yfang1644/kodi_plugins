@@ -8,6 +8,8 @@ import re
 import json
 import traceback
 
+UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
+
 
 def colorize(label, color):
     return "[COLOR %s]" % color + label + "[/COLOR]"
@@ -47,9 +49,11 @@ def GetHttpData(url, data=None, cookie=None, headers=None):
     xbmc.log("Fetch URL :%s, with data: %s" % (url, data))
     try:
         req = urllib2.Request(url)
-        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
-                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
-                              'Chrome/28.0.1500.71 Safari/537.36'))
+#        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
+#                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
+#                              'Chrome/51.0.2704.84 Safari/537.36'))
+        req.add_header('User-Agent', UserAgent_IPAD)
+
         req.add_header('Accept-encoding', 'gzip')
         if cookie is not None:
             req.add_header('Cookie', cookie)
@@ -62,6 +66,8 @@ def GetHttpData(url, data=None, cookie=None, headers=None):
             response = urllib2.urlopen(req, timeout=3)
         httpdata = response.read()
         if response.headers.get('content-encoding', None) == 'gzip':
+            if httpdata[-1] == '\n':
+                httpdata = httpdata[:-1]
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         response.close()
         match = re.compile('encoding=(.+?)"').findall(httpdata)

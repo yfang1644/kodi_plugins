@@ -1,8 +1,6 @@
 # -*- coding: utf8 -*-
 
 from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbmcplugin
-import os
-import sys
 from rrmj import *
 from common import *
 

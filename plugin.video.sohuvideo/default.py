@@ -80,6 +80,8 @@ def getHttpData(url):
     else:
         httpdata = response.read()
         if response.headers.get('content-encoding', None) == 'gzip':
+            if httpdata[-1] == '\n':
+                httpdata = httpdata[:-1]
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         charset = response.headers.getparam('charset')
         cj.save(cookieFile, ignore_discard=True, ignore_expires=True)

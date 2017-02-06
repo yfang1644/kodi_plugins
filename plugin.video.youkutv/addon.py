@@ -82,9 +82,6 @@ ACTION_CONTEXT_MENU   = 117
 
 
 def GetHttpData(url):
-    print '************** URL'
-    print url
-    print '************** URL'
     try:
         req = urllib2.Request(url)
         req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
