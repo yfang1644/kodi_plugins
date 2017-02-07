@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import xbmc, xbmcgui, xbmcplugin, xbmcaddon
-import urllib2, urllib, httplib, time
-import os, sys, re, string, gzip, StringIO
+import urllib2, urllib, time
+import os, sys, re, gzip, StringIO
 import cookielib
 
 try:
@@ -121,6 +121,11 @@ def getHttpData(url):
             httpdata = "IO Timeout Error"
         else:
             httpdata = response.read()
+            if response.headers.get('Content-Encoding', None) == 'gzip':
+                if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
+                    httpdata = httpdata[:-1]
+                httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
+
             response.close()
             cj.save(cookieFile, ignore_discard=True, ignore_expires=True)
             for cookie in cj:
@@ -132,7 +137,8 @@ def getHttpData(url):
     if len(match):
         charset = match[0].lower()
         if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = unicode(httpdata, charset,'replace').encode('utf8')
+            httpdata = unicode(httpdata, charset, 'replace').encode('utf8')
+
     return httpdata
 
 
@@ -353,8 +359,10 @@ def updateListMovie(name, id, page, cat, area, year, order, listpage):
         order = SORT_LIST[sel][1]
         change = True
 
-    if change: progListMovie(name, id, '1', cat, area, year, order, listpage)
-    else: return(name, id, '1', cat, area, year, order, listpage)
+    if change:
+        progListMovie(name, id, '1', cat, area, year, order, listpage)
+    else:
+        return(name, id, '1', cat, area, year, order, listpage)
 
 ##################################################################################
 # Routine to fetch and build the video series selection menu

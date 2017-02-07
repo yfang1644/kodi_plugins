@@ -527,7 +527,7 @@ def GetPPTVVideoURL_Flash(url, quality):
         return []
 
     # get segment list
-    dragdata = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'dragdata', attrs={'ft': cur.encode('utf-8')}))
+    dragdata = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'dragdata', attrs = { 'ft' : cur.encode('utf-8') }))
     if len(dragdata) <= 0:
         return []
     sgms = parseDOM(dragdata, 'sgm', ret='no')
@@ -547,8 +547,8 @@ def GetPPTVVideoURL_Flash(url, quality):
         return []
     downparseurl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'form', attrs={'name': 'mform'}, ret='action'))
     # get hidden values in form
-    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden'}, ret='name')
-    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden'}, ret='value')
+    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='name')
+    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='value')
     if min(len(input_names), len(input_names)) <= 0:
         return []
 
@@ -604,7 +604,7 @@ def GetPPTVVideoURL(url, quality):
     # get sports iPad live URL
     ipadurl = CheckValidList(re.compile('["\']pbar_video_(\d+)["\']').findall(data))
     if len(ipadurl) > 0:
-        return [PPTV_WEBPLAY_XML + 'web-m3u8-' + ipadurl + '.m3u8?type=m3u8.web.pad&o=' + domain]
+        return [PPTV_WEBPLAY_XML + 'web-m3u8-' + ipadurl + '.m3u8?type=m3u8.web.pad&o=' + domain ]
 
     # try to get iPad non-live video URL
     if 'true' == __addon__.getSetting('ipad_video'):

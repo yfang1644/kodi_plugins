@@ -1,7 +1,5 @@
 ﻿# -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, sys, os, gzip, StringIO
-from random import random, randint
-from math import floor
+import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, sys, gzip, StringIO
 import hashlib
 import time
 import simplejson
