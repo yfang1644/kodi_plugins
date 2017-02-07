@@ -1,6 +1,19 @@
 # -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib
-import time, random, socket, re, sys, os, gzip, StringIO
+
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import urllib2
+import urllib
+import time
+import random
+import socket
+import re
+import sys
+import os
+import gzip
+import StringIO
 import cookielib
 import base64
 import simplejson
@@ -536,7 +549,7 @@ def mainMenu():
                     mode = '1'
                 url = p_url + x_url
 
-                ilist = "[]%s. %s[]" % (i, name)
+                ilist = "%s. %s" % (i, name)
                 li = xbmcgui.ListItem(ilist)
                 u = sys.argv[0] + "?mode=" + mode + "&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&cat=" + urllib.quote_plus(cat) + "&filtrs=" + urllib.quote_plus(filtrs) + "&page=1" + "&listpage=" + listpage
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True, totalItems)
@@ -547,7 +560,7 @@ def mainMenu():
             if (name == namex):
                 i = i + 1
                 url = p_url + x_url
-                ilist = "[]%s. %s[]" % (i, name)
+                ilist = "%s. %s" % (i, name)
                 li = xbmcgui.ListItem(ilist)
                 u = sys.argv[0] + "?mode=8" + "&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&cat=" + urllib.quote_plus(cat) + "&filtrs=" + urllib.quote_plus(filtrs) + "&page=1" + "&listpage=" + listpage
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True, totalItems)
@@ -580,6 +593,7 @@ def progListMovie(name, url, cat, filtrs, page, listpage):
     p_url = p_url % (fltrCategory, page, filtrs)
 
     # Fetch & build video titles list for user selection, highlight user selected filtrs
+    cat = re.sub(' ', '', cat)
     li = xbmcgui.ListItem(name + '（第' + str(page) + '页）【' + cat + '】（按此选择)')
     u = sys.argv[0] + "?mode=9&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&cat=" + urllib.quote_plus(cat) + "&filtrs=" + urllib.quote_plus(filtrs) + "&page=1" + "&listpage=" + urllib.quote_plus(listpage)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -718,7 +732,7 @@ def progListSeries(name, url, thumb):
 
             match1 = re.compile('class="time">(.+?)</span>').findall(matchp[i])
             if match1:
-                p_list += ' [][ ' + match1[0].strip() + ' ][]'
+                p_list += ' [ ' + match1[0].strip() + ' ]'
 
             li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
             u = sys.argv[0] + "?mode=10&name=" + urllib.quote_plus(p_name) + "&url=" + urllib.quote_plus(p_url)
@@ -904,6 +918,7 @@ def progListUgc(name, url, cat, filtrs, page, listpage):
     p_url = p_url % (fltrCategory, page, filtrs)
 
     # Fetch & build video titles list for user selection, highlight user selected filter
+    cat = re.sub(' ', '', cat)
     li = xbmcgui.ListItem(name + '（第' + str(page) + '页）【' + cat + '】（按此选择)')
     if listpage is None:
         listpage = ''

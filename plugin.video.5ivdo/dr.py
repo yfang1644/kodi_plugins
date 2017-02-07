@@ -1,20 +1,17 @@
 ﻿# -*- coding: utf-8 -*-
 
-
-import urllib2, urllib, re, gzip, StringIO, urlparse
+import urllib2, urllib, re, sys, gzip, StringIO, urlparse
 from random import random
 import base64, time, cookielib
 import json as simplejson
-# try:
+#try:
 #    import simplejson
-# except ImportError:
+#except ImportError:
 #    import json as simplejson
-
 
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
 RUNFLAG = 0
-
 
 def GetHttpData(url):
     global RUNFLAG
@@ -33,7 +30,7 @@ def GetHttpData(url):
         req.add_header('referer', 'http://static.youku.com')
     response = urllib2.urlopen(req)
     httpdata = response.read()
-    if response.headers.get('content-encoding', None) == 'gzip':
+    if response.headers.get('content-encoding') == 'gzip':
         httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
     response.close()
     match = re.compile('<meta http-equiv="[Cc]ontent-[Tt]ype" content="text/html; charset=(.+?)"').findall(httpdata)
@@ -103,7 +100,7 @@ class YOUKU_DR:
         seed = float(seed)
         for i in range(len(source)):
             seed = (seed * 211 + 30031) % 65536
-            index = int(seed / 65536 * len(source)
+            index = int(seed / 65536 * len(source))
             mixed.append(source[index])
             source.remove(source[index])
         return mixed
@@ -129,19 +126,19 @@ class YOUKU_DR:
         ep = urllib.quote(base64.b64encode(tmp), safe='~()*!.\'')
         return fileid, ep
 
-    def GetPlayList(self,vid):
+    def GetPlayList(self, vid):
         urls = []
         stypes = ['mp4hd2', 'mp4hd', 'flvhd']
-        url = 'http://play.youku.com/play/get.json?vid=%s&ct=12' % vid
+        url  = 'http://play.youku.com/play/get.json?vid=%s&ct=12' % vid
         json_response = simplejson.loads(GetHttpData(url))
         movdat = json_response['data']
         oip = movdat['security']['ip']
-        ep = movdat['security']['encrypt_string']
+        ep  = movdat['security']['encrypt_string']
         sid, token = self.get_sid(ep)
         url = 'http://play.youku.com/play/get.json?vid=%s&ct=10' % vid
         json_response = simplejson.loads(GetHttpData(url))
         movdat = json_response['data']
-        stream = movdat['stream'][0]
+        stream=movdat['stream'][0]
         for t in stypes:
             for s in movdat['stream']:
                 if s['stream_type'] == t:
@@ -153,29 +150,30 @@ class YOUKU_DR:
             k = segs[no]['key']
             fileid, ep = self.generate_ep(no, streamfileid, sid, token)
             query = urllib.urlencode(dict(
-                ctype=12, ev=1, K=k, ep=urllib.unquote(ep),oip = oip,token = token,yxon = 1
+                ctype=12, ev =1, K=k, ep=urllib.unquote(ep), oip=oip, token=token, yxon = 1
              ))
             u = 'http://k.youku.com/player/getFlvPath/sid/{sid}_00/st/{container}/fileid/{fileid}?{q}'.format(
                     sid       = sid,
-                    container = 'flv' , #resolution_map[resolution], 
+                    container = 'flv' , #resolution_map[resolution],
                     fileid    = fileid,
                     q         = query
             )
 #            urls.append(u)
             urls += [i['server'] for i in simplejson.loads(GetHttpData(u))]
-        return 'MULTI',urls
+        return 'MULTI', urls
 
 
 # http://hot.vrs.sohu.com/vrs_flash.action?vid=2339874
 class SOHU_DR:
     def __init__(self):
         return
-    def real_url(self, host, vid, tvid, new,clipURL, ck):
+
+    def real_url(self, host, vid, tvid, new, clipURL, ck):
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
         return simplejson.loads(GetHttpData(url))['url'].encode('utf-8')
 
     def get_hqvid(self, ppage):
-        match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?),').search(ppage)
+        match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?), ').search(ppage)
         if match:
             if match.group(4) != '0':
                 return match.group(4)
@@ -203,12 +201,11 @@ class SOHU_DR:
 #        assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
         for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
             clipURL = urlparse.urlparse(clip).path
-            urls.append(self.real_url(host, hqvid, tvid, new,clipURL, ck)+'|Range=')
+            urls.append(self.real_url(host, hqvid, tvid, new, clipURL, ck)+'|Range=')
         return 'MULTI', urls
 
 
 class PPTV_DR:
-
     def __init__(self):
         return
 
@@ -282,7 +279,7 @@ class PPTV_DR:
         return result
 
     def parseDOM(self, html, name=u"", attrs={}, ret=False):
-        if isinstance(html, str):              # Should be handled
+        if isinstance(html, str): # Should be handled
             html = [html]
         elif isinstance(html, unicode):
             html = [html]
@@ -314,8 +311,8 @@ class PPTV_DR:
     def GetPlayList(self, ppid):
         purl = 'http://v.pptv.com/show/%s.html' % ppid
         data = GetHttpData(purl)
-        kk = self.CheckValidList(re.compile('%26kk%3D([^"\']*)["\'],').findall(data))
-        vid = self.CheckValidList(re.compile('"id"\s*:\s*(\d+)\s*,').findall(data))
+        kk = self.CheckValidList(re.compile('%26kk%3D([^"\']*)["\'], ').findall(data))
+        vid = self.CheckValidList(re.compile('"id"\s*:\s*(\d+)\s*, ').findall(data))
         PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
         ipadurl = PPTV_WEBPLAY_XML + 'webplay3-0-' + vid + '.xml&version=4&type=m3u8.web.pad' + '&kk=' + kk
         data = GetHttpData(ipadurl)
@@ -332,7 +329,7 @@ class PPTV_DR:
         cur = str(quality)
         if len(rid) <= 0 or len(cur) <= 0:
             return 'ERROR', 'C'
-        dt = self.CheckValidList(self.parseDOM(unicode(data, 'utf-8', 'ignore'), 'dt', attrs = { 'ft' : cur.encode('utf-8')}))
+        dt = self.CheckValidList(self.parseDOM(unicode(data, 'utf-8', 'ignore'), 'dt', attrs={'ft': cur.encode('utf-8')}))
         if len(dt) <= 0:
             return 'ERROR', 'D'
         sh = self.CheckValidList(self.parseDOM(dt, 'sh'))
@@ -340,11 +337,11 @@ class PPTV_DR:
         if len(sh) <= 0:
             return 'ERROR', 'F'
         rid = self.CheckValidList(re.compile('([^\.]*)\.').findall(rid))
-        return 'M3U8','http://' + sh.encode('utf-8') + '/' + rid.encode('utf-8') + '.m3u8?type=m3u8.web.pad&k=' + f_key.encode('utf-8')
+        return 'M3U8', 'http://' + sh.encode('utf-8') + '/' + rid.encode('utf-8') + '.m3u8?type=m3u8.web.pad&k=' + f_key.encode('utf-8')
 
 
 def work(purl):
-    ips = purl.split(',')
+    ips = purl.split(', ')
     if ips[0] == 'DR_YOUKU':
         itype, iurl = YOUKU_DR().GetPlayList(ips[1])
     elif ips[0] == 'DR_SOHU':
@@ -359,7 +356,3 @@ def work(purl):
         itype = 'ERROR'
         iurl = ''
     return itype, iurl
-
-
-def version():
-    return '20161125'

@@ -18,77 +18,94 @@ except ImportError:
     import json as jsonimpl
 
 mainList = {
-    'yangshi': 'National Channels 央视频道',
-    'weishi': 'Provincial Channels 卫视频道',
-    'shuzi': 'Digital Channels 数字频道',
-    'chengshi': 'City-based Channels 城市频道'
+    'yangshi': '央视频道',
+    'weishi': '卫视频道',
+    'shuzi': '数字频道',
+    'chengshi': '城市频道'
 }
 
-cityList = {
-    "anhui": "Anhui 安徽",
-    "beijing": "Beijing 北京",
-    "fujian": "Fujian 福建",
-    "gansu": "Gansu 甘肃",
-    "guangdong": "Guangdong 广东",
-    "guangxi": "Guangxi 广西",
-    "hebei": "Hebei 河北",
-    "heilongjiang": "Heilongjiang 黑龙江",
-    "hubei": "Hubei 湖北",
-    "jilin": "Jilin 吉林",
-    "jiangsu": "Jiangsu 江苏",
-    "jiangxi": "Jiangxi 江西",
-    "liaoning": "Liaoning 辽宁",
-    "neimenggu": "Inner Mongolia 内蒙古",
-    "shandong": "Shandong 山东",
-    "shaanxi": "Shaanxi 陕西",
-    "shanghai": "Shanghai 上海",
-    "sichuan": "Sichuan 四川",
-    "tianjin": "Tianjin 天津",
-    "xizang": "Tibet 西藏",
-    "xinjiang": "Xinjiang 新疆",
-    "yunnan": "Yunnan 云南",
-    "zhejiang": "Zhejiang 浙江",
-}
+cityList = [["anhui", "安徽"],
+            ["beijing", "北京"],
+            ["fujian", "福建"],
+            ["gansu", "甘肃"],
+            ["guangdong", "广东"],
+            ["guangxi", "广西"],
+            ["hebei", "河北"],
+            ["heilongjiang", "黑龙江"],
+            ["hubei", "湖北"],
+            ["jilin", "吉林"],
+            ["jiangsu", "江苏"],
+            ["jiangxi", "江西"],
+            ["liaoning", "辽宁"],
+            ["neimenggu", "内蒙古"],
+            ["shandong", "山东"],
+            ["shaanxi", "陕西"],
+            ["shanghai", "上海"],
+            ["sichuan", "四川"],
+            ["tianjin", "天津"],
+            ["xizang", "西藏"],
+            ["xinjiang", "新疆"],
+            ["yunnan", "云南"],
+            ["zhejiang", "浙江"]]
 
-weishList = {
-    "anhui": "安徽卫视",
-    "btv1": "北京卫视",
-    "bingtuan": "兵团卫视",
-    "chongqing": "重庆卫视",
-    "dongfang": "东方卫视",
-    "dongnan": "东南卫视",
-    "gansu": "甘肃卫视",
-    "guangdong": "广东卫视",
-    "guangxi": "广西卫视",
-    "guizhou": "贵州卫视",
-    "hebei": "河北卫视",
-    "henan": "河南卫视",
-    "heilongjiang": "黑龙江卫视",
-    "hubei": "湖北卫视",
-    "jilin": "吉林卫视",
-    "jiangxi": "江西卫视",
-    "kangba": "康巴卫视",
-    "liaoning": "辽宁卫视",
-    "travel": "旅游卫视",
-    "neimenggu": "内蒙古卫视",
-    "ningxia": "宁夏卫视",
-    "qinghai": "青海卫视",
-    "shandong": "山东卫视",
-    "sdetv": "山东教育台",
-    "shenzhen": "深圳卫视",
-    "shan1xi": "山西卫视",
-    "shan3xi": "陕西卫视",
-    "shenzhen": "深圳卫视",
-    "sichuan": "四川卫视",
-    "tianjin": "天津卫视",
-    "xizang": "西藏卫视",
-    "xiamen": "厦门卫视",
-    "xianggangweishi": "香港卫视",
-    "xinjiang": "新疆卫视",
-    "yanbian": "延边卫视",
-    "yunnan": "云南卫视",
-    "zhejiang": "浙江卫视"
-}
+cctvList = [["cctv1", "1-综合"],
+            ["cctv2", "2-财经"],
+            ["cctv3", "3-综艺"],
+            ["cctv4", "4-国际(亚洲)"],
+            ["cctveurope", "4-国际(欧洲)"],
+            ["cctvamerica", "4-国际(美洲)"],
+            ["cctv5", "5-体育"],
+            ["cctv5plus", "5-赛事"],
+            ["cctv6", "6-电影"],
+            ["cctv7", "7-军事农业"],
+            ["cctv8", "8-电视剧"],
+            ["cctv9", "CCTV-NEWS"],
+            ["cctvjilu", "9-纪录"],
+            ["cctvdoc", "9-纪录(英语)"],
+            ["cctv10", "10-科教"],
+            ["cctv11", "11-戏曲"],
+            ["cctv12", "12-社会与法"],
+            ["cctv13", "13-新闻"],
+            ["cctvchild", "14-少儿"],
+            ["cctv15", "15-音乐"]]
+
+weishList = [["anhui", "安徽卫视"],
+             ["btv1", "北京卫视"],
+             ["bingtuan", "兵团卫视"],
+             ["chongqing", "重庆卫视"],
+             ["dongfang", "东方卫视"],
+             ["dongnan", "东南卫视"],
+             ["gansu", "甘肃卫视"],
+             ["guangdong", "广东卫视"],
+             ["guangxi", "广西卫视"],
+             ["guizhou", "贵州卫视"],
+             ["hebei", "河北卫视"],
+             ["henan", "河南卫视"],
+             ["heilongjiang", "黑龙江卫视"],
+             ["hubei", "湖北卫视"],
+             ["jilin", "吉林卫视"],
+             ["jiangxi", "江西卫视"],
+             ["kangba", "康巴卫视"],
+             ["liaoning", "辽宁卫视"],
+             ["travel", "旅游卫视"],
+             ["neimenggu", "内蒙古卫视"],
+             ["ningxia", "宁夏卫视"],
+             ["qinghai", "青海卫视"],
+             ["shandong", "山东卫视"],
+             ["sdetv", "山东教育台"],
+             ["shenzhen", "深圳卫视"],
+             ["shan1xi", "山西卫视"],
+             ["shan3xi", "陕西卫视"],
+             ["shenzhen", "深圳卫视"],
+             ["sichuan", "四川卫视"],
+             ["tianjin", "天津卫视"],
+             ["xizang", "西藏卫视"],
+             ["xiamen", "厦门卫视"],
+             ["xianggangweishi", "香港卫视"],
+             ["xinjiang", "新疆卫视"],
+             ["yanbian", "延边卫视"],
+             ["yunnan", "云南卫视"],
+             ["zhejiang", "浙江卫视"]]
 
 addon = xbmcaddon.Addon(id="plugin.video.cntv-live")
 addon_name = addon.getAddonInfo("name")
@@ -100,13 +117,16 @@ TIMEOUT_S = 2.0
 
 param = sys.argv[2]
 
+
 def showNotification(stringID):
     xbmc.executebuiltin("Notification({0},{1})".format(addon_name, addon.getLocalizedString(stringID)))
+
 
 def getQualityRange(quality):
     if quality == "100-300": #Hooray for efficiency!
         return "100-300"
     return "300-500"
+
 
 def main():
     if param.startswith("?stream="):
@@ -146,6 +166,8 @@ def main():
         pDialog.update(0)
         try:
             #Locate the M3U8 file
+            print '****************************'
+            print param[8:]
             resp = urllib2.urlopen("http://vdn.live.cntv.cn/api2/live.do?channel=pa://cctv_p2p_hd" + param[8:])
             data = resp.read().decode("utf-8")
 
@@ -159,26 +181,12 @@ def main():
             urlsToTry = 5
 
             if 'hls_url' in jsondata:
-                if url is None:
-                    urlsTried += 1
-                    pDialog.update(urlsTried / urlsToTry * 100, "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                    url = tryHLSStream(jsondata, "hls1")
-                if url is None:
-                    urlsTried += 1
-                    pDialog.update(urlsTried / urlsToTry * 100, "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                    url = tryHLSStream(jsondata, "hls2")
-                if url is None:
-                    urlsTried += 1
-                    pDialog.update(urlsTried / urlsToTry * 100, "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                    url = tryHLSStream(jsondata, "hls3")
-                if url is None:
-                    urlsTried += 1
-                    pDialog.update(urlsTried / urlsToTry * 100, "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                    url = tryHLSStream(jsondata, "hls4")
-                if url is None:
-                    urlsTried += 1
-                    pDialog.update(urlsTried / urlsToTry * 100, "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                    url = tryHLSStream(jsondata, "hls5")
+                for i in range(1, urlsToTry + 1):
+                    if url is None:
+                        urlsTried += 1
+                        pDialog.update(urlsTried * 100 / urlsToTry,
+                                       "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
+                        url = tryHLSStream(jsondata, "hls%d" %(i))
 
             if pDialog.iscanceled():
                 return
@@ -350,29 +358,12 @@ def main():
             xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?stream=" + channelID, listitem=li)
 
         if category == "yangshi":
-            addStream("cctv1", "CCTV-1 综合")
-            addStream("cctv2", "CCTV-2 财经")
-            addStream("cctv3", "CCTV-3 综艺")
-            addStream("cctv4", "CCTV-4 (亚洲)")
-            addStream("cctveurope", "CCTV-4 (欧洲)")
-            addStream("cctvamerica", "CCTV-4 (美洲)")
-            addStream("cctv5", "CCTV-5 体育")
-            addStream("cctv6", "CCTV-6 电影")
-            addStream("cctv7", "CCTV-7 军事 农业")
-            addStream("cctv8", "CCTV-8 电视剧")
-            addStream("cctvjilu", "CCTV-9 纪录")
-            addStream("cctvdoc", "CCTV-9 纪录(英)")
-            addStream("cctv10", "CCTV-10 科教")
-            addStream("cctv11", "CCTV-11 戏曲")
-            addStream("cctv12", "CCTV-12 社会与法")
-            addStream("cctv13", "CCTV-13 新闻")
-            addStream("cctvchild", "CCTV-14 少儿")
-            addStream("cctv15", "CCTV-15 音乐")
-            addStream("cctv9", "CCTV-NEWS")
-            addStream("cctv5plus", "CCTV体育赛事")
+            for item in cctvList:
+                addStream(item[0], item[1])
+
         if category == "weishi":
             for item in weishList:
-                addStream(item, weishList[item])
+                addStream(item[0], item[1])
 
         if category == "shuzi":
             addStream("zhongxuesheng", "CCTV中学生")
@@ -384,8 +375,8 @@ def main():
                 li = xbmcgui.ListItem(cityName, iconImage=addon_path + "/resources/media/" + cityID + ".png")
                 xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?city=" + cityID, listitem=li, isFolder=True)
 
-            for city in cityList:
-                addCity(city, cityList[city])
+            for item in cityList:
+                addCity(item[0], item[1])
 
         xbmcplugin.endOfDirectory(addon_handle)
 

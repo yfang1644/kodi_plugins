@@ -2,11 +2,11 @@
 
 import sys
 import time
-import urllib 
+import urllib
 import urlparse
 import xbmc
-import xbmcgui 
-import xbmcplugins
+import xbmcgui
+import xbmcplugin
 import xbmcaddon
 
 def cn_time_s():  # return CST (China Standard Time) in seconds
