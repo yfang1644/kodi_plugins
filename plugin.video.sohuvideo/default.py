@@ -79,7 +79,7 @@ def getHttpData(url):
         httpdata = "IO Timeout Error"
     else:
         httpdata = response.read()
-        if response.headers.get('content-encoding', None) == 'gzip':
+        if response.headers.get('content-encoding') == 'gzip':
             if httpdata[-1] == '\n':
                 httpdata = httpdata[:-1]
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()

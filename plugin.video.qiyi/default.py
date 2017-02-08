@@ -37,7 +37,7 @@ def GetHttpData(url):
         response = urllib2.urlopen(req)
         headers = response.info()
         httpdata = response.read()
-        if response.headers.get('Content-Encoding', None) == 'gzip':
+        if response.headers.get('Content-Encoding') == 'gzip':
             if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
                 httpdata = httpdata[:-1]
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
