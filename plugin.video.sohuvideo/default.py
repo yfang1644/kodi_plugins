@@ -1,16 +1,29 @@
 ﻿# -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, urlparse, re, sys, os, gzip, StringIO
+
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import urllib2
+import urllib
+import urlparse
+import re
+import sys
+import os
+import gzip
+import StringIO
 from random import random
-import cookielib, datetime, time
+import cookielib
+import datetime
+import time
 import ChineseKeyboard
 import simplejson
 
 # Plugin constants
-__addonname__ = "搜狐视频(SoHu)"
-__addonid__   = "plugin.video.sohuvideo"
-__addon__     = xbmcaddon.Addon(id=__addonid__)
-__settings__  = xbmcaddon.Addon(id=__addonid__)
-__profile__   = xbmc.translatePath(__settings__.getAddonInfo('profile'))
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
+__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cookieFile    = __profile__ + 'cookies.sohu'
 
 CHANNEL_LIST = {'电影'  : '100',

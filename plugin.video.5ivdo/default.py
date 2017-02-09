@@ -11,36 +11,20 @@ import string
 import sys
 import gzip
 import StringIO
+import time
+import cookielib
 import dr
 
 # 5ivdo(5ivdo) by sand, 2015
 
 # Plugin constants
-__addonname__ = "5ivdo(5ivdo)"
-__addonid__ = "plugin.video.5ivdo"
-__addon__ = xbmcaddon.Addon(id=__addonid__)
+__addon__   = xbmcaddon.Addon()
+__addonname__ = __addon__.getAddonInfo('name')
+__addonid__   = __addon__.getAddonInfo('id')
 
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
 DP = xbmcgui.DialogProgress()
-
-
-def get_params(pmenustr=None):
-    if pmenustr:
-        paramstring = pmenustr
-    else:
-        paramstring = sys.argv[2]
-
-    param = {}
-    if len(paramstring) >= 2:
-        params = paramstring
-        cleanedparams = params.replace('?', '')
-        pairsofparams = cleanedparams.split('&')
-        for i in range(len(pairsofparams)):
-            splitparams = pairsofparams[i].split('=')
-            if len(splitparams) == 2:
-                param[splitparams[0]] = splitparams[1]
-    return param
 
 
 def Get5ivdoData(url):
@@ -239,7 +223,7 @@ def Getmatch2(purl, matchstr, match2str):
     matchA = re.compile(match2str).findall(link)
     match = []
     if matchA:
-        match= re.compile(matchstr).findall(matchA[0])
+        match = re.compile(matchstr).findall(matchA[0])
     return match
 
 
@@ -289,64 +273,28 @@ def parsepmod(pPARMS):
 
 
 def genparamdata(pmenustr=None):
-    params = get_params(pmenustr)
+    if pmenustr:
+        params = pmenustr[1:]
+    else:
+        params = sys.argv[2][1:]
+    params = dict(urllib2.urlparse.parse_qsl(params))
+
     iret = {}
-    iret['mode']= None
-    iret['options'] = ''
-    iret['sub'] = ''
-    iret['prefix']=''
-    iret['thumb']=''
-
-    try:
-        iret['thumb']  = urllib.unquote_plus(params["thumb"])
-    except:
-        pass
-
-    try:
-        iret['name']  = urllib.unquote_plus(params["name"])
-    except:
-        pass
-
-    try:
-        iret['matchstr']  = urllib.unquote_plus(params["matchstr"])
-    except:
-        pass
-
-    try:
-        iret['mflag']  = urllib.unquote_plus(params["mflag"])
-    except:
-        pass
-
-    try:
-        iret['url']  = urllib.unquote_plus(params["url"])
-    except:
-        pass
-
-    try:
-        iret['mode']  = urllib.unquote_plus(params["mode"])
-    except:
-        pass
-
-    try:
-        iret['sub']  = urllib.unquote_plus(params["sub"])
-    except:
-        pass
-
-    try:
-        iret['prefix']  = urllib.unquote_plus(params["prefix"])
-    except:
-        pass
-
-    try:
-        iret['options']  = ' ' + urllib.unquote_plus(params["options"])
-    except:
-        pass
+    iret['thumb'] = params.get('thumb', '')
+    iret['name'] = params.get('name')
+    iret['matchstr'] = params.get('matchstr')
+    iret['mflag'] = params.get('mflag')
+    iret['url'] = params.get('url')
+    iret['mode'] = params.get('mode')
+    iret['sub'] = params.get('sub', '')
+    iret['prefix'] = params.get('prefix', '')
+    iret['options'] = ' ' + params.get('options', '')
 
     return iret
 
 
 def playDR(pname, purl, pthumb):
-    itype, iurl=dr.work(purl)
+    itype, iurl = dr.work(purl)
     DP.update(80)
     if itype in '|M3U8|SINGLE':
         playlist = xbmc.PlayList(1)
@@ -371,7 +319,7 @@ def PlayVideo(pPARMs):
     ioptions = pPARMs['options']
     pmod = parsepmod(pPARMs)
 
-    DP.create('5iVDO 提示','节目准备中 : ', pPARMs['name'] + ' ...')
+    DP.create('5iVDO 提示', '节目准备中 : ', pPARMs['name'] + ' ...')
     DP.update(10)
 
     if url[0:2] == 'DR':
@@ -430,7 +378,7 @@ def PlayVideo(pPARMs):
             xbmc.Player().play(playlist)
         else:
             if pmod.find('NOSTACK') > 0:
-                playlist=xbmc.PlayList(1)
+                playlist = xbmc.PlayList(1)
                 playlist.clear()
                 dialog = xbmcgui.Dialog()
                 for i in range(0, len(urls)):
@@ -449,6 +397,10 @@ def PlayVideo(pPARMs):
 play_data = genparamdata()
 mode = play_data['mode']
 
+cj = cookielib.CookieJar()
+opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+opener.addheaders = [('Cookie', '__ysuid={0}'.format(time.time()))]
+urllib2.install_opener(opener)
 if mode is None:
     rootList()
 elif mode == 'menu':

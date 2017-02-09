@@ -709,7 +709,7 @@ class video_concatenate:
                         #All data sent
                         outputs.remove(self.agent_server)
 
-                        if self.agent_client == None:
+                        if self.agent_client is None:
                             _clean_socket(self.agent_server)
                             self.agent_server = None
                         elif self.agent_client not in inputs:

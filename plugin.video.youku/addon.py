@@ -1,19 +1,34 @@
-﻿# -*- coding: utf-8 -*-
-# default.py
+# -*- coding: utf-8 -*-
+# addon.py
 
-import xbmcgui, xbmcaddon, xbmc, xbmcplugin
-import json, sys, urllib, urllib2, gzip, StringIO, re, os, time, threading, socket, base64, cookielib
+import xbmcgui
+import xbmcaddon
+import xbmc
+import xbmcplugin
+import json
+import sys
+import urllib
+import urllib2
+import gzip
+import StringIO
+import re
+import os
+import time
+import threading
+import socket
+import base64
+import cookielib
 from video_concatenate import video_concatenate
 try:
    import StorageServer
 except:
    import storageserverdummy as StorageServer
 
-__addonid__ = "plugin.video.youku"
-__addon__ = xbmcaddon.Addon(id=__addonid__)
-__cwd__ = __addon__.getAddonInfo('path')
-__profile__    = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-__resource__   = xbmc.translatePath(os.path.join(__cwd__, 'resources', 'lib'))
+__addon__    = xbmcaddon.Addon()
+__addonid__  = __addon__.getAddonInfo('id')
+__cwd__      = __addon__.getAddonInfo('path')
+__profile__  = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+__resource__ = xbmc.translatePath(os.path.join(__cwd__, 'resources', 'lib'))
 sys.path.append(__resource__)
 cache = StorageServer.StorageServer(__addonid__, 87600)
 m3u8_file = __cwd__ + '/v.m3u8'
@@ -1586,16 +1601,16 @@ def play(vid, playContinue=False):
                 for i in range(len(urls)):
                     title = movdat['video']['title'] + u" - 第"+str(i+1)+"/"+str(len(urls)) + u"节"
                     listitem = xbmcgui.ListItem(title)
-                    listitem.setInfo(type="Video",infoLabels={"Title":title})
+                    listitem.setInfo(type="Video", infoLabels={"Title": title})
                     playlist.add(urls[i], listitem)
             elif settings_data['play_type'][settings['play']] == 'stack':
                 playurl = 'stack://' + ' , '.join(urls)
-                listitem=xbmcgui.ListItem(movdat['video']['title'])
-                listitem.setInfo(type="Video", infoLabels={"Title":movdat['video']['title']})
+                listitem = xbmcgui.ListItem(movdat['video']['title'])
+                listitem.setInfo(type="Video", infoLabels={"Title": movdat['video']['title']})
                 playlist.add(playurl, listitem)
             else:
-                listitem=xbmcgui.ListItem(movdat['video']['title'])
-                listitem.setInfo(type="Video", infoLabels={"Title":movdat['video']['title']})
+                listitem = xbmcgui.ListItem(movdat['video']['title'])
+                listitem.setInfo(type="Video", infoLabels={"Title": movdat['video']['title']})
                 playlist.add(m3u8_file, listitem)
 
         urls = []
@@ -1719,7 +1734,7 @@ pluginhandle = int(sys.argv[1])
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 mode = params.get('mode')
-       
+
 cj = cookielib.CookieJar()
 opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
 opener.addheaders = [('Cookie', '__ysuid={0}'.format(time.time()))]

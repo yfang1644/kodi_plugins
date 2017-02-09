@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, gzip, datetime, StringIO, urlparse
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import urllib2
+import urllib
+import re
+import gzip
+import datetime
+import StringIO
+import urlparse
 try:
     import json
 except:
@@ -7,12 +17,12 @@ except:
 import ChineseKeyboard
 
 # Plugin constants
-__addonname__ = "PPTV视频"
-__addonid__ = "plugin.video.pptv"
-__addon__ = xbmcaddon.Addon(id=__addonid__)
+__addon__ = xbmcaddon.Addon()
+__addonid__ = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
 
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+#UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 
 PPTV_LIST = 'http://list.pptv.com/'
 PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
@@ -65,17 +75,15 @@ dbg = False
 dbglevel = 3
 
 
-def GetHttpData(url, agent=UserAgent_IPAD, referer=''):
-    print "getHttpData: " + url
+def GetHttpData(url, referer=''):
     req = urllib2.Request(url)
-    req.add_header('Accept-encoding', 'gzip')
-    req.add_header('User-Agent', agent)
+    req.add_header('User-Agent', UserAgent_IPAD)
     if len(referer) > 0:
         req.add_header('Referer', referer)
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()
-        if response.headers.get('content-encoding', None) == 'gzip':
+        if response.headers.get('content-encoding') == 'gzip':
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         charset = response.headers.getparam('charset')
         response.close()
@@ -290,7 +298,7 @@ def GetPPTVVideoList(url, only_filter=False):
             if pos > 0:
                 label = label[0:pos+3]
             # ugly, try two different class to get selected one
-            selected_name = CheckValidList(parseDOM(dd[k], 'a', attrs={'class': ' all'})).encode('utf-8')
+            selected_name = CheckValidList(parseDOM(dd[k], 'a', attrs={'class': 'all'})).encode('utf-8')
             if len(selected_name) <= 0:
                 selected_name = CheckValidList(parseDOM(dd[k], 'a', attrs={'class': 'all'})).encode('utf-8')
             # select first type if can't get selected one
@@ -468,7 +476,7 @@ def GetPPTVEpisodesList(name, url, thumb):
                         'name': name,
                         'image': thumb,
                         'isdir': 0,
-                        'spc': '' } for i in links], None)
+                        'spc': ''} for i in links], None)
     else:
         return None
 
@@ -500,7 +508,7 @@ def flvcd_sc_input(sc_base, sc_in, sc_time):
 
 
 def GetPPTVVideoURL_Flash(url, quality):
-    data = GetHttpData(url, UserAgent_IE)
+    data = GetHttpData(url)
     # get video ID
     vid = CheckValidList(re.compile('"id"\s*:\s*(\d+)\s*,').findall(data))
     if len(vid) <= 0:
@@ -527,7 +535,7 @@ def GetPPTVVideoURL_Flash(url, quality):
         return []
 
     # get segment list
-    dragdata = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'dragdata', attrs = { 'ft' : cur.encode('utf-8') }))
+    dragdata = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'dragdata', attrs={'ft': cur.encode('utf-8')}))
     if len(dragdata) <= 0:
         return []
     sgms = parseDOM(dragdata, 'sgm', ret='no')
@@ -547,8 +555,8 @@ def GetPPTVVideoURL_Flash(url, quality):
         return []
     downparseurl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'form', attrs={'name': 'mform'}, ret='action'))
     # get hidden values in form
-    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='name')
-    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden' }, ret='value')
+    input_names = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden'}, ret='name')
+    input_values = parseDOM(forms.encode('utf-8'), 'input', attrs={'type': 'hidden'}, ret='value')
     if min(len(input_names), len(input_names)) <= 0:
         return []
 
@@ -584,9 +592,8 @@ def GetPPTVVideoURL(url, quality):
         return []
 
     data = GetHttpData(url)
-
     # new key for query XML
-    kk = CheckValidList(re.compile('%26kk%3D([^"\']*)["\'],').findall(data))
+    kk = CheckValidList(re.compile('&kk=([^"\']*)["\'],').findall(data))
 
     # try to directly get iPad live video URL
     ipadurl = CheckValidList(re.compile(',\s*["\']ipadurl["\']\s*:\s*["\']([^"\']*)["\']').findall(data))
@@ -604,7 +611,7 @@ def GetPPTVVideoURL(url, quality):
     # get sports iPad live URL
     ipadurl = CheckValidList(re.compile('["\']pbar_video_(\d+)["\']').findall(data))
     if len(ipadurl) > 0:
-        return [PPTV_WEBPLAY_XML + 'web-m3u8-' + ipadurl + '.m3u8?type=m3u8.web.pad&o=' + domain ]
+        return [PPTV_WEBPLAY_XML + 'web-m3u8-' + ipadurl + '.m3u8?type=m3u8.web.pad&o=' + domain]
 
     # try to get iPad non-live video URL
     if 'true' == __addon__.getSetting('ipad_video'):
@@ -654,6 +661,7 @@ def GetPPTVVideoURL(url, quality):
         return ['http://' + sh.encode('utf-8') + '/' + rid.encode('utf-8') + '.m3u8?type=m3u8.web.pad&k=' + f_key.encode('utf-8')]
     else:
         return GetPPTVVideoURL_Flash(url, quality)
+
 
 
 def GetPPTVSearchList(url, matchnameonly=None):
@@ -779,7 +787,6 @@ def listVideo(name, url, list_ret):
 
 def playVideo(name, url, thumb):
     ppurls = []
-
     # if live page without video link, try to get video link from search result
     if re.match('^http://live\.pptv\.com/list/tv_program/.*$', url):
         url = GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(name), name)

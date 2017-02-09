@@ -1,13 +1,22 @@
 ﻿# -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, sys, gzip, StringIO
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import urllib2
+import urllib
+import re
+import sys
+import gzip
+import StringIO
 import hashlib
 import time
 import simplejson
 
 # Plugin constants
-__addonname__ = "奇艺视频(QIYI)"
-__addonid__   = "plugin.video.qiyi"
-__addon__     = xbmcaddon.Addon(id=__addonid__)
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
 
 CHANNEL_LIST = {'电影': '1',
                 '电视剧': '2',

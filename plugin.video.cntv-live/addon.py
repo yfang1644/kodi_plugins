@@ -107,7 +107,7 @@ weishList = [["anhui", "安徽卫视"],
              ["yunnan", "云南卫视"],
              ["zhejiang", "浙江卫视"]]
 
-addon = xbmcaddon.Addon(id="plugin.video.cntv-live")
+addon = xbmcaddon.Addon()
 addon_name = addon.getAddonInfo("name")
 addon_path = xbmc.translatePath(addon.getAddonInfo("path"))
 addon_handle = int(sys.argv[1])
@@ -169,8 +169,9 @@ def main():
             print '****************************'
             print param[8:]
             resp = urllib2.urlopen("http://vdn.live.cntv.cn/api2/live.do?channel=pa://cctv_p2p_hd" + param[8:])
-            data = resp.read().decode("utf-8")
-
+            data = resp.read()
+            data = data.decode('utf-8')
+            resp.close()
             if pDialog.iscanceled():
                 return
 
@@ -182,11 +183,12 @@ def main():
 
             if 'hls_url' in jsondata:
                 for i in range(1, urlsToTry + 1):
-                    if url is None:
-                        urlsTried += 1
-                        pDialog.update(urlsTried * 100 / urlsToTry,
-                                       "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls1"))
-                        url = tryHLSStream(jsondata, "hls%d" %(i))
+                    urlsTried += 1
+                    pDialog.update(urlsTried * 5000 / urlsToTry,
+                                   "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%s"%i))
+                    url = tryHLSStream(jsondata, "hls%s"%i)
+                    if url is not None:
+                        break
 
             if pDialog.iscanceled():
                 return
@@ -382,8 +384,8 @@ def main():
 
     else:
         def addCategory(categoryID, categoryName):
-                li = xbmcgui.ListItem(categoryName)
-                xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?category=" + categoryID, listitem=li, isFolder=True)
+            li = xbmcgui.ListItem(categoryName)
+            xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?category=" + categoryID, listitem=li, isFolder=True)
 
         for title in mainList:
             addCategory(title, mainList[title])

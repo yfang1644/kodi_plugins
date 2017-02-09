@@ -36,13 +36,12 @@ except:
 ########################################################################
 
 # Plugin constants
-__addonname__ = "乐视网 (LeTV)"
-__addonid__ = "plugin.video.letv"
-__addon__ = xbmcaddon.Addon(id=__addonid__)
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
 __addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
-__settings__ = xbmcaddon.Addon(id=__addonid__)
-__profile__ = xbmc.translatePath(__settings__.getAddonInfo('profile'))
-cookieFile = __profile__ + 'cookies.letv'
+__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+cookieFile    = __profile__ + 'cookies.letv'
 
 # # UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
@@ -524,7 +523,7 @@ def getPages(p_itemCount, page):
 # - movies, series, star & ugc require different sub-menu access methods
 ##################################################################################
 def mainMenu():
-    li = xbmcgui.ListItem('[COLOR F0F0F0F0] LeTV 乐视网 - 搜索:[/COLOR][COLOR FF00FF00]【点此进入】[/COLOR]')
+    li = xbmcgui.ListItem(' LeTV 乐视网 - 搜索: 【点此进入】')
     u = sys.argv[0] + "?mode=31"
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -642,7 +641,7 @@ def progListMovie(name, url, cat, filtrs, page, listpage):
             p_rating = float(vlist[i]['rating'])
             if (p_rating is not None and p_rating > 0.01):
                 p_rating = "%0.1f" % p_rating
-                p_list += '[COLOR FFFF00FF][' + p_rating + '][/COLOR]'
+                p_list += '[' + p_rating + ']'
         except:
             pass
 
@@ -651,7 +650,7 @@ def progListMovie(name, url, cat, filtrs, page, listpage):
             if name in MOVIE_LIST:
                 p_lang = vlist[i]['lgName'] + '-'
             p_area = vlist[i]['areaName']
-            p_list += '[COLOR FF00FFFF][' + (p_lang + p_area).encode('utf-8') + '][/COLOR]'
+            p_list += '[' + (p_lang + p_area).encode('utf-8') + ']'
         except:
             pass
 
@@ -659,7 +658,7 @@ def progListMovie(name, url, cat, filtrs, page, listpage):
         if (p_sdx is not None) and (len(p_sdx) > 0) and (int(p_sdx) > 0):
             p_dx = int(p_sdx)
             p_duration = "[%02d:%02d]" % (int(p_dx / 60), (p_dx % 60))
-            p_list += '[COLOR FFFFFF00]' + p_duration + '[/COLOR]'
+            p_list += '[' + p_duration + ']'
 
         p_artists = vlist[i]['starring']
         if (p_artists is not None) and len(p_artists):
@@ -704,7 +703,7 @@ def progListSeries(name, url, thumb):
     if match:
         episodes = ' (' + ' '.join(match[0].split()) + ')'
 
-    li = xbmcgui.ListItem('【[COLOR FFFFFF00]' + name + '[/COLOR]' + episodes + ' | [COLOR FF00FFFF][选择: ' + name + '][/COLOR]】', iconImage='', thumbnailImage=thumb)
+    li = xbmcgui.ListItem('【' + name + '-' + episodes + ' | [选择: ' + name + ']】', iconImage='', thumbnailImage=thumb)
     u = sys.argv[0] + "?mode=2&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&thumb=" + urllib.quote_plus(thumb)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -782,23 +781,23 @@ def progListStar(name, url, cat, filtrs, page, listpage):
         # v_url = 'http://so.letv.com/star?wd=%s&from=list' % p_name
         v_url = 'http://so.letv.com/s?wd=%s' % p_name
         p_thumb = vlist[i]['postS1']
-        p_list = str(i + 1) + '. [COLOR FF00FF00]' + p_name + '[/COLOR] '
+        p_list = str(i + 1) + '. []' + p_name + '[] '
 
         match = vlist[i]['professional']
         p_prof = re.compile('":"(.+?)"').findall(match)
         if ((p_prof is not None) and len(p_prof)):
-            p_list += '[COLOR FF00FFFF]['
+            p_list += '['
             for prof in p_prof:
                 p_list += prof.encode('utf-8') + ' '
-            p_list = p_list[:-1] + '][/COLOR] '
+            p_list = p_list[:-1] + '] '
 
         p_area = vlist[i]['areaName']
         if (p_area is not None):
-            p_list += '[COLOR FFFFFF00][' + p_area.encode('utf-8') + '][/COLOR] '
+            p_list += '[' + p_area.encode('utf-8') + '] '
 
         p_birthday = vlist[i]['birthday']
         if (p_birthday is not None) and len(p_birthday):
-            p_list += '[COLOR FFFF00FF][' + p_birthday.encode('utf-8') + '][/COLOR]'
+            p_list += '[' + p_birthday.encode('utf-8') + '] '
 
         li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
         # li.setInfo(type = "Video", infoLabels = {"Title":p_list, "Artist":p_name})
@@ -829,7 +828,7 @@ def progListStarVideo(name, url, page, thumb):
         page = '1'
     p_url = 'http://open.api.letv.com/ms?hl=1&dt=2&pn=%s&ps=30&wd=%s' % (page, name)
 
-    li = xbmcgui.ListItem('【[COLOR FF00FFFF][' + name + '][/COLOR] | [COLOR FFFFFF00]（第' + page + '页）[/COLOR]】', iconImage='', thumbnailImage=thumb)
+    li = xbmcgui.ListItem('【' + name + ' | （第' + page + '页）】', iconImage='', thumbnailImage=thumb)
     u = sys.argv[0] + "?mode=5&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&thumb=" + urllib.quote_plus(thumb)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -862,20 +861,20 @@ def progListStarVideo(name, url, page, thumb):
         p_category = vlist[i]['categoryName']
         if (p_category is not None) and len(p_category):
             p_subcategory = '-' + vlist[i]['subCategoryName']
-            p_list += '[COLOR FF00FFFF][' + (p_category + p_subcategory).encode('utf-8') + '][/COLOR] '
+            p_list += '[' + (p_category + p_subcategory).encode('utf-8') + ' '
 
         try:
             p_rating = float(vlist[i]['rating'])
             if (p_rating is not None and p_rating > 0.01):
                 p_rating = "%0.1f" % p_rating
-                p_list += '[COLOR FFFF00FF][' + p_rating + '][/COLOR]'
+                p_list += '[' + p_rating + ']'
         except:
             pass
 
         p_dx = int(vlist[i]['duration'])
         if (p_dx is not None) and (p_dx > 0):
             p_duration = "[%02d:%02d]" % (int(p_dx / 60), (p_dx % 60))
-            p_list += '[COLOR FFFFFF00]' + p_duration + '[/COLOR]'
+            p_list += '[' + p_duration + ']'
 
         li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
         # li.setInfo(type = "Video", infoLabels = {"Title":p_list, "Artist":p_name})
@@ -952,20 +951,20 @@ def progListUgc(name, url, cat, filtrs, page, listpage):
         p_list = p_name = str(i + 1) + '. ' + p_title + ' '
         p_artist = vlist[i]['actor']
         if (p_artist is not None) and len(p_artist):
-            p_list += '[COLOR FFFF00FF]['
+            p_list += '['
             for actor in p_artist:
                 p_list += actor.encode('utf-8') + ' '
-            p_list = p_list[:-1] + '][/COLOR]'
+            p_list = p_list[:-1] + ']'
 
         p_dx = int(vlist[i]['duration'])
         if (p_dx is not None):
             p_duration = "[%02d:%02d]" % (int(p_dx / 60), (p_dx % 60))
-            p_list += '[COLOR FFFFFF00]' + p_duration + '[/COLOR]'
+            p_list += '[' + p_duration + ']'
 
         p_album = vlist[i]['albumName']
         if (p_album is not None):
             p_album = p_album.encode('utf-8')
-            p_list += '[COLOR FF00FFFF][' + p_album + '][/COLOR]'
+            p_list += '[' + p_album + ']'
 
         li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
         # li.setInfo(type = "Video", infoLabels = {"Title":p_list, "Artist":p_artist})
@@ -1036,7 +1035,7 @@ def letvSearchList(name, page):
 
         p_categoryName = vlist[i]['categoryName']
         if (p_categoryName is not None):
-            p_list = p_name = str(i + 1) + '. [COLOR FF00FFFF][' + p_categoryName.encode('utf-8') + '][/COLOR] ' + p_title + ' '
+            p_list = p_name = str(i + 1) + '. [' + p_categoryName.encode('utf-8') + '] ' + p_title + ' '
         else:
             p_list = p_name = str(i + 1) + '. ' + p_title + ' '
 
@@ -1044,14 +1043,14 @@ def letvSearchList(name, page):
             p_rating = float(vlist[i]['rating'])
             if (p_rating is not None and p_rating > 0.01):
                 p_rating = "%0.1f" % p_rating
-                p_list += '[COLOR FFFF00FF][' + p_rating + '][/COLOR]'
+                p_list += '[' + p_rating + ']'
         except:
             pass
 
         p_dx = int(vlist[i]['duration'])
         if (p_dx is not None):
             p_duration = "[%02d:%02d]" % (int(p_dx / 60), (p_dx % 60))
-            p_list += '[COLOR FFFFFF00]' + p_duration + '[/COLOR]'
+            p_list += '[' + p_duration + ']'
 
         p_artists = vlist[i]['actor']
         if ((p_artists is not None) and len(p_artists)):

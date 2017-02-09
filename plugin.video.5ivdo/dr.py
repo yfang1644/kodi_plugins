@@ -1,27 +1,22 @@
 ﻿# -*- coding: utf-8 -*-
 
-import urllib2, urllib, re, sys, gzip, StringIO, urlparse
+import urllib2
+import urllib
+import re
+import sys
+import gzip
+import StringIO
+import urlparse
 from random import random
-import base64, time, cookielib
-import json as simplejson
-#try:
-#    import simplejson
-#except ImportError:
-#    import json as simplejson
+import base64
+import time
+try:
+    import simplejson
+except ImportError:
+    import json as simplejson
 
-UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
-
-RUNFLAG = 0
 
 def GetHttpData(url):
-    global RUNFLAG
-    if (RUNFLAG == 0):
-        cj = cookielib.CookieJar()
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-        opener.addheaders = [('Cookie', '__ysuid={0}'.format(time.time()))]
-        urllib2.install_opener(opener)
-        RUNFLAG = RUNFLAG + 1
-
     req = urllib2.Request(url)
     req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
                        format('AppleWebKit/537.36 (KHTML, like Gecko) ',
@@ -170,7 +165,8 @@ class SOHU_DR:
 
     def real_url(self, host, vid, tvid, new, clipURL, ck):
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
-        return simplejson.loads(GetHttpData(url))['url'].encode('utf-8')
+        link = GetHttpData(url)
+        return simplejson.loads(link)['url']
 
     def get_hqvid(self, ppage):
         match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?), ').search(ppage)

@@ -22,13 +22,13 @@ else:
 # See changelog.txt for previous history
 ########################################################################
 # Plugin constants
-__addonname__ = "PPS 网络电视"
-__addonid__   = "plugin.video.ppstream"
-__addon__ = xbmcaddon.Addon(id=__addonid__)
-__addonicon__ = os.path.join( __addon__.getAddonInfo('path'), 'icon.png' )
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
+__addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __settings__  = xbmcaddon.Addon(id=__addonid__)
-__profile__   = xbmc.translatePath( __settings__.getAddonInfo('profile') )
-__cwd__       = xbmc.translatePath( __settings__.getAddonInfo('path') )
+__profile__   = xbmc.translatePath(__settings__.getAddonInfo('profile'))
+__cwd__       = xbmc.translatePath(__settings__.getAddonInfo('path'))
 cookieFile = __profile__ + 'cookies.ppstream'
 
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'

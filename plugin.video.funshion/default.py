@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, urllib2, urllib, re, string, sys, os, gzip, StringIO
-import math, os.path, httplib, time
+
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import urllib2
+import urllib
+import re
+import sys
+import gzip
+import StringIO
+import time
 from random import randrange
 import simplejson
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
@@ -73,7 +83,7 @@ def getHttpData(url):
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()
-        if response.headers.get('content-encoding', None) == 'gzip':
+        if response.headers.get('content-encoding') == 'gzip':
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         charset = response.headers.getparam('charset')
         response.close()
