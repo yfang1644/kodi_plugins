@@ -15,6 +15,20 @@ from random import randrange
 import simplejson
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
+# get wrong IP from some local IP
+unusableIP = ["121.32.237.24",
+              "121.32.237.42",
+              "222.84.164.2",
+              "122.228.57.21"]
+
+# followings are usable
+usableIP = ["112.25.81.203",
+            "111.63.135.120",
+            "122.72.64.198",
+            "183.203.12.197",
+            "223.82.247.101",
+            "222.35.249.3"]
+
 
 ########################################################################
 # 风行视频(Funshion)"
@@ -55,7 +69,11 @@ SERIES_LIST = {'电视剧', '动漫', '综艺'}
 MOVIE_LIST = {'电影', '微电影'}
 COLOR_LIST = ['[COLOR FFFF0000]','[COLOR FF00FF00]','[COLOR FFFFFF00]','[COLOR FF00FFFF]','[COLOR FFFF00FF]']
 
-RES_LIST = [['tv','标清'], ['dvd','高清'], ['high-dvd','超清']]
+RES_LIST = [['tv', '低清'],
+            ['dvd', '标清'],
+            ['high-dvd', '高清'],
+            ['super_dvd', '超清']]
+
 LANG_LIST = [['chi','国语'], ['arm','粤语'], ['und','原声']]
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 
@@ -69,7 +87,6 @@ def log(txt):
 
 ########################################################################
 def getHttpData(url):
-    print url
     log("%s::url - %s" % (sys._getframe().f_code.co_name, url))
     headers = {"Accept":"application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
                "Accept-Charset": "GBK,utf-8;q=0.7,*;q=0.3",
@@ -94,6 +111,8 @@ def getHttpData(url):
                sys.exc_info()[1]
                ))
         return ''
+
+    httpdata = re.sub('\t|\n|\r', ' ', httpdata)
     match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
     if match:
         charset = match[0]
@@ -105,6 +124,7 @@ def getHttpData(url):
         charset = charset.lower()
         if (charset != 'utf-8') and (charset != 'utf8'):
             httpdata = httpdata.decode(charset, 'ignore').encode('utf8', 'ignore')
+
     return httpdata
 
 
@@ -315,6 +335,25 @@ def progList(name, type, cat, filtrs, page, listpage):
 
 
 ##################################################################################
+def rootList():
+    totalItems = len(CHANNEL_LIST)
+    cat = "全部"
+    i = 0
+    for name in CHANNEL_LIST:
+        i += 1
+        ilist = "[COLOR FF00FFFF]%s. %s[/COLOR]" % (i, name)
+        li = xbmcgui.ListItem(ilist)
+        u = sys.argv[0]+"?mode=1&" + \
+                        "name="+urllib.quote_plus(name) + \
+                        "&type="+urllib.quote_plus(CHANNEL_LIST[name]) + \
+                        "&cat="+cat + \
+                        "&filtrs=&page=1" + \
+                        "&listpage="
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
+    xbmcplugin.endOfDirectory(pluginhandle)
+
+
+##################################################################################
 def seriesList(name, id, thumb):
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1' % (id)
     url = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1' % (id) #&dtime=1397342446859
@@ -324,14 +363,19 @@ def seriesList(name, id, thumb):
         ok = xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
         return
 
+    resolution = int(__addon__.getSetting('resolution'))
+    if resolution == 0:
+        resolution = 1            # set default resolution as DVD
+    else:
+        resolution -= 1
+
     items = json_response['data']['videos']
     name = json_response['data']['name'].encode('utf-8')
     totalItems = len(items)
     for item in items:
         p_name = '%s %s' % (name, item['name'].encode('utf-8'))
         # p_number = str(item['number'])
-        p_id2 = item['streams'][-1]['hashid']
-
+        p_id2 = item['streams'][resolution]['hashid']
         p_thumb = item['pic'].encode('utf-8')
         if not p_thumb:
             p_thumb = thumb
@@ -368,6 +412,45 @@ def selResolution(items):
     else:
         sel = 0
     return items[ratelist[sel][2]][1], ratelist[sel][1]
+
+
+def PlayVideo_test(name, id, thumb):
+    url = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1' % (id) #&dtime=1397342446859
+    link = getHttpData(url)
+    json_response = simplejson.loads(link)
+
+    resolution = int(__addon__.getSetting('resolution'))
+    if resolution == 0:
+        resolution = 1            # set default resolution as DVD
+    else:
+        resolution -= 1
+
+    hashid = json_response['data']['videos'][0]['streams'][resolution]['hashid']
+
+    url = 'http://jobsfe.funshion.com/query/v1/mp4/%s.json' % (hashid)
+
+    link = getHttpData(url)
+    json_response = simplejson.loads(link)
+    if json_response['return'].encode('utf-8') == 'succ':
+        listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+
+        #xbmc.Player().play(json_response['playlist'][0]['urls'][0], listitem)
+        # Randomly pick a server to stream video
+        v_urls = json_response['playlist'][0]['urls']   #json_response['data']['fsps']['mult']
+        # print "streamer servers: ", len(v_urls), v_urls, link, json_response['playlist'][0]
+        try:
+            i_url = randrange(len(v_urls)-1)
+        except:
+            i_url = 0
+        v_url = v_urls[i_url]
+        ip = re.compile('http://(\d+\.\d+\.\d+\.\d+)').findall(v_url)
+        if ip not in usableIP:    # replace a usable IP
+            i_url = randrange(len(usableIP)-1)
+            v_url = re.sub('http://\d+\.\d+\.\d+\.\d+/',
+                           'http://%s/'%(usableIP[i_url]), v_url)
+        xbmc.Player().play(v_url, listitem)
+    else:
+        ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
 
 
 ##################################################################################
@@ -408,6 +491,11 @@ def PlayVideo(name, id, thumb, id2):
         except:
             i_url = 0
         v_url = v_urls[i_url]
+        ip = re.compile('http://(\d+\.\d+\.\d+\.\d+\)/').findall(v_url)
+        if ip not in usableIP:    # replace a usable IP
+            i_url = randrange(len(usableIP)-1)
+            v_url = re.sub('http://\d+\.\d+\.\d+\.\d+/',
+                           'http://%s/'%(usableIP[i_url]), v_url)
         xbmc.Player().play(v_url, listitem)
     else:
         ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
@@ -559,28 +647,14 @@ cat = params.get('cat', '')
 
 mode = params.get('mode')
 if mode is None:
-    totalItems = len(CHANNEL_LIST)
-    cat = "全部"
-    i = 0
-    for name in CHANNEL_LIST:
-        i += 1
-        ilist = "[COLOR FF00FFFF]%s. %s[/COLOR]" % (i, name)
-        li = xbmcgui.ListItem(ilist)
-        u = sys.argv[0]+"?mode=1&" + \
-                        "name="+urllib.quote_plus(name) + \
-                        "&type="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-                        "&cat="+cat + \
-                        "&filtrs=&page=1" + \
-                        "&listpage="
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-    xbmcplugin.endOfDirectory(pluginhandle)
-
+    rootList()
 elif mode == '1':
     progList(name, type, cat, filtrs, page, listpage)
 elif mode == '2':
     seriesList(name, id, thumb)
 elif mode == '3':
-    PlayVideo(name, id, thumb, id2)
+    PlayVideo_test(name, id, thumb)
+    # PlayVideo(name, id, thumb, id2)
 elif mode == '4':
     PlayVideo2(name, id, thumb, type)
 elif mode == '10':

@@ -446,7 +446,6 @@ def getListSEL(listpage):
 # Routine to update video list as per user selected filtrs
 ##################################################################################
 def updateListSEL(name, url, cat, filtrs, page, listpage):
-    dialog = xbmcgui.Dialog()
     titlelist, catlist = getListSEL(listpage)
     fltr = filtrs[1:].replace('=', '').split('&')
 
