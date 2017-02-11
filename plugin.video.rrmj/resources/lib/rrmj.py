@@ -5,7 +5,6 @@ import time
 from common import *
 import xbmc
 import xbmcvfs
-import xbmcgui
 import xbmcaddon
 SERVER = "http://api.rrmj.tv"
 __ADDON__ = xbmcaddon.Addon()
@@ -144,7 +143,6 @@ class RRMJResolver(RenRenMeiJu):
                     location = opener.open(request)
                     return location, current_quality
                 return m3u8["url"], current_quality
-
 
     def get_play(self, seasonId, episodeSid, quality=""):
         return self.get_by_sid(seasonId=seasonId, episodeSid=episodeSid, quality=quality)

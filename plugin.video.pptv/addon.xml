@@ -5,7 +5,6 @@
     provider-name="Uranus Zhou">
     <requires>
         <import addon="script.module.keyboard.chinese" version="1.0.0"/>
-		<import addon="script.module.simplejson" />
 	</requires>
 	<extension
         point="xbmc.python.pluginsource"

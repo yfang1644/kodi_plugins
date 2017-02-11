@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 import xbmc
 import xbmcgui
 import xbmcplugin
@@ -10,20 +11,22 @@ import gzip
 import datetime
 import StringIO
 import urlparse
+import ChineseKeyboard
 try:
     import json
 except:
     import simplejson as json
-import ChineseKeyboard
 
 # Plugin constants
-__addon__ = xbmcaddon.Addon()
-__addonid__ = __addon__.getAddonInfo('id')
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
+__cwd__       = __addon__.getAddonInfo('path')
 
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-#UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 
+SEGSIZE = 500
 PPTV_LIST = 'http://list.pptv.com/'
 PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
 PPTV_TV_LIST = 'http://live.pptv.com/list/tv_list'
@@ -75,9 +78,14 @@ dbg = False
 dbglevel = 3
 
 
-def GetHttpData(url, referer=''):
+def log(description, level=0):
+    if dbg and dbglevel > level:
+        print description
+
+
+def GetHttpData(url, agent=UserAgent_IPAD, referer=''):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent_IPAD)
+    req.add_header('User-Agent', agent)
     if len(referer) > 0:
         req.add_header('Referer', referer)
     try:
@@ -242,11 +250,6 @@ def parseDOM(html, name=u"", attrs={}, ret=False):
 
     log("Done: " + repr(ret_lst), 3)
     return ret_lst
-
-
-def log(description, level=0):
-    if dbg and dbglevel > level:
-        print description
 
 ##### Common functions end #####
 
@@ -507,6 +510,24 @@ def flvcd_sc_input(sc_base, sc_in, sc_time):
     return sc_out
 
 
+# Cut m3u8 into each 300 seconds (5 minutes)
+def Segmentation(httpurl, duration):
+    piece = []
+    during = SEGSIZE
+    start = 0
+    while start < duration:
+        if start + during > duration:
+            during = duration -start
+        seg1 = re.sub('m3u8\?type=m3u8',
+                      'ts?start=%d&during=%d&type=m3u8'%(start, during), httpurl)
+        seg1 = re.sub('%3D', '=', seg1)
+        seg1 = re.sub('%26', '&', seg1)
+        piece.append(seg1)
+        start += during
+
+    return piece
+
+
 def GetPPTVVideoURL_Flash(url, quality):
     data = GetHttpData(url)
     # get video ID
@@ -538,13 +559,14 @@ def GetPPTVVideoURL_Flash(url, quality):
     dragdata = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'dragdata', attrs={'ft': cur.encode('utf-8')}))
     if len(dragdata) <= 0:
         return []
+    frid = re.compile('rid="(.+?)"').findall(dragdata)
     sgms = parseDOM(dragdata, 'sgm', ret='no')
     if len(sgms) <= 0:
         return []
 
+    # STOP HERE!... FLVCD server is dead
     # get key from flvcd.com, sorry we can't get it directly by now
     parser_url1 = FLVCD_PARSER_PHP + '?format=' + PPTV_VIDEO_QUALITY_VALS[int(cur.encode('utf-8'))] + '&kw=' + url
-    data = GetHttpData(parser_url1)
 
     flvcd_sc_base = CheckValidList(re.compile('\|for\|([^\|]*)\|createSc\|').findall(data))
     if len(flvcd_sc_base) <= 0:
@@ -657,11 +679,17 @@ def GetPPTVVideoURL(url, quality):
             return []
 
         rid = CheckValidList(re.compile('([^\.]*)\.').findall(rid))
+        httpurl = ['http://' + sh + '/' + rid + '.m3u8?type=m3u8.web.pad&k=' + f_key]
 
-        return ['http://' + sh.encode('utf-8') + '/' + rid.encode('utf-8') + '.m3u8?type=m3u8.web.pad&k=' + f_key.encode('utf-8')]
+        dur = re.compile('<channel .+dur="(\d+)".+>').findall(data)
+        duration = int(dur[0])
+        # Segment a long mv
+        if duration and int(duration) > SEGSIZE:
+            httpurl = Segmentation(httpurl[0], duration)
+        return httpurl
+
     else:
         return GetPPTVVideoURL_Flash(url, quality)
-
 
 
 def GetPPTVSearchList(url, matchnameonly=None):

@@ -307,7 +307,7 @@ class PPTV_DR:
     def GetPlayList(self, ppid):
         purl = 'http://v.pptv.com/show/%s.html' % ppid
         data = GetHttpData(purl)
-        kk = self.CheckValidList(re.compile('%26kk%3D([^"\']*)["\'], ').findall(data))
+        kk = self.CheckValidList(re.compile('&kk=([^"\']*)["\'], ').findall(data))
         vid = self.CheckValidList(re.compile('"id"\s*:\s*(\d+)\s*, ').findall(data))
         PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
         ipadurl = PPTV_WEBPLAY_XML + 'webplay3-0-' + vid + '.xml&version=4&type=m3u8.web.pad' + '&kk=' + kk
