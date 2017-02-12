@@ -16,18 +16,18 @@ import simplejson
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
 # get wrong IP from some local IP
-unusableIP = ["121.32.237.24",
+unusableIP = ("121.32.237.24",
               "121.32.237.42",
               "222.84.164.2",
-              "122.228.57.21"]
+              "122.228.57.21")
 
 # followings are usable
-usableIP = ["112.25.81.203",
+usableIP = ("112.25.81.203",
             "111.63.135.120",
             "122.72.64.198",
             "183.203.12.197",
             "223.82.247.101",
-            "222.35.249.3"]
+            "222.35.249.3")
 
 
 ########################################################################
@@ -442,12 +442,13 @@ def PlayVideo_test(name, id, thumb):
             i_url = randrange(len(v_urls)-1)
         except:
             i_url = 0
+
         v_url = v_urls[i_url]
         ip = re.compile('http://(\d+\.\d+\.\d+\.\d+)').findall(v_url)
-        if ip not in usableIP:    # replace a usable IP
+        if ip[0] not in usableIP:    # replace a usable IP
             i_url = randrange(len(usableIP)-1)
-            v_url = re.sub('http://\d+\.\d+\.\d+\.\d+/',
-                           'http://%s/'%(usableIP[i_url]), v_url)
+            v_url = re.sub('http://(\d+\.\d+\.\d+\.\d+)',
+                           'http://%s'%(usableIP[i_url]), v_url)
         xbmc.Player().play(v_url, listitem)
     else:
         ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
@@ -492,10 +493,10 @@ def PlayVideo(name, id, thumb, id2):
             i_url = 0
         v_url = v_urls[i_url]
         ip = re.compile('http://(\d+\.\d+\.\d+\.\d+\)/').findall(v_url)
-        if ip not in usableIP:    # replace a usable IP
+        if ip[0] not in usableIP:    # replace a usable IP
             i_url = randrange(len(usableIP)-1)
-            v_url = re.sub('http://\d+\.\d+\.\d+\.\d+/',
-                           'http://%s/'%(usableIP[i_url]), v_url)
+            v_url = re.sub('http://(\d+\.\d+\.\d+\.\d+)',
+                           'http://%s'%(usableIP[i_url]), v_url)
         xbmc.Player().play(v_url, listitem)
     else:
         ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
