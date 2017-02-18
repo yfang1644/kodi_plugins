@@ -2203,7 +2203,6 @@ def clearFavor():
 
 
 player = MyPlayer()
-
 readSettings()
 try:
     if sys.argv[1] == 'clearHistory':
