@@ -2,7 +2,6 @@
 <addon id="plugin.video.cntv-live" name="CNTV Live 中国网络电视台直播" version="2.0.9" provider-name="RunasSudo">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0" />
-		<import addon="script.module.simplejson" version="2.0.10" optional="true" />
 	</requires>
 	
 	<extension point="xbmc.python.pluginsource" library="addon.py">

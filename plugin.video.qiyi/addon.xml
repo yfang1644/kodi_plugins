@@ -4,7 +4,6 @@
     version="2.2.7"
     provider-name="taxigps">
     <requires>
-      <import addon="script.module.simplejson" version="3.3.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"

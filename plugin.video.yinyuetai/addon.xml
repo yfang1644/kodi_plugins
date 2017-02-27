@@ -4,7 +4,6 @@
     version="1.7.9"
     provider-name="cmeng (originator: Skyemperor)">
     <requires>
-        <import addon="script.module.simplejson" version="3.3.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.qq"
+    name="腾讯视频"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
+    </requires>
+    <extension
+        point="xbmc.python.pluginsource"
+        library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Tencent Video plugin</summary>
+        <summary lang="zh">QQ视频插件</summary>
+        <description lang="en">Online videos from tv.sohu.com</description>
+        <description lang="zh">本插件视频解析自腾讯视频网站(v.qq.com)</description>
+        <platform>all</platform>
+    </extension>
+</addon>
