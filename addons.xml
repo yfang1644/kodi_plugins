@@ -21,6 +21,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.youku2" name="优酷视频2(YouKu2)" version="0.9.5" provider-name="tacy.lee">
   <requires>
     <import addon="xbmc.python" version="2.1.0"/>
@@ -39,6 +40,7 @@
     <description lang="zh">优酷视频是中国最大的视频分享网站: [CR]1. 插件支持优酷全频道播放 [CR]2. 视频搜索(搜酷搜索引擎) [CR]3. 多播放源支持，包括优酷/搜狐/腾讯/爱奇艺/乐视/土豆/PPS [CR]如果有问题请提交到 http://github.com/tacy/plugin.video.youkuvideo</description>
   </extension>
 </addon>
+
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
     version="1.7.9"
@@ -59,6 +61,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.pptv"
     name="PPTV视频"
     version="1.2.11"
@@ -85,6 +88,7 @@
 		<email>nocwat at gmail dot com</email>
     </extension>
 </addon>
+
 <addon id="plugin.audio.baidufm"
 	name="百度随心听"
 	version="0.0.5"
@@ -102,12 +106,13 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.cntv-live" name="CNTV Live 中国网络电视台直播" version="2.0.9" provider-name="RunasSudo">
 	<requires>
 		<import addon="xbmc.python" version="2.1.0" />
 		<import addon="script.module.simplejson" version="2.0.10" optional="true" />
 	</requires>
-	
+
 	<extension point="xbmc.python.pluginsource" library="addon.py">
 		<provides>video</provides>
 	</extension>
@@ -129,6 +134,7 @@
 		<source>https://github.com/RunasSudo/plugin.video.cntv-live</source>
 	</extension>
 </addon>
+
 <addon id="plugin.video.sohuvideo"
     name="搜狐视频(SoHu)"
     version="2.4.8"
@@ -150,6 +156,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.audio.radiocn"
     name="中国广播(Radiocn)"
     version="1.0"
@@ -166,26 +173,30 @@
         <platform>all</platform>
     </extension>
 </addon>
-<addon id="plugin.video.baiduyun" name="百度云" version="0.2.9" provider-name="jackyspy">
-  <requires>
-    <import addon="script.module.xbmcswift2" version="2.4.0" optional="false"/>
-    <import addon="script.module.chardet" version="2.1.1" optional="false"/>
-    <import addon="script.thunder.player"  version="0.1.10" optional="false"/>
-    <import addon="script.module.keyboard.chinese"  version="1.2.8" optional="false"/>
-    <import addon="script.module.hdpparser"  version="0.1" optional="false"/>
-  </requires>
-  <extension point="xbmc.python.pluginsource" library="addon.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <platform>all</platform>
-    <language></language>
-    <summary lang="en">Baidu Cloud</summary>
-    <summary lang="zh">百度云</summary>
-    <description lang="en">Baidu Cloud</description>
-    <description lang="zh">在线播放百度云盘中的视频</description>    
-  </extension>
+
+<addon id="plugin.video.baiduyun"
+       name="百度云" version="0.2.9"
+       provider-name="jackyspy">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0" optional="false"/>
+        <import addon="script.module.chardet" version="2.1.1" optional="false"/>
+        <import addon="script.thunder.player"  version="0.1.10" optional="false"/>
+        <import addon="script.module.keyboard.chinese"  version="1.2.8" optional="false"/>
+        <import addon="script.module.hdpparser"  version="0.1" optional="false"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <language></language>
+        <summary lang="en">Baidu Cloud</summary>
+        <summary lang="zh">百度云</summary>
+        <description lang="en">Baidu Cloud</description>
+        <description lang="zh">在线播放百度云盘中的视频</description>    
+    </extension>
 </addon>
+
 <addon id="plugin.audio.kugoufm"
 	name="酷狗电台(KugouFM)"
 	version="1.0.1"
@@ -201,6 +212,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.5ivdo"
     name="5ivdo(5ivdo)"
     version="1.2.0"
@@ -218,6 +230,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.audio.kuwo"
     name="酷我"
     version="2.2.0"
@@ -237,6 +250,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.audio.1ting"
     name="一听音乐"
     version="2.2.0"
@@ -257,6 +271,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.cntv-replay"
        name="央视重播 CCTV Replay"
        version="1.0.6" 
@@ -275,34 +290,38 @@
 	<email>sun_kang@hotmail.com</email>
   </extension>
 </addon>
-<addon id="plugin.addon.id" name="Add-on training" version="1.2.4" provider-name="yfang">
-	<requires>
-		<import addon="xbmc.python" version="2.1.0"/>
-	</requires>
-	<extension point="xbmc.python.pluginsource" library="addon.py">
-		<provides>video</provides>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en_gb">Your add-on's summary</summary>
-		<description lang="en_gb">Your add-on's description</description>
-		<disclaimer lang="en_gb"></disclaimer>
-		<language></language>
-		<platform>all</platform>
-		<license></license>
-		<forum></forum>
-		<website></website>
-		<email>yfang1644@gmail.com</email>
-		<source>https://github.com/yfang1644/plugin.video.my-addon</source>
-		<news>XXXXX XXXXX</news>
-		<assets>
-			<icon>icon.png</icon>
-			<fanart>fanart.jpg</fanart>
-			<screenshot>resources/screenshot-01.jpg</screenshot>
-			<screenshot>resources/screenshot-02.jpg</screenshot>
-			<screenshot>resources/screenshot-03.jpg</screenshot>
-		</assets>
-	</extension>
+
+<addon id="plugin.addon.id"
+       name="Add-on training" version="1.2.4"
+       provider-name="yfang">
+    <requires>
+       	<import addon="xbmc.python" version="2.1.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en_gb">Your add-on's summary</summary>
+        <description lang="en_gb">Your add-on's description</description>
+        <disclaimer lang="en_gb"></disclaimer>
+        <language></language>
+        <platform>all</platform>
+        <license></license>
+        <forum></forum>
+        <website></website>
+        <email>yfang1644@gmail.com</email>
+        <source>https://github.com/yfang1644/plugin.video.my-addon</source>
+        <news>XXXXX XXXXX</news>
+        <assets>
+            <icon>icon.png</icon>
+            <fanart>fanart.jpg</fanart>
+            <screenshot>resources/screenshot-01.jpg</screenshot>
+            <screenshot>resources/screenshot-02.jpg</screenshot>
+            <screenshot>resources/screenshot-03.jpg</screenshot>
+    	</assets>
+    </extension>
 </addon>
+
 <addon id="plugin.audio.doubanfm"
     name="豆瓣FM(DoubanFM)"
     version="1.0.1"
@@ -319,7 +338,10 @@
         <platform>all</platform>
     </extension>
 </addon>
-<addon id="plugin.video.youkutv" name="YouKu TV" version="1.7.6" provider-name="catro">
+
+<addon id="plugin.video.youkutv"
+    name="YouKu TV" version="1.7.6"
+    provider-name="catro">
   <requires>
     <import addon="script.common.plugin.cache" version="0.9.1"/>
   </requires>
@@ -333,6 +355,7 @@
     <description>优酷视频是中国最大的视频分享网站</description>
   </extension>
 </addon>
+
 <addon id="plugin.video.qiyi"
     name="奇艺视频(QIYI)"
     version="2.2.7"
@@ -353,6 +376,7 @@
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.ppstream"
     name="PPS网络电视(PPStream)"
     version="2.2.15"
@@ -378,7 +402,10 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
-<addon id="plugin.video.bdyun" name="百度云盘" version="0.1.9" provider-name="caasiu">
+
+<addon id="plugin.video.bdyun"
+    name="百度云盘" version="0.1.9"
+    provider-name="caasiu">
 	<requires>
 		<import addon="xbmc.python" version="2.20.0" />
 		<import addon="script.module.xbmcswift2" version="2.4.0" />
@@ -386,10 +413,10 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <import addon="script.module.keyboard.chinese" option="true" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
-		<provides>audio video</provides>
-	</extension>
-	<extension point="xbmc.addon.metadata">
-		<platform>all</platform>
+        <provides>audio video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
         <language></language>
         <summary lang="en">Baidu Yun (Personal Cloud Storage)</summary>
         <summary lang="zh">百度云</summary>
@@ -400,10 +427,11 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <description lang="zh">
         在kodi/xbmc播放百度云盘中的视频和音频,项目地址https://github.com/caasiu/plugin.video.bdyun
         </description>    
-		<license>GNU General Public License, v3</license>
-		<language></language>
-	</extension>
+        <license>GNU General Public License, v3</license>
+        <language></language>
+    </extension>
 </addon>
+
 <addon id="plugin.video.funshion"
     name="风行视频(Funshion)"
     version="1.1.1"
@@ -424,6 +452,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.rrmj"
        name="人人美剧"
        version="0.1.7"
@@ -444,6 +473,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
     <source><![CDATA[https://github.com/jindaxia/plugin.video.rrmj]]></source>
   </extension>
 </addon>
+
 <addon id="plugin.video.ku6"
     name="酷6云中剧场(Ku6)"
     version="1.0.5"
@@ -461,6 +491,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.audio.kuwobox"
     name="酷我音乐盒(KuwoBox)"
     version="1.1.5"
@@ -482,6 +513,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.video.youku"
     name="优酷视频(YouKu)"
     version="2.2.4"
@@ -502,6 +534,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
+
 <addon id="plugin.audio.baiduradio"
     name="百度电台联盟(BaiduRadio)"
     version="1.0.1"
@@ -519,23 +552,44 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
-<addon
-    id="plugin.video.asia-tv"
+
+<addon id="plugin.video.asia-tv"
     version="2.0.5"
     name="亚洲电视(Asia TVs)"
-    provider-name="米老康"
-    >
-  <extension point="xbmc.python.pluginsource"
-	     library="addondev1.py">
-    <provides>video</provides>
-  </extension>
-  <extension point="xbmc.addon.metadata">
-    <summary>TV Channels in Asian Laguages</summary>
-    <summary lang="zh">亚洲电视(Asia TVs)</summary>
-    <description>亚洲电视</description>
-    <description lang="zh">亚洲电视(Asia TVs)</description>
-    <platform>all</platform>
-    <email>sun_kang@hotmail.com</email>
-  </extension>
+    provider-name="米老康" >
+    <extension point="xbmc.python.pluginsource" library="addondev1.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>TV Channels in Asian Laguages</summary>
+        <summary lang="zh">亚洲电视(Asia TVs)</summary>
+        <description>亚洲电视</description>
+        <description lang="zh">亚洲电视(Asia TVs)</description>
+        <platform>all</platform>
+        <email>sun_kang@hotmail.com</email>
+    </extension>
 </addon>
+
+<addon id="plugin.video.qq"
+    name="腾讯视频"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
+    </requires>
+    <extension
+        point="xbmc.python.pluginsource"
+        library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Tencent Video plugin</summary>
+        <summary lang="zh">QQ视频插件</summary>
+        <description lang="en">Online videos from tv.sohu.com</description>
+        <description lang="zh">本插件视频解析自腾讯视频网站(v.qq.com)</description>
+        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.qq</source>
+        <platform>all</platform>
+    </extension>
+</addon>
+
 </addons>
