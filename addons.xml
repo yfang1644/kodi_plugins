@@ -291,37 +291,6 @@
   </extension>
 </addon>
 
-<addon id="plugin.addon.id"
-       name="Add-on training" version="1.2.4"
-       provider-name="yfang">
-    <requires>
-       	<import addon="xbmc.python" version="2.1.0"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en_gb">Your add-on's summary</summary>
-        <description lang="en_gb">Your add-on's description</description>
-        <disclaimer lang="en_gb"></disclaimer>
-        <language></language>
-        <platform>all</platform>
-        <license></license>
-        <forum></forum>
-        <website></website>
-        <email>yfang1644@gmail.com</email>
-        <source>https://github.com/yfang1644/plugin.video.my-addon</source>
-        <news>XXXXX XXXXX</news>
-        <assets>
-            <icon>icon.png</icon>
-            <fanart>fanart.jpg</fanart>
-            <screenshot>resources/screenshot-01.jpg</screenshot>
-            <screenshot>resources/screenshot-02.jpg</screenshot>
-            <screenshot>resources/screenshot-03.jpg</screenshot>
-    	</assets>
-    </extension>
-</addon>
-
 <addon id="plugin.audio.doubanfm"
     name="豆瓣FM(DoubanFM)"
     version="1.0.1"
