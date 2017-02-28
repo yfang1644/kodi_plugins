@@ -2,14 +2,11 @@
 <addon id="plugin.video.ppstream"
     name="PPS网络电视(PPStream)"
     version="2.2.15"
-    provider-name="cmeng (originator: robinttt)">
+    provider-name="cmeng (originator: robinttt),yfang1644">
     <requires>
-        <import addon="script.module.simplejson" version="2.0.10" />
- 		<import addon="script.module.keyboard.chinese" version="1.0.0"/>
+        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
   	</requires>    
-    <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
+    <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -21,6 +18,8 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <description lang="zh">快捷键设置 (Keymap Settings):[CR]静音: F8  声音缩小: F9  声音放大: F10  画面缩小: [↓  画面放大: ]↑[CR]上一章节: ,←  下一章节: .→  播放暂停: 空格键/回车  关闭程序: x/Esc  关于: F1
 设置自定快捷键:[CR]请运行 plugin.video.pps\resources\player\KeymapSet.exe
 使用PPS影音收看影视节目，清晰流畅更新快。PPS网络电视是全球第一家集P2P直播点播于一身的网络电视软件。PPS网络电视播放流畅、完全免费，PPS网络电视是网民喜爱的装机必备软件。</description>
+        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.ppstream</source>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>

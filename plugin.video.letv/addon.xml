@@ -2,13 +2,11 @@
 <addon id="plugin.video.letv"
     name="乐视网 (LeTV)"
     version="1.5.9"
-    provider-name="cmeng">
+    provider-name="cmeng,yfang1644">
   	<requires>
-		<import addon="script.module.keyboard.chinese" version="2.0.4"/>
+        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
   	</requires>    
-    <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
+    <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -16,6 +14,8 @@
         <summary lang="zh">乐视网插件</summary>
         <description lang="en">Letv video plugin[CR][CR]LeTV.com (Chinese: 乐视网), operated by Beijing LeTV Mobile Media and Technology Co. Ltd, is an online video portal in Beijing. It offers online video programs and movie viewing through legal channels.</description>
         <description lang="zh">Letv video plugin[CR][CR]乐视网(LeTV.com)是以正版,高清影视剧为主的视频门户网站,为用户提供正版高清电影,电视剧,动漫,综艺,娱乐等视频在线观看,视频分享,视频搜索等服务</description>
+        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.letv</source>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>

@@ -2,12 +2,10 @@
 <addon id="plugin.video.funshion"
     name="风行视频(Funshion)"
     version="1.1.1"
-    provider-name="taxigps">
+    provider-name="taxigps,yfang1644">
     <requires>
     </requires>
-    <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
+    <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -15,6 +13,8 @@
         <summary lang="zh">风行网视频插件</summary>
         <description lang="en">Online videos from www.funshion.com</description>
         <description lang="zh">来自风行网（www.funshion.com）的网络视频内容。</description>
+        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.funshion</source>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>

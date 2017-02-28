@@ -3,9 +3,7 @@
 	name="百度随心听"
 	version="0.0.5"
 	provider-name="zhangyuanwei">
-	<extension
-		point="xbmc.python.pluginsource"
-		library="default.py">
+	<extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -13,6 +11,8 @@
         <summary lang="zh">百度随心听插件</summary>
         <description>Baidu fm audio plugin</description>
         <description lang="zh">百度随心听插件</description>
+        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.audio.baidufm</source>
+		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>
