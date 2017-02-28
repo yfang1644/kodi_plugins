@@ -15,7 +15,7 @@
         <description>由人人影视转型后专门为美剧迷们打造的高质量讨论交流社区</description>
         <website><![CDATA[https://github.com/jindaxia/plugin.video.rrmj]]></website>
         <forum></forum>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.rrmj</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.rrmj</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

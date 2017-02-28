@@ -17,7 +17,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<forum>http://bbs.htpc1.com/thread-259452-1-1.html</forum>
 		<website>https://zohead.com/</website>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.pptv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.pptv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

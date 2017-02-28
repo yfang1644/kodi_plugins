@@ -13,7 +13,7 @@
         <summary lang="zh">风行网视频插件</summary>
         <description lang="en">Online videos from www.funshion.com</description>
         <description lang="zh">来自风行网（www.funshion.com）的网络视频内容。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.funshion</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.funshion</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

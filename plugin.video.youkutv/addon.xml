@@ -12,7 +12,7 @@
         <language></language>
         <summary>优酷TV</summary>
         <description>优酷视频是中国最大的视频分享网站</description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.vide.youkutv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.vide.youkutv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

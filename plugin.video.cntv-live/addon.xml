@@ -22,7 +22,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
 		<forum></forum>
 		<website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.cntv-live</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.cntv-live</source>
         <email>yfang1644@gmail.com</email>
 		<platform>all</platform>
 	</extension>

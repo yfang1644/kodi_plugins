@@ -13,7 +13,7 @@
         <summary lang="en">央视重播 CCTV Replay</summary>
         <description lang="en">央视重播 CCTV Replay 比直播晚十到二十分钟</description>
         <language>en</language>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.cntv-replay</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.cntv-replay</source>
 	    <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

@@ -11,7 +11,7 @@
         <summary lang="zh">百度电台联盟音频插件</summary>
         <description>BaiduRadio audio plugin</description>
         <description lang="zh">百度电台联盟音频插件，在线收听功能受电台播出时间和网络条件限制，个别台可能无法收听。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.audio.baiduradio</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.baiduradio</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

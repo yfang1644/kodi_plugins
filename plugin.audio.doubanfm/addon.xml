@@ -10,7 +10,7 @@
         <summary lang="en">DoubanFM plugin</summary>
         <summary lang="zh">豆瓣FM插件</summary>
         <description lang="zh">豆瓣FM是一款你专属的个性化收听工具。你只需要非常简单的操作就能听到为你量身推荐的歌曲。它还拥有不同音乐爱好者创建的主题兆赫，让你在享受自我口味歌曲的同时，也能发现更多样的未知音乐。 </description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.audio.doubanfm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.doubanfm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

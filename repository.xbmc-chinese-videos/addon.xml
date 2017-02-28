@@ -14,7 +14,7 @@
         <description lang="zh"></description>
         <disclaimer>Not for commercial use. Use at own risk</disclaimer>
         <disclaimer lang="zh">仅供娱乐</disclaimer>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/repository.xbmc-chinese-videos</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/repository.xbmc-chinese-videos</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

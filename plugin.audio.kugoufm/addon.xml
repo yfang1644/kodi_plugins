@@ -11,7 +11,7 @@
         <summary lang="zh">酷狗电台插件</summary>
         <description>kugou fm audio plugin</description>
         <description lang="zh">酷狗电台频道,数十个音乐电台为你精心打造,带你邂逅喜爱的音乐,享受随意听音乐的精彩。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.audio.kugoufm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.kugoufm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

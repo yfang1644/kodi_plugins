@@ -13,7 +13,7 @@
         <summary lang="zh">优酷网视频插件</summary>
         <description lang="en">online video from youku.com</description>
         <description lang="zh">优酷(www.youku.com)在线网络视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/tree/master/plugin.video.youku</source>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.youku</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
