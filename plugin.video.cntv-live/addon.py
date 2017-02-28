@@ -83,6 +83,7 @@ weishList = [["anhui", "安徽卫视"],
              ["henan", "河南卫视"],
              ["heilongjiang", "黑龙江卫视"],
              ["hubei", "湖北卫视"],
+             ["hunan", "湖南卫视"],
              ["jilin", "吉林卫视"],
              ["jiangxi", "江西卫视"],
              ["kangba", "康巴卫视"],
@@ -116,6 +117,25 @@ xbmcplugin.setContent(addon_handle, "movies")
 TIMEOUT_S = 2.0
 
 param = sys.argv[2]
+
+
+def getHttp(url):
+    resp = urllib2.urlopen(url)
+    data = resp.read()
+    data = data.decode('utf-8')
+    resp.close()
+
+    branch = re.compile('/cache.+\n').findall(data)
+    host = re.compile('(http.+//.+?)/').findall(url)
+
+    try:
+        data = host[0] + branch[0]
+    except:
+        return url
+    if data.find('m3u8') >= 0:
+        return data
+    else:
+        return url
 
 
 def showNotification(stringID):
@@ -166,8 +186,6 @@ def main():
         pDialog.update(0)
         try:
             #Locate the M3U8 file
-            print '****************************'
-            print param[8:]
             resp = urllib2.urlopen("http://vdn.live.cntv.cn/api2/live.do?channel=pa://cctv_p2p_hd" + param[8:])
             data = resp.read()
             data = data.decode('utf-8')
@@ -177,14 +195,13 @@ def main():
 
             url = None
             jsondata = jsonimpl.loads(data)
-
             urlsTried = 0
             urlsToTry = 5
 
             if 'hls_url' in jsondata:
                 for i in range(1, urlsToTry + 1):
                     urlsTried += 1
-                    pDialog.update(urlsTried * 5000 / urlsToTry,
+                    pDialog.update(urlsTried * 500 / urlsToTry,
                                    "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%s"%i))
                     url = tryHLSStream(jsondata, "hls%s"%i)
                     if url is not None:
@@ -201,14 +218,10 @@ def main():
                 pDialog.close()
                 return
 
-            print("Loading URL {0}".format(url))
-
             auth = urlparse.parse_qs(urlparse.urlparse(url)[4])["AUTH"][0]
-            print("Got AUTH {0}".format(auth))
-
             url = url + "|" + urllib.urlencode({"Cookie": "AUTH=" + auth})
-
-            print("Built URL {0}".format(url))
+            print url
+            url = getHttp(url)
 
             pDialog.close()
             xbmc.Player().play(url)
