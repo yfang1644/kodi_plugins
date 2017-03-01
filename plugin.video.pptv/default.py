@@ -256,14 +256,8 @@ def parseDOM(html, name=u"", attrs={}, ret=False):
 
 def GetPPTVCatalogs():
     cat_list = []
-    links = []
-    names = []
-
-    data = GetHttpData(PPTV_TV_LIST)
-    chl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'li', attrs={'class': 'level_1 '}))
-    if len(chl) > 0:
-        links = parseDOM(chl, 'a', ret='href')
-        names = parseDOM(chl, 'a')
+    links = [PPTV_TV_LIST]
+    names = [u'全国电视台']
 
     data = GetHttpData(PPTV_LIST)
     chl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'div', attrs={'class': 'detail_menu'}))
@@ -271,7 +265,13 @@ def GetPPTVCatalogs():
         links.extend(parseDOM(chl, 'a', ret='href'))
         names.extend(parseDOM(chl, 'a'))
 
-    cat_list.extend([{'link': re.sub('\.pptv\.com\?', '.pptv.com/?', i.encode('utf-8')), 'name' : j.encode('utf-8')}for i, j in zip(links, names)])
+    data = GetHttpData('http://www.pptv.com')
+    chl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'div', attrs={'class': 'morech cf'}))
+    if len(chl) > 0:
+        links = parseDOM(chl, 'a', ret='href')
+        names = parseDOM(chl, 'a')
+
+    cat_list.extend([{'link': re.sub('\.pptv\.com\?', '.pptv.com/?', i.encode('utf-8')), 'name': j.encode('utf-8')}for i, j in zip(links, names)])
     return cat_list
 
 
