@@ -268,8 +268,8 @@ def GetPPTVCatalogs():
     data = GetHttpData('http://www.pptv.com')
     chl = CheckValidList(parseDOM(unicode(data, 'utf-8', 'ignore'), 'div', attrs={'class': 'morech cf'}))
     if len(chl) > 0:
-        links = parseDOM(chl, 'a', ret='href')
-        names = parseDOM(chl, 'a')
+        links.extend(parseDOM(chl, 'a', ret='href'))
+        names.extend(parseDOM(chl, 'a'))
 
     cat_list.extend([{'link': re.sub('\.pptv\.com\?', '.pptv.com/?', i.encode('utf-8')), 'name': j.encode('utf-8')}for i, j in zip(links, names)])
     return cat_list
