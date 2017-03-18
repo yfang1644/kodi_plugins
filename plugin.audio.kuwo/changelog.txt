@@ -1,3 +1,6 @@
+[B]2.2.1[/B] (2017/03/18 yfang1644)
+- 从 yinyue.kuwo.cn/category.htm 起点
+
 [B]2.2.0[/B] (2015/01/08 osfans)
 - 添加搜索、曲风、标签
 

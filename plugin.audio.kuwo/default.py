@@ -5,7 +5,6 @@
 
 import urllib
 import urllib2
-import os
 import re
 import sys
 import gzip
@@ -17,12 +16,16 @@ import xbmcplugin
 import xbmcgui
 import xbmcaddon
 
+# Plugin constants
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
+__cwd__       = __addon__.getAddonInfo('path')
 
 UserAgent = 'Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20100101 Firefox/8.0'
 URL_BASE = 'http://yinyue.kuwo.cn'
 INDENT_STR = '    '
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
-
 
 #
 # Web process engine
@@ -39,62 +42,8 @@ def getUrlTree(url, data=None):
         httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         # BeautifulSoup handles encoding, thus skip transcoding here.
 
-    tree = BeautifulSoup(httpdata, "html.parser")
-    return tree
+    return httpdata
 
-
-def make_param(query, url=None):
-    if url is None:
-        url = sys.argv[0]
-    param = "%s?%s" % (url, urllib.urlencode(query))
-    return param
-
-
-def addDir(name, url, mode, iconimage='DefaultFolder.png', context={}, folder=True, total=0):
-    if url.startswith('/'):
-        url = URL_BASE + url
-
-    param = {"url": url, "mode": mode}
-    param.update(context)
-    u = make_param(param)
-
-    item = xbmcgui.ListItem(name, iconImage=iconimage, thumbnailImage=iconimage)
-    xbmcplugin.addDirectoryItem(pluginhandle, url=u, listitem=item, isFolder=folder, totalItems=total)
-
-
-context_params = {}
-
-
-def driller(tree, lCont):
-    # global item
-    global context_params
-    if not isinstance(lCont, list):
-        lCont = [lCont]
-
-    for cont in lCont:
-        result = None
-        context_params = cont.get('context', {})
-        items = tree.find_all(*cont['tag'])
-        # print("to find:", cont)
-        for item in items:
-            # print('found')
-            if cont.get('vect'):
-                try:
-                    result = cont['vect'](item)
-                except:
-                    pass
-            if result != 'DRILLER_NO_DEEPER':
-                if cont.get('child', None):
-                    driller(item, cont['child'])
-
-
-def processWebPage(tagHandler):
-    global tree
-    url = params['url']
-    post = params.get('urlpost', None)
-    tree = getUrlTree(url, post)
-    driller(tree, tagHandler)
-    xbmcplugin.endOfDirectory(pluginhandle, True)
 
 #
 # Media player
@@ -107,8 +56,8 @@ def get_content_by_tag(tree, tag):
         return ''
 
 
-def PlayMusic():
-    mids = params['url']
+def PlayMusic(url):
+    mids = url
 
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
@@ -116,7 +65,8 @@ def PlayMusic():
     for mid in mids:
         if mid == '':
             continue
-        tree = getUrlTree('http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'+mid)
+        html = getUrlTree('http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'+mid)
+        tree = BeautifulSoup(html, 'html.parser')
         title = get_content_by_tag(tree, 'name')
         # kuwo has names like "song name(抢听版)", causing lyrics look up failure
         true_title = title.split('(')[0].rstrip()
@@ -146,138 +96,100 @@ def PlayMusic():
         xbmc.Player().play(playlist)
 
 
-def addH1Banner(item):
-    name = item.h1.text.encode('utf-8')
-    # Burlywood color
-    if name:
-        name = BANNER_FMT % name
-        addDir(name, '', 'pass', '', folder=False)
-
-
-#
-# Kuwo tag handlers
-#
-def extractName(item):
-    if not item:
-        return ''
-    name = ''
-    span_name = item.find('span')
-    if span_name:
-        name = span_name.contents[0]
-    elif item.has_attr('title'):
-        name = item['title']
-    elif item.contents:
-        content = item.contents[0]
-        if 'String' in str(type(content)):
-            #BeautifulSoup NavigableString
-            name = content
-        else:
-            try:
-                name = content['title']
-            except:
-                pass
-    return name.encode('utf-8')
-
-
-def extractHref(item):
-    if item and item.has_attr('href'):
-        return item['href'].encode('utf-8')
-    return ''
-
-
-def extractImg(item):
-    if item:
-        for k in ['lazy_src', 'sr', 'src', 'init_src']:
-            if item.has_attr(k):
-                return item[k].encode('utf-8')
-    return ''
-
-
-def extractImgSearch(item, name=''):
-    iconimage = extractImg(item.find('img'))
-    if (not iconimage) and name:
-        attrs = {'title': unicode(name, 'utf-8')}
-        iconimage = extractImg(item.findChild('img', attrs))
-        if not iconimage:
-            iconimage = extractImg(item.findPreviousSibling('img', attrs))
-        if not iconimage:
-            iconimage = extractImg(item.findParent().findPreviousSibling('img', attrs))
-    return iconimage
-
-
-#
-# XBMC plugin
-#
-def addLink(title, artist, url, mode, iconimage='', total=0, video=False):
-    u = make_param({'url': url, 'mode': mode})
-    displayname = artist + ' - ' + title if artist else title
-    displayname = INDENT_STR + displayname
-    itemType = 'Video' if video else 'Music'
-
-    item = xbmcgui.ListItem(displayname, iconImage=iconimage, thumbnailImage=iconimage)
-    item.setInfo(type=itemType, infoLabels={'Title': title, 'Artist': artist})
-    xbmcplugin.addDirectoryItem(pluginhandle, url=u, listitem=item, isFolder=False, totalItems=total)
-
-
-
-# 分类
-def addHotMusic(item):
-    l = re.findall('"musiclist":(\[.+\]),"rids"', item.text)
+def musiclist(name, url):
+    html = getUrlTree(url)
+    l = re.findall('"musiclist":(\[.+\]),"rids"', html)
     if not l:
         return
     l = eval(l[0])
     mids = "/".join([d['musicrid'] for d in l])
-    disp_title = params.get('playall_title', '播放全部歌曲')
-    iconimg = params.get('playall_icon', '')
-    addDir(disp_title, mids, 'PlayMusic()', iconimg, folder=False)
+    item = xbmcgui.ListItem(BANNER_FMT % name)
+    u = sys.argv[0] + '?mode=play&url=' + mids
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
     for d in l:
         title = d['name']
         artist = d['artist']
         mid = d['musicrid']
-        addLink(title, artist, mid, 'PlayMusic()', '')
+        displayname = artist + ' - ' + title if artist else title
+        item = xbmcgui.ListItem(displayname)
+        u = sys.argv[0] + '?mode=play&url=' + mid
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, listitem=item, isFolder=False)
+
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def addHotMusicList(item):
-    ''' playlist item '''
-    url = extractHref(item.a)
-    name = extractName(item.a)
-    iconimg = extractImg(item.a.img)
-    playall_title = '播放【%s】所含曲目' % name
-    context = {'playall_title': playall_title, 'playall_icon': iconimg}
-    addDir(INDENT_STR + name, url, 'processWebPage(hotMusic)', iconimg, context=context)
+def albumlist(name, url, tree=None):
+    if tree is None:
+        html = getUrlTree(url)
+        tree = BeautifulSoup(html, "html.parser")
+    soup = tree.find_all('ul', {'class': 'singer_list clearfix'})
+    li = soup[0].find_all('li')
+
+    for item in li:
+        url = item.a['href'].encode('utf-8')
+        url = URL_BASE + url
+        itemp = item.p.text
+        attr = 'album' if u'列表' in itemp else 'list'
+        name = item.a['title'].encode('utf-8')
+        name = name + '(' + itemp.encode('utf-8') + ')'
+        image = item.img['lazy_src']
+        u = sys.argv[0] + '?url=' + url + '&mode=%s&name='%attr + name
+        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def addHotList(item):
-    ''' playlist item '''
-    url = extractHref(item.a)
-    name = extractName(item.a)
-    iconimg = extractImg(item.a.img)
-    context = {'playall_title': '', 'playall_icon': iconimg}
-    if name in hotSubList:
-        addDir(name, url, 'processWebPage(hotList)', iconimg, context=context)
-    else:
-        addDir(INDENT_STR + name, url, 'processWebPage(hotMusicListPage)', iconimg, context=context)
+def listRoot():
+    html = getUrlTree(URL_BASE + '/category.htm')
+    tree = BeautifulSoup(html, "html.parser")
+    soup = tree.find_all('div', {'class': 'hotlist'})
+
+    item = xbmcgui.ListItem(BANNER_FMT % soup[0].h1.text.encode('utf-8'))
+    u = sys.argv[0] + '?mode=title'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+
+    x = soup[0].find_all('ul', {'class': 'clearfix'})
+    li = x[0].find_all('li')
+
+    for item in li:
+        url = item.a['href'].encode('utf-8')
+        name = item.text.encode('utf-8')
+        url = URL_BASE + url
+        u = sys.argv[0] + '?url=' + url + '&mode=album&name=' + name
+        liz = xbmcgui.ListItem(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
+    item = xbmcgui.ListItem(BANNER_FMT % soup[1].h1.text.encode('utf-8'))
+    u = sys.argv[0] + '?mode=title'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+
+    x = soup[1].find_all('ul', {'class': 'clearfix'})
+    li = x[0].find_all('li')
+
+    for item in li:
+        url = item.a['href'].encode('utf-8')
+        name = item.text.encode('utf-8')
+        url = URL_BASE + url
+        u = sys.argv[0] + '?url=' + url + '&mode=album&name=' + name
+        liz = xbmcgui.ListItem(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
+    albumlist('Main Menu', url, tree)
 
 
-hotMusic = {'tag': ('script', {}), 'vect': addHotMusic}
-hotMusicList = {'tag': ('li', {}), 'vect': addHotMusicList}
-hotMusicListPage = {'tag': ('ul', {'class': 'singer_list clearfix'}), 'child': hotMusicList}
-hotList = {'tag': ('li', {}), 'vect': addHotList}
-hotPage = {'tag': ('div', {'class': 'hotlist'}), 'vect': addH1Banner, 'child': hotList}
-hotSubList = {'评书', '有声读物', '歌手'}
-
-
-pluginhandle = int(sys.argv[1])
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
+
 mode = params.get('mode')
+name = params.get('name')
+url = params.get('url')
 
 if mode is None:
-    url = 'http://yinyue.kuwo.cn/category.htm'
-    u = sys.argv[0] + '?&mode=hotPage' + '&url=%s' % (url)
-
-    params['url'] = url
-    processWebPage(hotPage)
-
-else:
-    exec(mode)
+    listRoot()
+elif mode == 'album':
+    albumlist(name, url)
+elif mode == 'list':
+    musiclist(name, url)
+elif mode == 'play':
+    PlayMusic(url)
