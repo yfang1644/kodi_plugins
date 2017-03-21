@@ -10,7 +10,6 @@ import re
 import sys
 import gzip
 import StringIO
-import time
 from random import randrange
 import simplejson
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
@@ -439,14 +438,14 @@ def PlayVideo_test(name, id, thumb):
         v_urls = json_response['playlist'][0]['urls']   #json_response['data']['fsps']['mult']
         # print "streamer servers: ", len(v_urls), v_urls, link, json_response['playlist'][0]
         try:
-            i_url = randrange(len(v_urls)-1)
+            i_url = randrange(len(v_urls))
         except:
             i_url = 0
 
         v_url = v_urls[i_url]
         ip = re.compile('http://(\d+\.\d+\.\d+\.\d+)').findall(v_url)
         if ip[0] not in usableIP:    # replace a usable IP
-            i_url = randrange(len(usableIP)-1)
+            i_url = randrange(len(usableIP))
             v_url = re.sub('http://(\d+\.\d+\.\d+\.\d+)',
                            'http://%s'%(usableIP[i_url]), v_url)
         xbmc.Player().play(v_url, listitem)
@@ -488,13 +487,13 @@ def PlayVideo(name, id, thumb, id2):
         v_urls = json_response['playlist'][0]['urls']   #json_response['data']['fsps']['mult']
         # print "streamer servers: ", len(v_urls), v_urls, link, json_response['playlist'][0]
         try:
-            i_url = randrange(len(v_urls)-1)
+            i_url = randrange(len(v_urls))
         except:
             i_url = 0
         v_url = v_urls[i_url]
         ip = re.compile('http://(\d+\.\d+\.\d+\.\d+\)/').findall(v_url)
         if ip[0] not in usableIP:    # replace a usable IP
-            i_url = randrange(len(usableIP)-1)
+            i_url = randrange(len(usableIP))
             v_url = re.sub('http://(\d+\.\d+\.\d+\.\d+)',
                            'http://%s'%(usableIP[i_url]), v_url)
         xbmc.Player().play(v_url, listitem)
@@ -554,7 +553,7 @@ def PlayVideo2(name, id, thumb, type):
     playlist = xbmc.PlayList(1)
     playlist.clear()
 
-    v_pos = int(name.split('.')[0])-1
+    v_pos = int(name.split('.')[0]) - 1
     psize = playlistA.size()
     ERR_MAX = psize-1
     TRIAL = 1
@@ -623,6 +622,11 @@ def PlayVideo2(name, id, thumb, type):
             v_url = p_url
 
         err_cnt = 0    # reset error count
+        ip = re.compile('http://(\d+\.\d+\.\d+\.\d+)').findall(v_url)
+        if ip[0] not in usableIP:    # replace a usable IP
+            i_url = randrange(len(usableIP))
+            v_url = re.sub('http://(\d+\.\d+\.\d+\.\d+)',
+                           'http://%s'%(usableIP[i_url]), v_url)
         playlist.add(v_url, li, k)
         k += 1
         if k == 1:
