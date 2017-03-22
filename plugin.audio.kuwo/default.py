@@ -29,14 +29,13 @@ URL_BASE = 'http://yinyue.kuwo.cn'
 INDENT_STR = '    '
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 
+
 #
 # Web process engine
 #
-
-
 def getUrlTree(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent_IPAD)
+    req = urllib2.Request(url.replace(' ', '%20'))  # some names have ' '
+    req.add_header('User-Agent', UserAgent)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
@@ -170,13 +169,48 @@ def singeralbum(name, url):
     soup = tree.find_all('div', {'id': 'album'})
     li = soup[0].find_all('li')
 
+    item = xbmcgui.ListItem(BANNER_FMT % '专辑')
+    u = sys.argv[0] + '?mode=title'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
     for album in li:
-        href = album.find('div', {'class': 'cover'})
+        image = album.find('div', {'class': 'cover'})
+        image = image.img['src']
         name = album.find('span', {'class': 'name'})
-        aurl = href.a['href'].encode('utf-8')
-        name = name.text.encode('utf-8')
-        image = album.img['src']
+        aurl = name.a['href'].encode('utf-8')
+        name = name.text.strip('\n').encode('utf-8')
         u = sys.argv[0] + '?url=' + aurl + '&mode=album1&name=' + name
+        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
+    l = re.compile('"id":"MUSIC_(\d+)').findall(html)
+    if l:
+        soup = tree.find_all('li', {'class': 'onLine'})
+        item = xbmcgui.ListItem(BANNER_FMT % '单曲(全部播放)')
+        mids = '/'.join(l)
+        u = sys.argv[0] + '?mode=play&url=' + mids
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+        for song in soup:
+            mid = re.compile('\d+').findall(song.a['href'])
+            mid = mid[0].encode('utf-8')
+            name = song.a.text.encode('utf-8')
+            u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
+            liz = xbmcgui.ListItem(name)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
+
+    soup = tree.find_all('div', {'id': 'mv'})
+    li = soup[0].find_all('li')
+
+    item = xbmcgui.ListItem(BANNER_FMT % 'MV')
+    u = sys.argv[0] + '?mode=title'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+    for mv in li:
+        image = mv.find('div', {'class': 'cover'})
+        image = image.img['src']
+        name = mv.find('span', {'class': 'name'})
+        mid = re.compile('\d+').findall(name.a['href'])
+        mid = mid[0].encode('utf-8')
+        name = name.text.strip('\n').encode('utf-8')
+        u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
         liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
@@ -192,7 +226,6 @@ def singergroup(name, url, page):
         aurl = artist.a['href'].encode('utf-8')
         name = re.compile('name=(.+)').findall(aurl)
         name = name[0]
-        aurl = urllib.quote(aurl)
         aurl = 'http://www.kuwo.cn' + aurl
         u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum&name=' + name
         image = artist.img['src']
@@ -244,12 +277,21 @@ def single_album(name, url):
     tree = BeautifulSoup(html, "html.parser")
     soup = tree.find_all('li', {'class': 'clearfix'})
 
+    l = re.findall('class="[Mm]usicID.+mid="(.+)"', html)
+    if not l:
+        return
+    mids = "/".join(l)
+    item = xbmcgui.ListItem(BANNER_FMT % name)
+    u = sys.argv[0] + '?mode=play&url=' + mids
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+
     for item in soup:
-        url = item.p.input['mid'].encode('utf-8')
+        mid = item.p.input['mid'].encode('utf-8')
         name = item.a.text.encode('utf-8')
-        u = sys.argv[0] + '?url=' + url + '&mode=play&name=' + name
+        u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
         liz = xbmcgui.ListItem(name)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
+
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
