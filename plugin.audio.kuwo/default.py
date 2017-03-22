@@ -62,7 +62,7 @@ def PlayMusic(url):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     mids = mids.split('/')
-    mids = [x for x in mids if x != '']   # remove empty item
+    mids = [x for x in mids if x != '']   # remove empty items
     for mid in mids:
         html = getUrlTree('http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'+mid)
         tree = BeautifulSoup(html, 'html.parser')
@@ -92,6 +92,18 @@ def PlayMusic(url):
             listitem.setInfo(type="Music", infoLabels={"Title": true_title, "Artist": artist})
             playlist.add(url, listitem)
 
+    xbmc.Player().play(playlist)
+
+
+def PlayMV(name, url, image):
+    html = getUrlTree(url)
+    mp4 = re.compile('var mp4url.+(http:.+?mp4)').findall(html)
+    mp4 = mp4[0]
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
+    listitem = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+    listitem.setInfo(type="Video", infoLabels={"Title": name})
+    playlist.add(mp4, listitem)
     xbmc.Player().play(playlist)
 
 
@@ -163,12 +175,13 @@ def category():
     albumlist('Main Menu', url, tree)
 
 
-def singeralbum(name, url):
+def singeralbum(name, url, page, artistid):
     html = getUrlTree(url)
     tree = BeautifulSoup(html, "html.parser")
+
+    # ALBUM #######################################
     soup = tree.find_all('div', {'id': 'album'})
     li = soup[0].find_all('li')
-
     item = xbmcgui.ListItem(BANNER_FMT % '专辑')
     u = sys.argv[0] + '?mode=title'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
@@ -182,13 +195,47 @@ def singeralbum(name, url):
         liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
+    # MV ###############################################
+    soup = tree.find_all('div', {'id': 'mv'})
+    li = soup[0].find_all('li')
+    item = xbmcgui.ListItem(BANNER_FMT % 'MV')
+    u = sys.argv[0] + '?mode=title'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+    for mv in li:
+        image = mv.find('div', {'class': 'cover'})
+        image = image.img['src']
+        name = mv.find('span', {'class': 'name'})
+        aurl = name.a['href'].encode('utf-8')
+        name = name.text.strip('\n').encode('utf-8')
+        u = sys.argv[0] + '?url=' + aurl + '&mode=playmv&name=' + name
+        u += "&image=%s" % image.encode('utf-8')
+        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
+    # SONGS ###############################################
+    aurl = 'http://www.kuwo.cn/artist/contentMusicsAjax'
+    aurl += '?artistId=%s&pn=%d&rn=15' % (artistid, page)
+    html = getUrlTree(aurl)
     l = re.compile('"id":"MUSIC_(\d+)').findall(html)
+    maxpage = re.compile('data-page="(\d+)"').findall(html)
+    maxpage = int(maxpage[0])
+
     if l:
+        tree = BeautifulSoup(html, 'html.parser')
         soup = tree.find_all('li', {'class': 'onLine'})
         item = xbmcgui.ListItem(BANNER_FMT % '单曲(全部播放)')
         mids = '/'.join(l)
         u = sys.argv[0] + '?mode=play&url=' + mids
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+
+        if page > 0:
+            name = BANNER_FMT % '上一页'
+            aurl = url
+            aurl += "&artistId=%s&page=%d" % (artistid, page-1)
+            u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum'
+            liz = xbmcgui.ListItem(name)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+
         for song in soup:
             mid = re.compile('\d+').findall(song.a['href'])
             mid = mid[0].encode('utf-8')
@@ -197,54 +244,55 @@ def singeralbum(name, url):
             liz = xbmcgui.ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
 
-    soup = tree.find_all('div', {'id': 'mv'})
-    li = soup[0].find_all('li')
-
-    item = xbmcgui.ListItem(BANNER_FMT % 'MV')
-    u = sys.argv[0] + '?mode=title'
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
-    for mv in li:
-        image = mv.find('div', {'class': 'cover'})
-        image = image.img['src']
-        name = mv.find('span', {'class': 'name'})
-        mid = re.compile('\d+').findall(name.a['href'])
-        mid = mid[0].encode('utf-8')
-        name = name.text.strip('\n').encode('utf-8')
-        u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
-        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
+        if page < maxpage:
+            name = BANNER_FMT % '下一页'
+            aurl = url
+            aurl += "&artistId=%s&page=%d" % (artistid, page+1)
+            u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum'
+            liz = xbmcgui.ListItem(name)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def singergroup(name, url, page):
-    html = getUrlTree(url + '&pn=%d' % page)  # pn=page number
+def singergroup(name, url, page, prefix):
+    html = getUrlTree(url + '&prefix=%s&pn=%d' % (prefix, page))
+    # pn=page number, prefix=alphabet, initial singer name
     tree = BeautifulSoup(html, "html.parser")
     soup = tree.find_all('div', {'class': 'artistTop'})
 
+    if page > 0:
+        name = BANNER_FMT % '上一页'
+        aurl = url + '&prefix=%s&page=%d' % (prefix, page-1)
+        u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
+        liz = xbmcgui.ListItem(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
     for artist in soup:
         aurl = artist.a['href'].encode('utf-8')
         name = re.compile('name=(.+)').findall(aurl)
         name = name[0]
         aurl = 'http://www.kuwo.cn' + aurl
+        artistid = artist.find('div', {'class': 'artistnav'})['data-id']
         u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum&name=' + name
+        u += "&page=0&artistId=%s" % artistid.encode('utf-8')
         image = artist.img['src']
         liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     soup = tree.find('div', {'class': 'page'})
     maxpage = int(soup['data-page'])
-    if page > 1:
-        name = '上一页'
-        aurl = url + '&page=%d'%(page-1)
-        u = sys.argv[0] + '?url=' + aurl + '&mode=singers&name=' + name
+    if page < maxpage:
+        name = BANNER_FMT % '下一页'
+        aurl = url + '&prefix=%s&page=%d' % (prefix, page+1)
+        u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
         liz = xbmcgui.ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
-    if page < maxpage:
-        name = '下一页'
-        aurl = url + '&page=%d'%(page+1)
-        u = sys.argv[0] + '?url=' + aurl + '&mode=singers&name=' + name
-        liz = xbmcgui.ListItem(name)
+
+    for abc in range(0x41, 0x5A):   # A--Z
+        ch = chr(abc)
+        aurl = url + '&prefix=%s&page=%d' % (ch, page)
+        u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
+        liz = xbmcgui.ListItem(ch)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -360,7 +408,7 @@ params = dict(urllib2.urlparse.parse_qsl(params))
 mode = params.get('mode')
 name = params.get('name')
 url = params.get('url')
-page = params.get('page', '1')
+page = params.get('page', '0')
 page = int(page)
 
 if mode is None:
@@ -377,10 +425,11 @@ elif mode == 'sort':
 elif mode == 'singerarea':
     singerarea()
 elif mode == 'singers':
-    singergroup(name, url, page)
+    prefix = params.get('prefix', '')
+    singergroup(name, url, page, prefix)
 elif mode == 'singeralbum':
-    singeralbum(name, url)
-
+    artistid = params.get('artistId')
+    singeralbum(name, url, page, artistid)
 elif mode == 'sortitem':
     sortitem(name, url)
 elif mode == 'album1':
@@ -391,3 +440,6 @@ elif mode == 'list':
     musiclist(name, url)
 elif mode == 'play':
     PlayMusic(url)
+elif mode == 'playmv':
+    image = params.get('image')
+    PlayMV(name, url, image)
