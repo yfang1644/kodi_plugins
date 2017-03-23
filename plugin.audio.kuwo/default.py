@@ -96,6 +96,8 @@ def PlayMusic(url):
 
 
 def PlayMV(name, url, image):
+    print '------------------------------------'
+    print image
     html = getUrlTree(url)
     mp4 = re.compile('var mp4url.+(http:.+?mp4)').findall(html)
     mp4 = mp4[0]
@@ -288,7 +290,7 @@ def singergroup(name, url, page, prefix):
         liz = xbmcgui.ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
-    for abc in range(0x41, 0x5A):   # A--Z
+    for abc in range(0x41, 0x5B):   # A--Z
         ch = chr(abc)
         aurl = url + '&prefix=%s&page=%d' % (ch, page)
         u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
@@ -313,7 +315,7 @@ def singerlist():
         for item in li:
             url = item.a['href'].encode('utf-8')
             url = 'http://www.kuwo.cn' + url
-            name = item.text.encode('utf-8')
+            name = item.text.strip('\n').encode('utf-8')
             u = sys.argv[0] + '?url=' + url + '&mode=singers&name=' + name
             liz = xbmcgui.ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
