@@ -52,15 +52,20 @@ VIDEO_SRV = ('http://182.254.72.11',
              'http://182.254.72.110',
              'http://182.254.72.117',
              'http://182.254.8.74',
+             'http://124.89.197.14',
+             'http://124.89.197.16',
              'http://111.47.228.17',
              'http://111.47.228.19',
+             'http://117.135.168.23',
+             'http://117.135.168.25',
+             'http://117.135.168.26',
+             'http://117.135.128.159',
+             'http://117.135.128.160',
              'http://111.47.228.20',
              'http://111.47.228.26',
              'http://111.47.228.23')
 
 # p203(270), p212(360), p201(720)
-INDENT1 = '    '
-
 
 dbg = False
 dbglevel = 3
@@ -135,7 +140,6 @@ def changeList(params):
     setparam = 'url=%s' % url + setparam
     params = dict(urllib2.urlparse.parse_qsl(setparam))
     params['name'] = name
-    params['mode'] = 'mainlist'
     listSubMenu(params)
 
 
@@ -165,12 +169,12 @@ def listSubMenu(params):
     strparam = buildParams(params)
     aurl = url + '?' + strparam[1:]
     html = GetHttpData(aurl)
+    print '---------AURL------',aurl
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'filter_line'})
 
-    offset = params.get('offset')
-    if offset:
-        page = int(offset) // 30
+    if 'offset' in params:
+        page = int(params['offset']) // 30
     else:
         page = 0
     li = xbmcgui.ListItem(name+'【第%d页】(分类过滤)' % (page + 1))
@@ -178,6 +182,8 @@ def listSubMenu(params):
     u += '&mode=select' + strparam
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
+    if 'mode' not in params:
+        strparam += '&mode=episodelist'
     soup = tree.find_all('li', {'class': 'list_item'})
     for mainpage in soup:
         img = mainpage.img['r-lazyload']
@@ -194,11 +200,9 @@ def listSubMenu(params):
         if mark:
             info += '(' + mark.img['alt'] + ')'
 
-        if name in ('电影'):
-            minfo = ''    # getMovieInfo(href)
         li = xbmcgui.ListItem(title + info, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=episodelist' + strparam
+        u = sys.argv[0] + '?url=' + href + strparam
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     # PAGE LISTING
@@ -222,6 +226,7 @@ def listSubMenu(params):
 def seriesList(params):
     url = params['url']
     del(params['url'])
+    strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('span', {'class': 'item'})
@@ -237,10 +242,14 @@ def seriesList(params):
             href = item.a['href']
         except:
             continue
+        tn = item.a.text
+        tn = re.sub('\t|\n|\r| ', '', tn)
+        title = title + '--' + tn
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video',
                    infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + HOST_URL + href + '&mode=playvideo'
+        u = sys.argv[0] + '?url=' + HOST_URL + href
+        u += strparam + '&mode=playvideo'
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
@@ -255,10 +264,14 @@ def documentList(params):
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('span', {'class': 'item'})
     match = re.compile('var LIST_INFO = ({.+?}});{0,}\n').search(html)
-
     js = json.loads(match.group(1))
-    for item in js['data']:
-        title = js['data'][item]['title']
+    print '----------------------------',js
+    vidlist = js['vid']
+    for item in vidlist:
+        try:
+            title = js['data'][item]['title']
+        except:
+            break
         vid = js['data'][item]['vid']
         img = js['data'][item]['preview']
         if img[0:2] == '//':
@@ -267,12 +280,14 @@ def documentList(params):
         u = sys.argv[0] + '?mode=playvideo&vid=' + vid + strparam
         u += '&name=' + urllib.quote_plus(title.encode('utf-8'))
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def musicList(params):
     url = params['url']
     del(params['url'])
+    strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find('div', {'class': 'player_side_bd'})
@@ -300,20 +315,24 @@ def musicList(params):
         u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'music')
+    xbmcplugin.setContent(int(sys.argv[1]), 'video')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def episodesList(params):
     name = params['name']
-    if name in ('纪录片'):
+    if name in ('纪录片', '搞笑', '电视剧', '动漫', '少儿', '电影'):
         documentList(params)
     elif name in ('音乐'):
         musicList(params)
-    elif name in ('电视剧', '卡通', '少儿'):
-        seriesList(params)
     else:
         playVideo(params)
+
+
+def videoparse(vid):
+    i_url = randrange(len(VIDEO_SRV))
+    server = VIDEO_SRV[i_url] + '/vlive.qqvideo.tc.qq.com/'
+    return server
 
 
 def videoparseX(vid):
@@ -328,50 +347,66 @@ def videoparseX(vid):
     js = jsdata['vl']['vi'][0]
     fvkey = js['fvkey']
     typelist = jsdata['fl']['fi']
-    typeid = ['%d' % x['id'] for x in typelist]
+
+    typeid = []
+    for idlist in typelist:
+        id = '%d' % idlist['id']
+        if id == '2':
+            id = typeid[0]['id'][0:3] + '12'
+        if id[0:3] == '100':
+            id = '10' + id[3:]
+
+        typeid.append({'cname': idlist['cname'], 'id': id})
+
     filename = js['fn'].split('.')
     fid = filename[0]    # file-id
     title = js['ti']     # video title
     dur = js['td']       # video duration in seconds
     url = js['ul']['ui']
     for u in url:
-        if u['vt'] == 0:
+        if 'video.tc.qq.com' not in u:
             url.remove(u)
 
-    x = randrange(len(url))
-    server = url[x]['url']
+    if len(url) > 0:
+        server = url[0]['url']
+    else:
+        server = videoparse(0)
 
-    resolution = int(__addon__.getSetting('resolution'))
-    if resolution >= len(typeid):
-        resolution = len(typeid) - 1
-    id = typeid[resolution]
-    if id == '2':
-        typeid[resolution] = typeid[0][:3] + '12'
-        id = typeid[resolution]
+    sel = int(__addon__.getSetting('resolution'))
+    if sel == 4:
+        list = [x['cname'] for x in typeid]
+        sel = xbmcgui.Dialog().select('清晰度选择', list)
+
+    if sel < 0:
+        sel = 0
+
+    if sel >= len(typeid):
+        sel = len(typeid) - 1
+
+    id = typeid[sel]['id']
     id = '.p' + id[2:]
 
     url = PARSING_URL.replace('getinfo', 'getkey')
     url = url.replace('vids=', 'vid=' + vid)
-    url += '&format=' + typeid[resolution]
+    url += '&format=' + typeid[sel]['id']
     url += '&filename=' + fid + id
     urllist = []
-    print url
-    for i in range(1, 1000):   # set a big number
+
+    series = int(float(dur) / 300.0)       # each piece 5 minutes
+    if series == 0:
+        series = 1
+    for i in range(1, series+1):   # set a big number
         jspage = GetHttpData(url + '.%d.mp4' % i)
         jspage = jspage[13:-1]   # remove heading and tail
         jsdata = json.loads(jspage)
-        if jsdata.get('filename'):
-            urllist.append(server + fid + id + '.%d.mp4' % i)
+        key = jsdata.get('key')
+        if key:
+            urllist.append(server + fid + id + '.%d.mp4?vkey=%s' % (i, key))
         else:
-            break
+            urllist.append(server + fid + id + '.%d.mp4?vkey=%s' % (i, fvkey))
 
+    print urllist
     return urllist, title
-
-
-def videoparse(vid):
-    i_url = randrange(len(VIDEO_SRV))
-    server = VIDEO_SRV[i_url] + '/vlive.qqvideo.tc.qq.com/' + vid
-    return server
 
 
 def playVideo(params):
@@ -385,14 +420,19 @@ def playVideo(params):
         vid = vid.strip('"')
 
     urllist, title = videoparseX(vid)
-    print urllist
-    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-    playlist.clear()
-    item = xbmcgui.ListItem(title, thumbnailImage='')
-    for i in range(0, len(urllist)):
-        playlist.add(urllist[i])
+    ulen = len(urllist)
+    if ulen > 0:
+        playlist = xbmc.PlayList(1)
+        playlist.clear()
+        for i in range(0, ulen):
+            name = title + '(%d/%d)' % (i + 1, ulen)
+            liz = xbmcgui.ListItem(name, thumbnailImage='')
+            liz.setInfo(type="Video", infoLabels={"Title": name})
+            playlist.add(urllist[i], liz)
 
-    xbmc.Player().play(playlist)
+        xbmc.Player().play(playlist)
+    else:
+        xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址')
 
 
 # main programs goes here #########################################
@@ -403,16 +443,16 @@ mode = params.get('mode')
 
 if mode is None:
     listRoot()
-else:
-    del(params['mode'])
 
-if mode == 'mainlist':
+elif mode == 'mainlist':
+    del(params['mode'])
     listSubMenu(params)
 elif mode == 'episodelist':
+    del(params['mode'])
     episodesList(params)
 elif mode == 'playvideo':
+    del(params['mode'])
     playVideo(params)
-elif mode == 'play':
-    playSingle(params)
 elif mode == 'select':
+    del(params['mode'])
     changeList(params)
