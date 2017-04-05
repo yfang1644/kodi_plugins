@@ -1028,7 +1028,7 @@ def decrypt_url(url, mCheck=True):
         m3u8File.write(m3u8_list)
     m3u8File.close()
 
-	# urls contains array of v_url video links for playback
+    # urls contains array of v_url video links for playback
     urls = re.findall(r'^[^#][^\r]*', m3u8_list, re.MULTILINE)
     return urls
 
