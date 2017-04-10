@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import xbmc
 import xbmcgui
@@ -12,658 +12,288 @@ import sys
 import os
 import gzip
 import StringIO
-from random import random
-import cookielib
 import datetime
 import time
-import ChineseKeyboard
+from random import random
+import cookielib
 import simplejson
+from bs4 import BeautifulSoup
+
+########################################################################
+# 搜狐视频 tv.sohu.com
+########################################################################
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
+__addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-cookieFile    = __profile__ + 'cookies.sohu'
+__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
+cookieFile = __profile__ + 'cookies.letv'
 
-CHANNEL_LIST = {'电影'  : '100',
-                '电视剧': '101',
-                '动漫'  : '115',
-                '综艺'  : '106',
-                '纪录片': '107',
-                '音乐'  : '121',
-                '教育'  : '119',
-                '新闻 ' : '122',
-                '娱乐 ' : '112',
-                '星尚 ' : '130'}
-ORDER_LIST = [['7', '周播放最多'],
-              ['5', '日播放最多'],
-              ['1', '总播放最多'],
-              ['3', '最新发布'],
-              ['4', '评分最高']]
+if (__addon__.getSetting('keyboard')=='0'):
+    from xbmc import Keyboard as Apps
+else:
+    from ChineseKeyboard import Keyboard as Apps
 
-LIVEID_URL = 'http://live.tv.sohu.com/live/player_json.jhtml?lid=%s&type=1'
-
+UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
+UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
-##################################################################################
-# Routine to fetech url site data using Mozilla browser
-# - deletc '\r|\n|\t' for easy re.compile
-# - do not delete ' ' i.e. <space> as some url include spaces
-# - unicode with 'replace' option to avoid exception on some url
-# - translate to utf8
-##################################################################################
-def getHttpData(url):
-    if url[0:5] != 'http:':
-        url = 'http:' + url
-    # setup proxy support
-    proxy = __addon__.getSetting('http_proxy')
-    type = 'http'
-    if proxy != '':
-        ptype = re.split(':', proxy)
-        if len(ptype) < 3:
-            # full path requires by Python 2.4
-            proxy = type + '://' + proxy
-        else:
-            type = ptype[0]
-        httpProxy = {type: proxy}
-    else:
-        httpProxy = {}
-    proxy_support = urllib2.ProxyHandler(httpProxy)
+LIVEID_URL = 'http://live.tv.sohu.com/live/player_json.jhtml?lid=%s&type=1'
+HOST_URL = 'http://tv.sohu.com'
+LIST_URL = 'http://so.tv.sohu.com'
 
-    # setup cookie support
-    cj = cookielib.MozillaCookieJar(cookieFile)
-    if os.path.isfile(cookieFile):
-        cj.load(ignore_discard=True, ignore_expires=True)
-    else:
-        if not os.path.isdir(os.path.dirname(cookieFile)):
-            os.makedirs(os.path.dirname(cookieFile))
+BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
+INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
+INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
+RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
 
-    # create opener for both proxy and cookie
-    opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
-    charset = ''
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    try:
-        response = opener.open(req)
-    except urllib2.HTTPError, e:
-        httpdata = e.read()
-    except urllib2.URLError, e:
-        httpdata = "IO Timeout Error"
-    else:
-        httpdata = response.read()
-        if response.headers.get('content-encoding') == 'gzip':
-            if httpdata[-1] == '\n':
-                httpdata = httpdata[:-1]
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        charset = response.headers.getparam('charset')
-        cj.save(cookieFile, ignore_discard=True, ignore_expires=True)
-        response.close()
-
-    httpdata = re.sub('\r|\n|\t', '', httpdata)
-    match = re.compile('<meta.+?charset=["]*(.+?)"').findall(httpdata)
-    if len(match):
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
-    return httpdata
+CFRAGMAX = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
 
 
 ##################################################################################
-# Routine to extract url ID from array based on given selected filter
+# LeTv player class
 ##################################################################################
-def searchDict(dlist, idx):
-    for i in range(0, len(dlist)):
-        if dlist[i][0] == idx:
-            return dlist[i][1]
-    return ''
+class LetvPlayer(xbmc.Player):
+    def __init__(self):
+        xbmc.Player.__init__(self)
 
+    def play(self, name, thumb, v_urls=None):
+        self.name = name
+        self.thumb = thumb
+        self.v_urls_size = 0
+        self.curpos = 0
+        self.is_active = True
+        self.load_url_sync = False
+        self.xbmc_player_stop = False
+        self.title = name
+        self.mCheck = True
+        self.LOVS = 0
 
-##################################################################################
-# Routine to fetch and build video filter list
-# tuple to list conversion and strip spaces
-# - 按类型  (Categories)
-# - 按地区 (Countries/Areas)
-# - 按年份 (Year)
-# - etc
-# 类别 p2_p3
-# 风格 p2_p3
-# 子类 p3_p4
-# 地区 p3_p4
-# 年份 p4_p5
-# 篇幅 p5_p6
-# 年龄 p6_p7
-#
-##################################################################################
-def getcatList(listpage, title, page):
-    c1 = '<dt>%s</dt>\s*<dd class="sort-tag">(.+?)</dd>' % (title)
-    c2 = 'p%d(.*?)_p%d.+?>(.+?)</a>' % (page, page + 1)
-    match = re.compile(c1, re.DOTALL).findall(listpage)
-    l = re.compile(c2, re.DOTALL).findall(match[0])
-    return l
+        self.v_urls = v_urls
+        if (v_urls):    # single video file playback
+            self.curpos = int(__addon__.getSetting('video_fragmentstart')) * 10
+            self.v_urls_size = len(v_urls)
+        else:    # ugc playlist playback
+            self.curpos = int(name.split('.')[0]) - 1
+            # Get the number of video items in PlayList for ugc playback
+            self.playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            self.psize = self.playlist.size()
 
+        self.videoplaycont = __addon__.getSetting('video_vplaycont')
+        self.maxfp = CFRAGMAX[int(__addon__.getSetting('video_cfragmentmax'))]
 
-def getList16(listpage):
-    pflist = getcatList(listpage, '篇幅：', 5)
-    nllist = getcatList(listpage, '年龄：', 6)
-    return pflist, nllist
+        # Start filling first buffer video and start playback
+        self.geturl()
 
+    def geturl(self):
+        if (self.v_urls and (self.curpos < self.v_urls_size)):
+            # Use double buffering for smooth playback
+            x = (self.curpos / self.maxfp) % 2
+            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
+            fs = open(self.videourl, 'wb')
 
-def getList24(listpage):
-    match = re.compile('<dt>类别：</dt>\s*<dd class="sort-tag">(.+?)</dd>', re.DOTALL).findall(listpage)
-    lxlist = re.compile('p5(.*?)_p6.+?html">(.+?)</a>', re.DOTALL).findall(match[0])
-    match = re.compile('<dt>语言：</dt>\s*<dd class="sort-tag">(.+?)</dd>', re.DOTALL).findall(listpage)
-    yylist = re.compile('_p101_p11(.+?).html">(.+?)</a>', re.DOTALL).findall(match[0])
-    if len(yylist) > 0:
-        yylist.insert(0, ['', '全部'])
-    arealist = getcatList(listpage, '地区：', 3)
-    fglist = getcatList(listpage, '风格：', 2)
-    return lxlist, yylist, arealist, fglist
+            endIndex = min((self.curpos + self.maxfp), self.v_urls_size)
+            self.title = "%s - 第(%s~%s)/%s节" % (self.name, str(self.curpos+1), str(endIndex), str(self.v_urls_size))
+            # print "### Preparing: " + self.title
+            self.listitem = xbmcgui.ListItem(self.title, thumbnailImage=self.thumb)
+            self.listitem.setInfo(type="Video", infoLabels={"Title":self.title})
 
+            for i in range(self.curpos, endIndex):
+                # Stop further video loading and terminate if user stop playback
+                if (self.xbmc_player_stop or pDialog.iscanceled()):
+                    self.videourl = None
+                    i = self.v_urls_size
+                    break
 
-##################################################################################
-# Routine to fetch & build Sohu 网络 main menu
-# - Video Search
-# - 电视直播
-# - video list as per [CHANNEL_LIST]
-##################################################################################
-def rootList():
-    # force sohu to give cookie; must use cookie for some categories fast response else timeout
-    #http://pv.sohu.com/suv/?t?=1342163482 447275_1920_1200?r?=
-    ticks = int(time.time())
-    url_cookie = 'http://pv.sohu.com/suv/?t?='+str(ticks)+'866725_1920_1080?r?='
-    link = getHttpData(url_cookie)
-
-    li = xbmcgui.ListItem('[COLOR F0F0F0F0] Sohu 搜库网:[/COLOR][COLOR FF00FF00]【请输入搜索内容】[/COLOR]')
-    u = sys.argv[0]+"?mode=21"
-    xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-
-    name = '电视直播'
-    li = xbmcgui.ListItem(name)
-    u = sys.argv[0]+"?mode=10&name="+urllib.quote_plus(name)
-    xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-
-    for name in CHANNEL_LIST:
-        if name == '星尚 ':
-            order = '1'
-        else:
-            order = '7'
-        li = xbmcgui.ListItem(name)
-        u = sys.argv[0] + "?mode=1&name=" + urllib.quote_plus(name) + \
-            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-            "&page=1"+"&cat="+"&area="+"&year="+"&p5="+"&p6="+"&p11="+"&order="+order
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-
-##################################################################################
-# Routine to fetch and build the video selection menu
-# - selected page & filters (user selectable)
-# - video items list
-# - user selectable pages
-# ########### url parameter decode ##############
-# http://so.tv.sohu.com/list_p1100_p2_p3_p4_p5_p6_p7_p8_p9.html
-# p1: 分类: 100=电影;电视剧=101;动漫=115;综艺=106 etc
-# p2: 类型： 全部 爱情 动作 喜剧 科幻 战争 恐怖 风月 剧情 歌舞 动画 纪录
-# p3: 产地： 全部 华语 好莱坞 欧洲 日本 韩国 其他
-# p4: 年份： 全部 2012 2011
-# p5: 篇幅(动漫 )：全部 电影 连续剧 预告片 其他
-# p6: 年龄(动漫 )：全部 5岁以下 5岁-12岁 13岁-18岁 18岁以上
-# p7: 相关程度: 5=日播放最多;7=周播放最多;1=总播放最多;3=最新发布;4=评分最高
-# p8: 付费： 0=全部;2=免费;1=VIP;3=包月;4=点播
-# p9: 状态: 2d2=全部;2d1=正片;2d3=非正片
-# p10: page
-# p11:
-##################################################################################
-def progList(name, page, cat, area, year, p5, p6, p11, order):
-    url = 'http://so.tv.sohu.com/list_p1'+CHANNEL_LIST[name] + \
-            '_p2'+cat+'_p3'+area+'_p4'+year+'_p5'+p5+'_p6'+p6+'_p7'+order
-    if name in ('电影', '电视剧'):
-        url += '_p82_p9_2d1'
-    else:
-        url += '_p8_p9'
-    url += '_p10'+page+'_p11'+p11+'.html'
-
-    currpage = int(page)
-    link = getHttpData(url)
-    match = re.compile('<div class="ssPages area">(.+?)</div>', re.DOTALL).findall(link)
-    if not match:
-        dialog = xbmcgui.Dialog()
-        ok = dialog.ok(__addonname__, '没有符合条件的视频')
-    else:
-        matchpages = re.compile('<a title="\d+" href="[^"]*">(\d+)</a>', re.DOTALL).findall(match[0])
-        totalpages = int(matchpages[-1])
-        if totalpages < currpage:
-            totalpages = currpage
-        match = re.compile('<div class="sort-type">(.+?)</div>', re.DOTALL).findall(link)
-        if len(match):
-            listpage = match[0]
-        else:
-            listpage = ''
-
-        match = re.compile('<li>(.+?)</li>', re.DOTALL).findall(link)
-        totalItems = len(match) + 1
-        if currpage > 1:
-            totalItems += 1
-        if currpage < totalpages:
-            totalItems += 1
-        lxstr = ''
-        if name != '音乐':
-            if name == '教育':
-                catlist = getcatList(listpage, '子类：', 3)
-            else:
-                catlist = getcatList(listpage, '类别：', 2)
-            lxstr += '[COLOR FFFF0000]'
-            if cat:
-                lxstr += searchDict(catlist, cat)
-            else:
-                lxstr += '全部类型'
-            lxstr += '[/COLOR]'
-
-        if name in ('电影', '电视剧', '综艺'):
-            lxstr += '/[COLOR FF00FF00]'
-            arealist = getcatList(listpage, '地区：', 3)
-            if area:
-                lxstr += searchDict(arealist, area)
-            else:
-                lxstr += '全部地区'
-            lxstr += '[/COLOR]'
-
-        if name == '动漫':
-            lxstr += '/[COLOR FFFFFF00]'
-            pflist, nllist = getList16(listpage)
-            if p5:
-                lxstr += searchDict(pflist, p5)
-            else:
-                lxstr += '全部篇幅'
-            lxstr += '[/COLOR]/[COLOR FF00FF00]'
-            if p6:
-                lxstr += searchDict(nllist, p6)
-            else:
-                lxstr += '全部年龄'
-            lxstr += '[/COLOR]'
-
-        if name == '音乐':
-            lxstr += '[COLOR FFFF0000]'
-            lxlist, yylist, arealist, fglist = getList24(listpage)
-            if p5:
-                lxstr += searchDict(lxlist, p5)
-            else:
-                lxstr += '全部类型'
-            lxstr += '[/COLOR]/[COLOR FF00FF00]'
-            if p11:
-                lxstr += searchDict(yylist, p11)
-            else:
-                lxstr += '全部语言'
-            lxstr += '[/COLOR]/[COLOR FFFF5555]'
-            if area:
-                lxstr += searchDict(arealist, area)
-            else:
-                lxstr += '全部地区'
-            lxstr += '[/COLOR]/[COLOR FFFF00FF]'
-            if cat:
-                lxstr += searchDict(fglist, cat)
-            else:
-                lxstr += '全部风格'
-            lxstr += '[/COLOR]'
-
-        if name in ('电影', '电视剧', '动漫', '音乐'):
-            lxstr += '/[COLOR FF5555FF]'
-            yearlist = getcatList(listpage, '年份：', 4)
-            if year == '':
-                lxstr += '全部年份'
-            elif year in ('80', '90'):
-                lxstr += year+'年代'
-            elif year == '100':
-                lxstr += '更早年代'
-            else:
-                lxstr += year+'年'
-            lxstr += '[/COLOR]'
-
-        li = xbmcgui.ListItem(name+'（第'+str(currpage)+'/'+str(totalpages)+'页）【' + lxstr + '/[COLOR FF00FFFF]' + searchDict(ORDER_LIST,order) + '[/COLOR]】（按此选择）')
-        u = sys.argv[0]+"?mode=4&name="+urllib.quote_plus(name)+ \
-                "&id="+CHANNEL_LIST[name]+"&cat="+cat+"&area="+area+"&year="+year+"&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+"&listpage="+urllib.quote_plus(listpage)
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-
-        for i in range(0, len(match)):
-            match1 = re.compile('<a href="([^"]+)" title="([^"]+)" target="_blank"', re.DOTALL).search(match[i])
-            if match1:
-                p_name = match1.group(2)
-                p_url = match1.group(1)
-            else:
-                match1 = re.compile('<a title="([^"]+)" target="_blank" href="([^"]+)"', re.DOTALL).search(match[i])
-                if match1:
-                    p_name = match1.group(1)
-                    p_url = match1.group(2)
+                if (not self.isPlayingVideo()):
+                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
+                    pDialog.update(((i - self.curpos) * 100 / self.maxfp), line2="### " + self.title)
                 else:
-                    match1 = re.compile('<a .*?title="([^"]+)"', re.DOTALL).search(match[i])
-                    p_name = match1.group(1)
-                    match1 = re.compile('<a .*?href="([^"]+)"', re.DOTALL).search(match[i])
-                    p_url = match1.group(1)
+                    pDialog.close()
 
-            match1 = re.compile('<img.*?src="([^"]+)"', re.DOTALL).search(match[i])
-            p_thumb = match1.group(1)
-            p_rating = 0
-            p_votes = ''
-            p_director = ''
-            p_genre = ''
-            match1 = re.compile('<p class="lh-info">(.+?)</p>').search(match[i])
-            if match1:
-                p_plot = match1.group(1)
-            else:
-                p_plot = ''
-            p_year = 0
+                v_url = self.v_urls[i]
+                bfile = getHttpData(v_url, True, True)
+                # give another trial if playback is active and bfile is invalid
+                if ((len(bfile) < 30) and self.isPlayingVideo()):
+                    bfile = getHttpData(v_url, True, True)
+                fs.write(bfile)
 
-            if name in ('电视剧', '动漫', '综艺', '纪录片', '教育'):
-                p_dir = True
-                mode = '2'
-            else:
-                p_dir = False
-                mode = '3'
+                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
+                if (not self.isPlayingVideo() and (i < self.v_urls_size) and (((i - self.curpos) % 4) == 3)):
+                    pDialog.close()
+                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
+                    self.load_url_sync = False
+                    xbmc.Player.play(self, self.videourl, self.listitem)
+                    # give some time to xmbc to upate its player status before continue
+                    xbmc.sleep(100)
+                    # Only reset fragment start after successful playback
+                    __addon__.setSetting('video_fragmentstart', '0')
 
-            match1 = re.compile('<span class="maskTx">(.+?)</span>').search(match[i])
-            if match1:
-                p_name1 = p_name + ' [' + match1.group(1) + ']'
-            else:
-                p_name1 = p_name
-            if match[i].find('<span class="rl-phua"></span>') > 0:
-                p_name1 += ' [片花]'
-            elif match[i].find('<span class="rl-rep"></span>') > 0:
-                p_name1 += ' [预告]'
-            elif match[i].find('<span class="rl-fuf"></span>') > 0:
-                p_name1 += ' [付费]'
-            if match[i].find('<a title="超清" class="super">') > 0:
-                p_name1 += ' [超清]'
-                p_res = 2
-            elif match[i].find('<a title="原画" class="origin">') > 0:
-                p_name1 += ' [原画]'
-                p_res = 1
-            else:
-                p_res = 0
+            fs.close()
+            # print "### Last video file download fragment: " + str(i)
+            # set self.curpos to the next loading video index
+            self.curpos = i + 1
 
-            li = xbmcgui.ListItem(str(i + 1) + '. ' + p_name1, iconImage='', thumbnailImage=p_thumb)
-            u = sys.argv[0]+"?mode="+mode+"&name="+urllib.quote_plus(p_name)+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(p_thumb)+"&id="+urllib.quote_plus(str(i))
-            li.setInfo(type="Video", infoLabels ={"Title": p_name, "Director": p_director, "Genre":p_genre, "Plot":p_plot, "Year":p_year, "Rating":p_rating, "Votes":p_votes})
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, p_dir, totalItems)
+            # Last of video segment loaded, enable play once only
+            if (self.curpos == self.v_urls_size):
+                self.LOVS = 1
+            else:    # reset
+                self.LOVS = 0
 
-        # Fetch and build user selectable page number
-        if matchpages:
-            for num in matchpages:
-                li = xbmcgui.ListItem("... 第" + num + "页")
-                u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name)+ \
-                        "&id="+CHANNEL_LIST[name] + "&page="+str(num)+ \
-                        "&cat="+cat+"&area="+area+"&year="+year+\
-                        "&p5="+p5+"&p6="+p6+"&p11="+p11+"&order="+order
-                xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
+            # Start next video segment loading if sync loading not enable
+            if (not self.load_url_sync and (self.curpos < self.v_urls_size)):
+                # Reset to sync loading on subsequent video segment
+                self.load_url_sync = True
+                self.playrun()
 
-        xbmcplugin.setContent(pluginhandle, 'movies')
-        xbmcplugin.endOfDirectory(pluginhandle)
+        # ugc auto playback
+        elif ((self.v_urls is None) and (self.curpos < self.psize)):
+            if (self.mCheck and not self.isPlayingVideo()):
+                pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
 
+            # find next not play item in ugc playlist
+            for idx in range(self.curpos, self.psize):
+                p_item = self.playlist.__getitem__(idx)
+                p_url = p_item.getfilename(idx)
+                # p_url auto replaced with self.videourl by xbmc after played. To refresh, back and re-enter
+                if "http:" in p_url:
+                    p_list = p_item.getdescription(idx)
+                    self.listitem = p_item  # pass all li items including the embedded thumb image
+                    self.listitem.setInfo(type="Video", infoLabels={"Title":p_list})
+                    self.curpos = idx
+                    break
 
-##################################################################################
-# Routine to fetch and build the video series selection menu
-# - for 电视剧  & 动漫
-# - selected page & filters (user selectable)
-# - Video series list
-# - user selectable pages
-##################################################################################
-def seriesList(name, url, thumb):
-    link = getHttpData(url)
-    if url.find('.html') > 0:
-        match0 = re.compile('var playlistId\s*=\s*"(.+?)";', re.DOTALL).findall(link)
-        link = getHttpData('http://hot.vrs.sohu.com/vrs_videolist.action?playlist_id='+match0[0])
-        match = re.compile('"videoImage":"(.+?)",.+?"videoUrl":"(.+?)".+?"videoOrder":"(.+?)",', re.DOTALL).findall(link)
-        totalItems = len(match)
+            x = self.curpos % 2
+            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
+            fs = open(self.videourl, 'wb')
 
-        for p_thumb, p_url, p_order in match:
-            p_name = '%s第%s集' % (name, p_order)
-            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
-            li.setInfo(type="Video", infoLabels={"Title": p_name, "episode": int(p_order)})
-            u = sys.argv[0] + "?mode=3&name=" + urllib.quote_plus(p_name) + "&url=" + urllib.quote_plus(p_url)+ "&thumb=" + urllib.quote_plus(p_thumb)
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
-    else:
-        match0 = re.compile('var pid\s*=\s*(.+?);', re.DOTALL).findall(link)
-        if len(match0) > 0:
-            # print 'pid=' + match0[0]
-            pid = match0[0].replace('"', '')
-            match0 = re.compile('var vid\s*=\s*(.+?);', re.DOTALL).findall(link)
-            vid = match0[0].replace('"', '')
-            if vid == '0':
-                dialog = xbmcgui.Dialog()
-                ok = dialog.ok(__addonname__, '节目不能播放')
-                return
-            obtype = '2'
-            link = getHttpData("http://search.vrs.sohu.com/avs_i"+vid+"_pr"+pid+"_o"+obtype+"_n_p1000_chltv.sohu.com.json")
-            data = link.replace('var video_album_videos_result=','').decode('raw_unicode_escape')
-            js = simplejson.loads(data)
-            try:
-                match = js['videos']
-            except:
-                xbmcgui.Dialog().ok(__addonname__, 'videos not found')
-                return
-            totalItems = len(match)
-            for item in match:
-                p_name = item['videoName'].encode('utf-8')
-                p_url = item['videoUrl'].encode('utf-8')
-                p_thumb = item['videoBigPic'].encode('utf-8')
-                p_plot = item['videoDesc'].encode('utf-8')
-                p_rating = item['videoScore']
-                p_votes = int(item['videoVoters'])
-                p_order = int(item['playOrder'])
-                if 'videoPublishTime' in item:
-                    p_time = item['videoPublishTime']
-                    p_date = datetime.date.fromtimestamp(float(p_time)/1000).strftime('%d.%m.%Y')
+            v_urls = decrypt_url(p_url, self.mCheck)
+            self.v_urls_size = len(v_urls)
+            self.title = "UGC list @ %s (size = %s): %s" % (str(self.curpos), str(self.v_urls_size), p_list)
+            # print "### Preparing: " + self.title
+
+            for i, v_url in enumerate(v_urls):
+                if (self.xbmc_player_stop or pDialog.iscanceled()):
+                    self.videourl = None
+                    i = self.v_urls_size
+                    break
+
+                if (not self.isPlayingVideo()):
+                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
+                    pDialog.update((i * 100 / self.v_urls_size), line2=self.title)
                 else:
-                    p_date = ''
-                li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
-                li.setInfo(type="Video", infoLabels={"Title":p_name, "date":p_date, "episode":p_order, "plot":p_plot, "rating":p_rating, "votes":p_votes})
-                u = sys.argv[0] + "?mode=3&name=" + urllib.quote_plus(p_name) + "&url=" + urllib.quote_plus(p_url)+ "&thumb=" + urllib.quote_plus(p_thumb)
-                xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
+                    pDialog.close()
+
+                bfile = getHttpData(v_url, True, True)
+                fs.write(bfile)
+
+                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
+                if (not self.isPlayingVideo() and (i < self.v_urls_size) and ((i % 4) == 3)):
+                    pDialog.close()
+                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
+                    self.load_url_sync = False
+                    xbmc.Player.play(self, self.videourl, self.listitem)
+                    # give some time to xmbc to upate its player status before continue
+                    xbmc.sleep(100)
+            fs.close()
+            # print "### Last video file download total fragment: %s ==> %s" % (str(i), self.title)
+            # set self.curpos to the next loading ugc index
+            self.curpos += 1
+
+            # Last of video segment loaded, enable play once only
+            if (self.curpos == self.psize):
+                self.LOVS = 1
+            else:    # reset
+                self.LOVS = 0
+
+            # Start next video segment loading if sync loading not enable
+            if (not self.load_url_sync and (self.curpos < self.psize)):
+                # Do not display dialog on subsequent UGC list loading
+                self.mCheck = False
+
+                # Reset to sync loading on subsequent ugc item
+                self.load_url_sync = True
+                self.playrun()
+
+        # close dialog on all mode when fetching end
+        pDialog.close()
+
+    def playrun(self):
+        if (self.videourl and not self.isPlayingVideo()):
+            # print "### Player resume: %s \n### %s" % (self.title, self.videourl)
+            pDialog.close()
+            # Next video segment loading must wait until player started to avoid race condition
+            self.load_url_sync = True
+            xbmc.Player.play(self, self.videourl, self.listitem)
+            xbmc.sleep(100)
+        elif ((self.curpos < self.v_urls_size) or self.videoplaycont):
+           # print "### Async fetch next video segment @ " + str(self.curpos)
+           self.geturl()
+
+    def onPlayBackStarted(self):
+        # may display next title to playback due to async
+        # print "### onPlayBackStarted Callback: " + self.title
+        pDialog.close()
+        if (self.load_url_sync):
+            if ((self.curpos < self.v_urls_size) or self.videoplaycont):
+                # print "### Sync fetch next video segment @ " + str(self.curpos)
+                self.geturl()
+        xbmc.Player.onPlayBackStarted(self)
+
+    def onPlayBackSeek(self, time, seekOffset):
+        # print "### Player seek forward: %s / %s" % (str(time), str(seekOffset))
+        xbmc.Player.onPlayBackSeek(self, time, seekOffset)
+
+    def onPlayBackSeekChapter(self, chapter):
+        # no effect, valid on playlist playback by xmbc
+        self.curpos += 1
+        # print "### Player seek next chapter: " + str(self.curpos)
+        xbmc.Player.onPlayBackSeek(self, chapter)
+
+    def onPlayBackEnded(self):
+        # Do not restart resume playback if video aborted due to starve network data
+        if (self.videourl and self.load_url_sync):
+        # if (self.videourl):
+            # print "### onPlayBackEnded callback: Continue next video playback !!! " + str(self.LOVS)
+            if (self.LOVS < 2):
+                self.playrun()
+            else:   # reset
+                self.LOVS = 0
+            # set flag to play last video segment once only
+            if (self.LOVS == 1):
+                self.LOVS += 1
         else:
-            match = re.compile('<a([^>]*)><IMG([^>]*)></a>',re.I).findall(link)
-            thumbDict = {}
-            for i in range(0, len(match)):
-                p_url = re.compile('href="(.+?)"').findall(match[i][0])
-                if len(p_url) > 0:
-                    p_url = p_url[0]
-                else:
-                    p_url = match[i][0]
-                p_thumb = re.compile('src="(.+?)"').findall(match[i][1])
-                if len(p_thumb) > 0:
-                    p_thumb = p_thumb[0]
-                else:
-                    p_thumb = match[i][1]
-                thumbDict[p_url] = p_thumb
-            #for img in thumbDict.items():
-            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.decode('utf-8').encode('gbk'))
-            html = getHttpData(url)
-            match = re.compile('class="serie-list(.+?)</div>').findall(html)
-            if not match:
-                return
-            items = re.compile('<a([^>]*)>(.+?)</a>', re.I).findall(match[0])
-            totalItems = len(items)
-            for item in items:
-                if item[1] == '展开>>':
-                    continue
-                href = re.compile('href="(.+?)"').findall(item[0])
-                if len(href) > 0:
-                    p_url = href[0]
-                    urlKey = re.compile('u=(http.+?.shtml)').search(p_url)
-                    if urlKey:
-                        urlKey = urllib.unquote(urlKey.group(1))
-                    else:
-                        urlKey = p_url
-                    # print urlKey
-                    try:
-                        p_thumb = thumbDict[urlKey]
-                    except:
-                        p_thumb = thumb
-                    #title = re.compile('title="(.+?)"').findall(item)
-                    #if len(title)>0:
-                        #p_name = title[0]
-                    p_name = name + '第' + item[1].strip() + '集'
-                    li = xbmcgui.ListItem(p_name, iconImage=p_thumb, thumbnailImage=p_thumb)
-                    u = sys.argv[0] + "?mode=3&name="+urllib.quote_plus(p_name)+\
-                            "&id="+CHANNEL_LIST[name]+\
-                            "&url="+urllib.quote_plus(p_url)+\
-                            "&thumb="+urllib.quote_plus(p_thumb)
-                    xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+            # print "### onPlayBackEnded callback: Ended-Deleted !!!"
+            ## self.delTsFile(10)
+            xbmc.Player.onPlayBackEnded(self)
 
-    xbmcplugin.setContent(pluginhandle, 'episodes')
-    xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_EPISODE)
-    xbmcplugin.addSortMethod(pluginhandle, xbmcplugin.SORT_METHOD_DATE)
-    xbmcplugin.endOfDirectory(pluginhandle)
+    def onPlayBackStopped(self):
+        # print "### onPlayBackStopped callback - Ending playback!!!"
+        self.is_active = False
+        self.xbmc_player_stop = True
+
+    def delTsFile(self, end_index):
+        for k in range(end_index):
+            tsfile = __profile__ + 'vfile-' + str(k) + '.ts'
+            if os.path.isfile(tsfile):
+                try:
+                    os.remove(tsfile)
+                except:
+                    pass
 
 
-# 类型选择对话
-def setupList(list, title, origitem):
-    if (len(list) > 0):
-        l = [x[1] for x in list]
-        dialog = xbmcgui.Dialog()
-        sel = dialog.select(title, l)
-        if sel != -1:
-            if sel == 0:
-                item = ''
-            else:
-                item = list[sel][0]
-            return True, item  # item changed
-
-    return False, origitem     # item not changed
-
-
-##################################################################################
-# Routine to update video list as per user selected filters
-# - 按类型  (Categories)
-# - 按地区 (Areas)
-# - 按年份 (Year)
-# - 排序方式 (Selection Order) etc
-##################################################################################
-def performChanges(name, cat, area, year, p5, p6, p11, order, listpage):
-    change = False
-    if name != '音乐':
-        if name == '教育':
-            catlist = getcatList(listpage, '子类：', 3)
-        else:
-            catlist = getcatList(listpage, '类别：', 2)
-        change, cat = setupList(catlist, '类型', cat)
-
-    if name in ('电影', '电视剧', '综艺'):
-        arealist = getcatList(listpage, '地区：', 3)
-        change, area = setupList(arealist, '地区', area)
-
-    if name == '动漫':
-        pflist, nllist = getList16(listpage)
-        change, p5 = setupList(pflist, '篇幅', p5)
-        change, p6 = setupList(nllist, '年龄', p6)
-
-    if name == '音乐':
-        lxlist, yylist, arealist, fglist = getList24(listpage)
-        change, p5 = setupList(lxlist, '类型', p5)
-        change, p11 = setupList(yylist, '语言', p11)
-        change, area = setupList(arealist, '地区', area)
-        change, cat = setupList(fglist, '风格', cat)
-
-    if name in ('电影', '电视剧', '动漫', '音乐'):
-        yearlist = getcatList(listpage, '年份：', 4)
-        change, year = setupList(yearlist, '年份', year)
-
-    change, order = setupList(ORDER_LIST, '排序方式', order)
-    if change:
-        progList(name, '1', cat, area, year, p5, p6, p11, order)
-
-
-##################################################################################
-# Routine to search Sohu site based on user given keyword for:
-# http://so.tv.sohu.com/mts?chl=&tvType=-2&wd=love&whole=1&m=1&box=1&c=100&o=1&p=2
-# c: 类型：''=全部 100=电影 101=电视剧 106=综艺 121=音乐 122=新闻 112=娱乐 0=其它
-# o:排序方式： ''=相关程度 1=最多播放 3=最新发布
-##################################################################################
-def sohuSearchList(name, url, page):
-    # construct url based on user selected item
-    p_url = url + '&fee=0&whole=1&m=1&box=1&p=' + page
-    link = getHttpData(p_url)
-
-    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + name + ')[/COLOR]【[COLOR FF00FF00]' + '请输入新搜索内容' + '[/COLOR]】')
-    u = sys.argv[0] + "?mode=21&name=" + urllib.quote_plus(name) + "&url=" + urllib.quote_plus(url) + "&page=" + urllib.quote_plus(page)
-    xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-
-    #########################################################################
-    # Video listing for all found related episode title
-    #########################################################################
-    matchp = re.compile('<div class="ssItem cfix">(.+?)<div class="alike">').findall(link)
-    totalItems = len(matchp)
-    for i in range(0, totalItems):
-        vlink = matchp[i]
-        if vlink.find('<em class="pay"></em>') > 0:
-            continue
-
-        match1 = re.compile('href="(.+?)"').findall(vlink)
-        p_url = match1[0]
-
-        match1 = re.compile('title="(.+?)"').search(vlink)
-        p_name = match1.group(1)
-
-        match1 = re.compile('src="(.+?)"').search(vlink)
-        p_thumb = match1.group(1)
-
-        match1 = re.compile('<span class="maskTx">(.*?)</span>').search(vlink)
-        if match1 and match1.group(1) != '':
-            p_label = ' [' + match1.group(1) + ']'
-        else:
-            p_label = ''
-
-        p_type = ''
-        isTeleplay = False
-        match1 = re.compile('<span class="label-red"><em>(.+?)</em></span>').search(vlink)
-        if match1:
-            p_type = match1.group(1)
-        if p_type == '电视剧':
-            isTeleplay = True
-            mode = '2'
-            p_type = '【[COLOR FF00FF00]电视剧[/COLOR]】'
-        elif p_type == '电影':
-            p_type = '【[COLOR FF00FF00]电影[/COLOR]】'
-            mode = '3'
-        else:
-            p_type = ' ' + p_type
-            mode = '3'
-
-        p_list = str(i+1) + ': ' + p_name + p_type + p_label
-        li = xbmcgui.ListItem(p_list, iconImage=p_thumb, thumbnailImage=p_thumb)
-        u = sys.argv[0] + "?mode=" + mode + "&name=" + \
-                urllib.quote_plus(p_name) + "&id=101" + \
-                "&url=" + urllib.quote_plus(p_url) + "&thumb=" + urllib.quote_plus(p_thumb)
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, isTeleplay, totalItems)
-
-    xbmcplugin.setContent(pluginhandle, 'movies')
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-
-#################################################################################
-# Get user input for Sohu site search
-##################################################################################
-def searchSohu():
-    if (__addon__.getSetting('keyboard') == '0'):
-        keyboard = xbmc.Keyboard('', '请输入搜索内容')
-    else:
-        keyboard = ChineseKeyboard.Keyboard('', '请输入搜索内容')
-    xbmc.sleep(1500)
-    keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-        p_url = 'http://so.tv.sohu.com/mts?chl=&tvType=-2&wd='
-        url = p_url + urllib.quote_plus(keyword.decode('utf-8').encode('gbk'))
-        sohuSearchList(keyword, url, '1')
-
-
-##################################################################################
+############################################################################
 # Sohu Video Link Decode Algorithm & Player
 # Extract all the video list and start playing first found valid link
 # User may press <SPACE> bar to select video resolution for playback
-##################################################################################
-def PlayVideo(name, url, thumb):
+############################################################################
+def PlayVideo(params):
+    name = params.get('name', '')
+    url = params['url']
+    thumb = params['thumb']
     level = int(__addon__.getSetting('resolution'))
     site = int(__addon__.getSetting('videosite'))
 
@@ -743,11 +373,252 @@ def PlayVideo(name, url, thumb):
     xbmc.Player().play(stackurl, listitem)
 
 
-##################################################################################
+def httphead(url):
+    http = url
+    if len(url) < 2:
+        return url
+    if http[0:2] == '//':
+        http = 'http:' + http
+    elif http[0] == '/':
+        http = LIST_URL + http
+
+    return http
+
+
+############################################################################
+# Routine to fetech url site data using Mozilla browser
+# - deletc '\r|\n|\t' for easy re.compile
+# - do not delete ' ' i.e. <space> as some url include spaces
+# - unicode with 'replace' option to avoid exception on some url
+# - translate to utf8
+############################################################################
+def getHttpData(url):
+    # setup proxy support
+    proxy = __addon__.getSetting('http_proxy')
+    type = 'http'
+    if proxy != '':
+        ptype = re.split(':', proxy)
+        if len(ptype) < 3:
+            # full path requires by Python 2.4
+            proxy = type + '://' + proxy
+        else:
+            type = ptype[0]
+        httpProxy = {type: proxy}
+    else:
+        httpProxy = {}
+    proxy_support = urllib2.ProxyHandler(httpProxy)
+
+    # setup cookie support
+    cj = cookielib.MozillaCookieJar(cookieFile)
+    if os.path.isfile(cookieFile):
+        cj.load(ignore_discard=True, ignore_expires=True)
+    else:
+        if not os.path.isdir(os.path.dirname(cookieFile)):
+            os.makedirs(os.path.dirname(cookieFile))
+
+    # create opener for both proxy and cookie
+    opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
+    charset = ''
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', UserAgent)
+    try:
+        response = opener.open(req)
+    except urllib2.HTTPError, e:
+        httpdata = e.read()
+    except urllib2.URLError, e:
+        httpdata = "IO Timeout Error"
+    else:
+        httpdata = response.read()
+        if response.headers.get('content-encoding') == 'gzip':
+            if httpdata[-1] == '\n':
+                httpdata = httpdata[:-1]
+            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
+        charset = response.headers.getparam('charset')
+        cj.save(cookieFile, ignore_discard=True, ignore_expires=True)
+        response.close()
+
+    httpdata = re.sub('\r|\n|\t', ' ', httpdata)
+    match = re.compile('<meta.+?charset=["]*(.+?)"').findall(httpdata)
+    if len(match):
+        charset = match[0]
+    if charset:
+        charset = charset.lower()
+        if (charset != 'utf-8') and (charset != 'utf8'):
+            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
+    return httpdata
+
+
+def mainMenu():
+    li = xbmcgui.ListItem('[COLOR FF00FF00] 【搜狐视频 - 搜索】[/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    name = '电视直播'
+    li = xbmcgui.ListItem(name)
+    u = sys.argv[0] + '?url=' + 'http://tvimg.tv.itc.cn/live/stations.jsonp'
+    u += '&mode=livechannel&name=' + urllib.quote_plus(name)
+
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    url = '/list_p1_p2_p3_p4_p5_p6_p7_p8_p9_p10_p11_p12_p13.html'
+    html = getHttpData(LIST_URL + url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'sort-nav cfix'})
+
+    grp = soup[0].find_all('a')
+    for prog in grp[1:]:
+        title = prog.text.strip(' ')
+        href = prog['href']
+        href = httphead(href)
+        li = xbmcgui.ListItem(title)
+        u = sys.argv[0] + '?url=%s&mode=videolist&name=%s' % (href, title)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def listSubMenu(params):
+    url = params['url']
+    name = params.get('name')
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+
+    surl = url.split('/')
+    lurl = re.compile('(.+?).html').findall(surl[-1])
+    lurl = lurl[0].split('_')
+    p10 = lurl[10]
+    page = int(p10[3:]) if len(p10) > 3 else 1
+    li = xbmcgui.ListItem(name+'【第%d页】(分类过滤)' % (page))
+    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    u += '&mode=select&name=' + name
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    hover = tree.find_all('div', {'class': 'list-hover'})
+    thumb = tree.find_all('div', {'class': 'st-pic'})
+    if len(thumb) == 0:
+        thumb = tree.find_all('div', {'class': 'ret_pic'})
+
+    for i in range(0, len(thumb)):
+        href = thumb[i].a.get('href')
+        href = httphead(href)
+        img = thumb[i].img.get('src')
+        img = httphead(img)
+        try:
+            title = hover[i].a.text
+        except:
+            title = thumb[i].img.get('alt')
+        if len(title) == 0:
+            title = thumb[i].a.get('title', '')
+        try:
+            info = hover[i].find('p', {'class': 'lh-info'}).text
+        except:
+            info = ''
+        li = xbmcgui.ListItem(title,
+                              iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        if name in ('电视剧', '动漫', '综艺', '纪录片', '教育'):
+            mode = 'episodelist'
+        else:
+            mode = 'playvideo'
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=' + mode
+        u += '&name=' + urllib.quote_plus(name)
+        u += '&thumb=' + urllib.quote_plus(img)
+        u += '&title=' + title
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    u = sys.argv[0] + '?url=' + href
+    li = xbmcgui.ListItem(INDENT_FMT0 % ('分页'))
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    pages = tree.find_all('div', {'class': 'ssPages area'})
+    pages = pages[0].find_all('a')
+    for page in pages:
+        title = page['title'].encode('utf-8')
+        href = httphead(page['href'])
+        li = xbmcgui.ListItem(title)
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=videolist'
+        u += '&name=' + urllib.quote_plus(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def normalSelect(params):
+    url = params.get('url')
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    filter = tree.find_all('dl', {'class': 'cfix'})
+
+    dialog = xbmcgui.Dialog()
+
+    surl = url.split('/')
+    lurl = re.compile('(.+?).html').findall(surl[-1])
+    lurl = lurl[0].split('_')
+
+    for item in filter:
+        title = item.dt.text
+        si = item.find_all('a')
+        list = []
+        for x in si:
+            if x.get('class') == ['aon']:
+                list.append('[COLOR FFF0F000]' + x.text + '[/COLOR]')
+            else:
+                list.append(x.text)
+
+        sel = dialog.select(title, list)
+
+        if sel < 0:
+            continue
+
+        selurl = si[sel]['href'].split('/')
+        selurl = re.compile('(.+?).html').findall(selurl[-1])
+        selurl = selurl[0].split('_')
+        for i in range(1, 14):
+            if selurl[i] != 'p%d' % i:
+                lurl[i] = selurl[i]
+
+    surl[-1] = '_'.join(lurl) + '.html'
+    url = '/'.join(surl)
+    params['url'] = url
+    listSubMenu(params)
+
+
+def episodesList(params):
+    url = params['url']
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+
+    title = params.get('title', '')
+    img = params.get('thumb', '')
+    u = sys.argv[0]
+    li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = tree.find_all('ul', {'class': 'list listA cfix'})
+    for part in soup:
+        drama = part.find_all('li')
+        for item in drama:
+            img = httphead(item.img['src'])
+            title = item.a['title']
+            href = httphead(item.a['href'])
+            li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+            li.setInfo(type='Video', infoLabels={'Title': title})
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+############################################################################
 # Sohu 电视直播 Menu List
-##################################################################################
-def LiveChannel():
-    link = getHttpData('http://tvimg.tv.itc.cn/live/stations.jsonp')
+############################################################################
+def LiveChannel(params):
+    url = params['url']
+    link = getHttpData(url)
     match = re.compile('var par=({.+?});', re.DOTALL).search(link)
     if match:
         parsed_json = simplejson.loads(match.group(1))
@@ -760,65 +631,152 @@ def LiveChannel():
             p_thumb = item['STATION_PIC'].encode('utf-8')
             id = str(item['STATION_ID'])
             i += 1
-            li = xbmcgui.ListItem(str(i) + '. ' + p_name, iconImage='', thumbnailImage=p_thumb)
-            u = sys.argv[0] + "?mode=11&name=" + urllib.quote_plus(p_name) + \
-                    "&id=" + urllib.quote_plus(id)+ "&thumb=" + urllib.quote_plus(p_thumb)
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
+            p_thumb == httphead(p_thumb)
+            li = xbmcgui.ListItem(str(i) + '. ' + p_name,
+                                  iconImage='', thumbnailImage=p_thumb)
+            u = sys.argv[0] + '?id=' + id
+            u += '&mode=liveplay&name=' + urllib.quote_plus(p_name)
+            u += '&thumb=' + urllib.quote_plus(p_thumb)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
 
-    xbmcplugin.setContent(pluginhandle, 'movies')
-    xbmcplugin.endOfDirectory(pluginhandle)
+    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-##################################################################################
+############################################################################
 # Sohu 电视直播 Player
-##################################################################################
-def LivePlay(name, id, thumb):
-    link = getHttpData(LIVEID_URL % (id))
-    parsed_json = simplejson.loads(link)
+############################################################################
+def LivePlay(params):
+    id = params['id']
+    name = params['name']
+    thumb = params['thumb']
+    link = getHttpData(LIVEID_URL % id)
+    parsed_json = simplejson.loads(link.decode('utf-8'))
     url = 'http://' + parsed_json['data']['clipsURL'][0].encode('utf-8')
     link = getHttpData(url)
-    parsed_json = simplejson.loads(link)
+    parsed_json = simplejson.loads(link.decode('utf-8'))
     url = parsed_json['url'].encode('utf-8')
     li = xbmcgui.ListItem(name, iconImage='', thumbnailImage=thumb)
     xbmc.Player().play(url, li)
 
 
+############################################################################
+# Routine to search Sohu site based on user given keyword for:
+# http://so.tv.sohu.com/mts?chl=&tvType=-2&wd=love&whole=1&m=1&box=1&c=100&o=1&p=2
+# c: 类型：''=全部 100=电影 101=电视剧 106=综艺 121=音乐 122=新闻 112=娱乐 0=其它
+# o:排序方式： ''=相关程度 1=最多播放 3=最新发布
+############################################################################
+def sohuSearchList(params):
+    url = params['url']
+    name = params.get('name', '')
+    page = params['page']
+    # construct url based on user selected item
+    p_url = url + '&fee=0&whole=1&m=1&box=1&p=' + page
+    link = getHttpData(p_url)
+
+    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + name + ')[/COLOR]【[COLOR FF00FF00]' + '请输入新搜索内容' + '[/COLOR]】')
+
+    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    u += '&mode=search&name=' + urllib.quote_plus(name) + '&page=' + urllib.quote_plus(page)
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    #########################################################################
+    # Video listing for all found related episode title
+    tree = BeautifulSoup(link, 'html.parser')
+    soup = tree.find_all('div', {'class': 'ssItem cfix'})
+    
+    #########################################################################
+    matchp = re.compile('<div class="ssItem cfix">(.+?)<div class="alike">').findall(link)
+    totalItems = len(matchp)
+    for i in range(0, totalItems):
+        vlink = matchp[i]
+        if vlink.find('<em class="pay"></em>') > 0:
+            continue
+
+        match1 = re.compile('href="(.+?)"').findall(vlink)
+        p_url = httphead(match1[0])
+
+        match1 = re.compile('title="(.+?)"').search(vlink)
+        p_name = match1.group(1)
+
+        match1 = re.compile('src="(.+?)"').search(vlink)
+        p_thumb = httphead(match1.group(1))
+
+        match1 = re.compile('<span class="maskTx">(.*?)</span>').search(vlink)
+        if match1 and match1.group(1) != '':
+            p_label = ' [' + match1.group(1) + ']'
+        else:
+            p_label = ''
+
+        p_type = ''
+        isTeleplay = False
+        match1 = re.compile('<span class="label-red"><em>(.+?)</em></span>').search(vlink)
+        if match1:
+            p_type = match1.group(1)
+        if p_type == '电视剧':
+            isTeleplay = True
+            mode = 'episodelist'
+            p_type = '【[COLOR FF00FF00]电视剧[/COLOR]】'
+        elif p_type == '电影':
+            p_type = '【[COLOR FF00FF00]电影[/COLOR]】'
+            mode = 'playvideo'
+        else:
+            p_type = ' ' + p_type
+            mode = 'playvideo'
+
+        p_list = str(i+1) + ': ' + p_name + p_type + p_label
+        li = xbmcgui.ListItem(p_list, iconImage=p_thumb, thumbnailImage=p_thumb)
+        u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url)
+        u += '&mode=' + mode + '&name=' + urllib.quote_plus(p_name)
+        u += '&id=101&thumb=' + urllib.quote_plus(p_thumb)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, isTeleplay)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+###########################################################################
+# Get user input for Sohu site search
+############################################################################
+def searchSohu(params):
+    if (__addon__.getSetting('keyboard') == '0'):
+        keyboard = xbmc.Keyboard('', '请输入搜索内容')
+    else:
+        keyboard = ChineseKeyboard.Keyboard('', '请输入搜索内容')
+    xbmc.sleep(1500)
+    keyboard.doModal()
+    if (keyboard.isConfirmed()):
+        keyword = keyboard.getText()
+        p_url = 'http://so.tv.sohu.com/mts?chl=&tvType=-2&wd='
+        url = p_url + urllib.quote_plus(keyword.decode('utf-8').encode('gbk'))
+        params['url'] = url
+        params['keyword'] = keyword
+        params['page'] = '1'
+        sohuSearchList(params)
+
+
 # main programs goes here #########################################
-pluginhandle = int(sys.argv[1])
+xplayer = LetvPlayer()
+mplaylist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+dialog = xbmcgui.Dialog()
+pDialog = xbmcgui.DialogProgress()
 
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
-name = params.get('name')
-id = params.get('id', '')
-cat = params.get('cat', '')
-area = params.get('area', '')
-year = params.get('year', '')
-order = params.get('order', '')
-page = params.get('page', '')
-p5 = params.get('p5', '')
-p6 = params.get('p6', '')
-p11 = params.get('p11', '')
-listpage = params.get('listpage', '')
-url = params.get('url')
-thumb = params.get('thumb')
-
 mode = params.get('mode')
-if mode is None:
-    rootList()
-elif mode == '1':
-    progList(name, page, cat, area, year, p5, p6, p11, order)
-elif mode == '2':
-    seriesList(name, url, thumb)
-elif mode == '3':
-    PlayVideo(name, url, thumb)
-elif mode == '4':
-    performChanges(name, cat, area, year, p5, p6, p11, order, listpage)
-elif mode == '10':
-    LiveChannel()
-elif mode == '11':
-    LivePlay(name, id, thumb)
-elif mode == '21':
-    searchSohu()
-elif mode == '22':
-    sohuSearchList(name, url, page)
+if mode is not None:
+    del(params['mode'])
+
+runlist = {
+    None: 'mainMenu()',
+    'livechannel': 'LiveChannel(params)',
+    'liveplay': 'LivePlay(params)',
+    'videolist': 'listSubMenu(params)',
+    'episodelist': 'episodesList(params)',
+    'playvideo': 'PlayVideo(params)',
+    'search': 'searchSohu(params)',
+    'select': 'normalSelect(params)'
+}
+
+eval(runlist[mode])
