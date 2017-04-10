@@ -458,8 +458,15 @@ def playVideoLetv(params):
 # Continuous Player start playback from user selected video
 # User backspace to previous menu will not work - playlist = last selected
 ##################################################################################
-def playVideoUgc(name, url, thumb):
+def playVideoUgc(params):
     videom3u8 = __addon__.getSetting('video_m3u8')
+    vid = params.get('vid')
+    if vid:    # pack vid address (cheating)
+        url = 'http://www.google.com/vplay/%s.html' % vid
+    else:
+        url = params['url']
+    name = params['name']
+    thumb = params['thumb']
     if videom3u8 == 'true':
         pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
         pDialog.update(0)
@@ -630,12 +637,8 @@ def listSubMenu(params):
         li = xbmcgui.ListItem(title + '(' + special + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
-        if name in ['体育']:
-            mode = 'sports'
-        else:
-            mode = 'episodelist'
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=' + mode + '&name=' + urllib.quote_plus(name)
+        u += '&mode=episodelist&name=' + urllib.quote_plus(name)
         u += '&title=%s&thumb=%s' % (title, img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -745,19 +748,21 @@ def episodesList(params):
     if name in ['电视剧', '自制']:
         url = album2series(url)
 
-    html = getHttpData(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    print '============================', html
+    if name in ['动漫', '综艺']:
+        html = getHttpData(url)
+        tree = BeautifulSoup(html, 'html.parser')
 
-    match = re.compile("video: {0,}{.+?vid': {0,}'(\d+)'").findall(html)
-    if len(match) < 1:
-        match = re.compile('video: {0,}{.+?vid: {0,}"(\d+)"').findall(html)
-    if len(match) < 1:
-        match = re.compile('video: {0,}{.+?vid: {0,}(\d+)').findall(html)
-        match[0] = str(match[0])
+        match = re.compile("video: {0,}{.+?vid': {0,}'(\d+)'").findall(html)
+        if len(match) < 1:
+            match = re.compile('video: {0,}{.+?vid: {0,}"(\d+)"').findall(html)
+        if len(match) < 1:
+            match = re.compile('video: {0,}{.+?vid: {0,}(\d+)').findall(html)
+            match[0] = str(match[0])
+        vid = match[0]
+    else:
+        vid = re.compile('/vplay/(\d+).html').findall(url)[0]
 
-    print match[0]
-    html = getHttpData(ALBULM_URL % (match[0]))
+    html = getHttpData(ALBULM_URL % (vid))
     jsdata = simplejson.loads(html)
 
     album = jsdata['data']['episode']['videolist']
@@ -836,30 +841,6 @@ def episodesList(params):
             u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
     '''
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def sportsList(params):
-    url = params['url']
-    html = getHttpData(url)
-    tree = BeautifulSoup(html, 'html.parser')
-
-    match = re.compile("pageid: 'www_play'").search(html)
-    if match is not None:    # play movie
-        playVideoLetv(params)
-        return
-
-    soup = tree.find_all('li', {'class': 'video-item'})
-    for list in soup:
-        vid = list['data-id']
-        img = list.img['data-original']
-        title = list.p['title']
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?vid=' + vid
-        u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -970,8 +951,7 @@ runlist = {
     None: 'mainMenu()',
     'videolist': 'listSubMenu(params)',
     'episodelist': 'episodesList(params)',
-    'sports': 'sportsList(params)',
-    'playvideo': 'playVideoLetv(params)',
+    'playvideo': 'playVideoUgc(params)',
     'search': 'searchLeTV(params)',
     'filter': 'changeList(params)'
 }
