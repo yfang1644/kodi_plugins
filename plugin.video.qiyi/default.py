@@ -1,54 +1,86 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+
 import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
+import urlparse
 import re
 import sys
+import os
 import gzip
 import StringIO
+import cookielib
 import hashlib
 import time
+from random import random
 import simplejson
+from bs4 import BeautifulSoup
+
+########################################################################
+# 爱奇艺 list.iqiyi.com
+########################################################################
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
+__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+cookieFile = __profile__ + 'cookies.iqiyi'
 
-CHANNEL_LIST = {'电影': '1',
-                '电视剧': '2',
-                '纪录片': '3',
-                '动漫': '4',
-                '音乐': '5',
-                '综艺': '6',
-                '娱乐': '7',
-                '旅游': '9',
-                '片花': '10',
-                '教育': '12',
-                '时尚': '13'}
-ORDER_LIST = [['4', '更新时间'],
-              ['11', '热门']]
-PAYTYPE_LIST = [['', '全部影片'],
-                ['0', '免费影片'],
-                ['1', '会员免费'],
-                ['2', '付费点播']]
-UserAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+if (__addon__.getSetting('keyboard') !='0'):
+    from xbmc import Keyboard as Apps
+else:
+    from ChineseKeyboard import Keyboard as Apps
+
+UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
+UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
+
+LIST_URL = 'http://list.iqiyi.com'
+
+BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
+INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
+INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
+RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
 
 
-def GetHttpData(url):
+def httphead(url):
+    if url[0:2] == '//':
+        url = 'http:' + url
+    elif url[0] == '/':
+        url = LIST_URL + url
+
+    return url
+
+
+def httpBegin0(url):
+    surl = url.split('/')
+    hurl = surl[-1].split('-')
+    hurl[10] = '0'
+    hurl = '-'.join(hurl)
+    url = '/'.join(surl)
+    return url
+
+
+############################################################################
+# Routine to fetech url site data using Mozilla browser
+# - deletc '\r|\n|\t' for easy re.compile
+# - do not delete ' ' i.e. <space> as some url include spaces
+# - unicode with 'replace' option to avoid exception on some url
+# - translate to utf8
+############################################################################
+def getHttpData(url):
     charset = ''
     req = urllib2.Request(url)
     req.add_header('User-Agent', UserAgent)
     try:
         response = urllib2.urlopen(req)
-        headers = response.info()
         httpdata = response.read()
+        if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
+            httpdata = httpdata[:-1]
         if response.headers.get('Content-Encoding') == 'gzip':
-            if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
-                httpdata = httpdata[:-1]
             httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
         charset = response.headers.getparam('charset')
         response.close()
@@ -60,7 +92,8 @@ def GetHttpData(url):
             sys.exc_info()[1]
             ), level=xbmc.LOGERROR)
         return ''
-    httpdata = re.sub('\r|\n|\t', '', httpdata)
+    httpdata = re.sub('\r|\n|\t', ' ', httpdata)
+
     match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
     if len(match) > 0:
         charset = match[0]
@@ -69,321 +102,6 @@ def GetHttpData(url):
         if (charset != 'utf-8') and (charset != 'utf8'):
             httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
     return httpdata
-
-
-def searchDict(dlist, idx):
-    for i in range(0, len(dlist)):
-        if dlist[i][0] == idx:
-            return dlist[i][1]
-    return ''
-
-
-def getcatList(listpage, name, cat):
-    # 类型(电影,纪录片,动漫,娱乐,旅游), 分类(电视剧,综艺,片花), 流派(音乐), 一级分类(教育), 行业(时尚)
-    match = re.compile('<h3>(类型|分类|流派|一级分类|行业)：</h3>(.*?)</ul>', re.DOTALL).findall(listpage)
-    if name in ('纪录片', '旅游'):
-        pattern = '/(\d*)-[^>]+>(.*?)</a>'
-    elif name in ('音乐', '片花'):
-        pattern = '/\d*-\d*-\d*-(\d*)-[^>]+>(.*?)</a>'
-    elif name == '教育':
-        pattern = '/\d*-\d*-(\d*)-[^>]+>(.*?)</a>'
-    elif name == '时尚':
-        pattern = '/\d*-\d*-\d*-\d*-(\d*)-[^>]+>(.*?)</a>'
-    else:
-        pattern = '/\d*-(\d*)-[^>]+>(.*?)</a>'
-
-    catlist = re.compile('/www/' + CHANNEL_LIST[name] + pattern).findall(match[0][1])
-    match1 = re.compile('<a href="#">(.*?)</a>').search(match[0][1])
-    if match1:
-        catlist.append((cat, match1.group(1)))
-    return catlist
-
-
-def getareaList(listpage, name, area):
-    match = re.compile('<h3>地区：</h3>(.*?)</ul>', re.DOTALL).findall(listpage)
-    if name == '娱乐':
-        arealist = re.compile('/www/' + CHANNEL_LIST[name] + '/\d*-\d*-(\d*)-[^>]+>(.*?)</a>').findall(match[0])
-    elif name in ('旅游', '片花'):
-        arealist = re.compile('/www/' + CHANNEL_LIST[name] + '/\d*-(\d*)-[^>]+>(.*?)</a>').findall(match[0])
-    else:
-        arealist = re.compile('/www/' + CHANNEL_LIST[name] + '/(\d*)-[^>]+>(.*?)</a>').findall(match[0])
-    match1 = re.compile('<a href="#">(.*?)</a>').search(match[0])
-    if match1:
-        arealist.append((area, match1.group(1)))
-    return arealist
-
-
-def getyearList(listpage, name, year):
-    match = re.compile('<h3>我的年代：</h3>(.*?)</ul>', re.DOTALL).findall(listpage)
-    yearlist = re.compile('/www/' + CHANNEL_LIST[name] + '/\d*-\d*---------\d*-([\d_]*)-[^>]+>(.*?)</a>').findall(match[0])
-    match1 = re.compile('<a href="#">(.*?)</a>').search(match[0])
-    if match1:
-        yearlist.append((year, match1.group(1)))
-    return yearlist
-
-
-#         id   c1   c2   c3   c4   c5     c11  c12   c14
-# 电影     1 area  cat                paytype year order
-# 电视剧   2 area  cat                paytype year order
-# 纪录片   3  cat                     paytype      order
-# 动漫     4 area  cat  ver  age      paytype      order
-# 音乐     5 area lang       cat  grp paytype      order
-# 综艺     6 area  cat                paytype      order
-# 娱乐     7       cat area           paytype      order
-# 旅游     9  cat area                paytype      order
-# 片花    10      area       cat      paytype      order
-# 教育    12            cat           paytype      order
-# 时尚    13                      cat paytype      order
-def progList(name, page, cat, area, year, order, paytype):
-    c1 = ''
-    c2 = ''
-    c3 = ''
-    c4 = ''
-    if name == '娱乐':
-        c3 = area
-    elif name in ('旅游', '片花'):
-        c2 = area
-    elif name != '纪录片':
-        c1 = area
-    if name in ('纪录片', '旅游'):
-        c1 = cat
-    elif name in ('音乐', '片花'):
-        c4 = cat
-    elif name == '教育':
-        c3 = cat
-    elif name == '时尚':
-        c5 = cat
-    else:
-        c2 = cat
-    url = 'http://list.iqiyi.com/www/' + CHANNEL_LIST[name]+ '/' + c1 + '-' + c2 + \
-          '-' + c3 + '-' + c4 + '-------' + paytype + \
-          '-' + year + '--' + order + '-' + page + '-1-iqiyi--.html'
-    currpage = int(page)
-    link = GetHttpData(url)
-    match1 = re.compile('data-key="([0-9]+)"').findall(link)
-    if len(match1) == 0:
-        totalpages = 1
-    else:
-        totalpages = int(match1[len(match1) - 1])
-    match = re.compile('<!-- 分类 -->(.+?)<!-- 分类 end-->', re.DOTALL).findall(link)
-    if match:
-        listpage = match[0]
-    else:
-        listpage = ''
-    match = re.compile('<div class="wrapper-piclist"(.+?)<!-- 页码 开始 -->', re.DOTALL).findall(link)
-    if match:
-        match = re.compile('<li[^>]*>(.+?)</li>', re.DOTALL).findall(match[0])
-    totalItems = len(match) + 1
-    if currpage > 1:
-        totalItems += 1
-    if currpage < totalpages:
-        totalItems += 1
-
-    if cat == '':
-        catstr = '全部类型'
-    else:
-        catlist = getcatList(listpage, name, cat)
-        catstr = searchDict(catlist, cat)
-    selstr = '[COLOR FFFF0000]' + catstr + '[/COLOR]'
-
-    if name not in ('纪录片', '教育', '时尚'):
-        if area == '':
-            areastr = '全部地区'
-        else:
-            arealist = getareaList(listpage, name, area)
-            areastr = searchDict(arealist, area)
-        selstr += '/[COLOR FF00FF00]' + areastr + '[/COLOR]'
-    if name in ('电影', '电视剧'):
-        if year == '':
-            yearstr = '全部年份'
-        else:
-            yearlist = getyearList(listpage, name, year)
-            yearstr = searchDict(yearlist, year)
-        selstr += '/[COLOR FFFFFF00]' + yearstr + '[/COLOR]'
-
-    selstr += '/[COLOR FF00FFFF]' + searchDict(ORDER_LIST, order) + '[/COLOR]'
-    selstr += '/[COLOR FFFF00FF]' + searchDict(PAYTYPE_LIST, paytype) + '[/COLOR]'
-    li = xbmcgui.ListItem(name+'（第'+str(currpage)+'/'+str(totalpages)+'页）【'+selstr+'】（按此选择）')
-    u = sys.argv[0]+"?mode=4&name="+urllib.quote_plus(name) + \
-        "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-        "&cat="+urllib.quote_plus(cat) + \
-        "&area="+urllib.quote_plus(area) + \
-        "&year="+urllib.quote_plus(year) + \
-        "&order="+order + \
-        "&paytype="+urllib.quote_plus(paytype) + \
-        "&page="+urllib.quote_plus(listpage)
-    xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-    for i in range(0, len(match)):
-        p_name = re.compile('alt="(.+?)"').findall(match[i])[0]
-        p_thumb = re.compile('src\s*=\s*"(.+?)"').findall(match[i])[0]
-        #p_id  = re.compile('data-qidanadd-albumid="(\d+)"').search(match[i]).group(1)
-        p_id = re.compile('href="([^"]*)"').search(match[i]).group(1)
-
-        try:
-            p_episode = re.compile('data-qidanadd-episode="(\d)"').search(match[i]).group(1) == '1'
-        except:
-            p_episode = False
-        match1 = re.compile('<span class="icon-vInfo">([^<]+)</span>').search(match[i])
-        if match1:
-            msg = match1.group(1).strip()
-            p_name1 = p_name + '（' + msg + '）'
-            if (msg.find('更新至') == 0) or (msg.find('共') == 0):
-                p_episode = True
-        else:
-            p_name1 = p_name
-
-        if p_episode:
-            mode = '2'
-            isdir = True
-            p_id = re.compile('data-qidanadd-albumid="(\d+)"').search(match[i]).group(1)
-        else:
-            mode = '3'
-            isdir = False
-        match1 = re.compile('<p class="dafen2">\s*<strong class="fRed"><span>(\d*)</span>([\.\d]*)</strong><span>分</span>\s*</p>').search(match[i])
-        if match1:
-            p_rating = float(match1.group(1)+match1.group(2))
-        else:
-            p_rating = 0
-        match1 = re.compile('<span>导演：</span>(.+?)</p>', re.DOTALL).search(match[i])
-        if match1:
-            p_director = ' / '.join(re.compile('<a [^>]+>([^<]*)</a>').findall(match1.group(1)))
-        else:
-            p_director = ''
-        match1 = re.compile('<em>主演:</em>(.+?)</div>', re.DOTALL).search(match[i])
-        if match1:
-            p_cast = re.compile('<a [^>]+>([^<]*)</a>').findall(match1.group(1))
-        else:
-            p_cast = []
-        match1 = re.compile('<span>类型：</span>(.+?)</p>', re.DOTALL).search(match[i])
-        if match1:
-            p_genre = ' / '.join(re.compile('<a [^>]+>([^<]*)</a>').findall(match1.group(1)))
-        else:
-            p_genre = ''
-        match1 = re.compile('<p class="s1">\s*<span>([^<]*)</span>\s*</p>').search(match[i])
-        if match1:
-            p_plot = match1.group(1)
-        else:
-            p_plot = ''
-        li = xbmcgui.ListItem(str(i + 1) + '.' + p_name1, iconImage='', thumbnailImage=p_thumb)
-        li.setArt({'poster': p_thumb})
-        u = sys.argv[0]+"?mode="+mode+"&name="+urllib.quote_plus(p_name)+"&id="+urllib.quote_plus(p_id)+"&thumb="+urllib.quote_plus(p_thumb)
-        li.setInfo(type="Video", infoLabels={"Title": p_name,
-                                             "Director": p_director,
-                                             "Genre": p_genre,
-                                             "Plot": p_plot,
-                                             "Cast": p_cast,
-                                             "Rating": p_rating})
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, isdir, totalItems)
-        print urllib.quote_plus(p_id)
-
-    if currpage > 1:
-        li = xbmcgui.ListItem('上一页')
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name) + \
-            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-            "&cat="+urllib.quote_plus(cat) + \
-            "&area="+urllib.quote_plus(area) + \
-            "&year="+urllib.quote_plus(year) + \
-            "&order="+order + \
-            "&page="+urllib.quote_plus(str(currpage-1)) + \
-            "&paytype="+paytype
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-    if currpage < totalpages:
-        li = xbmcgui.ListItem('下一页')
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name) + \
-            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-            "&cat="+urllib.quote_plus(cat) + \
-            "&area="+urllib.quote_plus(area) + \
-            "&year="+urllib.quote_plus(year) + \
-            "&order="+order + \
-            "&page="+urllib.quote_plus(str(currpage+1)) + \
-            "&paytype="+paytype
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-
-    xbmcplugin.setContent(pluginhandle, 'movies')
-    xbmcplugin.endOfDirectory(pluginhandle)
-
-
-def seriesList(name, id, thumb, page):
-    url = 'http://cache.video.qiyi.com/a/%s' % (id)
-    link = GetHttpData(url)
-    data = link[link.find('=')+1:]
-    json_response = simplejson.loads(data)
-    if json_response['data']['tvYear']:
-        p_year = int(json_response['data']['tvYear'])
-    else:
-        p_year = 0
-    p_director = ' / '.join(json_response['data']['directors']).encode('utf-8')
-    p_cast = [x.encode('utf-8') for x in json_response['data']['mainActors']]
-    p_plot = json_response['data']['tvDesc'].encode('utf-8')
-
-    albumType = json_response['data']['albumType']
-    sourceId = json_response['data']['sourceId']
-    if albumType in (1, 6, 9, 12, 13) and sourceId != 0:
-        url = 'http://cache.video.qiyi.com/jp/sdvlst/%d/%d/?categoryId=%d&sourceId=%d' % (albumType, sourceId, albumType, sourceId)
-        link = GetHttpData(url)
-        data = link[link.find('=')+1:]
-        json_response = simplejson.loads(data)
-        totalItems = len(json_response['data'])
-        for item in json_response['data']:
-            tvId = str(item['tvId'])
-            videoId = item['vid'].encode('utf-8')
-            p_id = '%s,%s' % (tvId, videoId)
-            p_thumb = item['aPicUrl'].encode('utf-8')
-            p_name = item['videoName'].encode('utf-8')
-            p_name = '%s %s' % (p_name, item['tvYear'].encode('utf-8'))
-            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
-            li.setInfo(type="Video", infoLabels={"Title": p_name,
-                                                 "Director": p_director,
-                                                 "Cast": p_cast,
-                                                 "Plot": p_plot,
-                                                 "Year": p_year})
-            u = sys.argv[0] + "?mode=3&name=" + urllib.quote_plus(p_name) + "&id=" + urllib.quote_plus(p_id)+ "&thumb=" + urllib.quote_plus(p_thumb)
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
-    else:
-        url = 'http://cache.video.qiyi.com/avlist/%s/%s/' % (id, page)
-        link = GetHttpData(url)
-        data = link[link.find('=')+1:]
-        json_response = simplejson.loads(data)
-        totalItems = len(json_response['data']['vlist']) + 1
-        totalpages = json_response['data']['pgt']
-        currpage = int(page)
-        if currpage > 1:
-            totalItems += 1
-        if currpage < totalpages:
-            totalItems += 1
-        li = xbmcgui.ListItem(name+'（第'+str(currpage)+'/'+str(totalpages)+'页）')
-        u = sys.argv[0]+"?mode=99"
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
-
-        for item in json_response['data']['vlist']:
-            tvId = str(item['id'])
-            videoId = item['vid'].encode('utf-8')
-            p_id = '%s,%s' % (tvId, videoId)
-            p_thumb = item['vpic'].encode('utf-8')
-            p_name = item['vn'].encode('utf-8')
-            if item['vt']:
-                p_name = '%s %s' % (p_name, item['vt'].encode('utf-8'))
-            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
-            li.setArt({'poster': thumb})
-            li.setInfo(type="Video", infoLabels={"Title": p_name,
-                                                 "Director": p_director,
-                                                 "Cast": p_cast,
-                                                 "Plot": p_plot,
-                                                 "Year": p_year})
-            u = sys.argv[0] + "?mode=3&name=" + urllib.quote_plus(p_name) + "&id=" + urllib.quote_plus(p_id)+ "&thumb=" + urllib.quote_plus(p_thumb)
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, False, totalItems)
-
-        if currpage > 1:
-            li = xbmcgui.ListItem('上一页')
-            u = sys.argv[0]+"?mode=2&name="+urllib.quote_plus(name)+"&id="+urllib.quote_plus(id)+"&thumb="+urllib.quote_plus(thumb)+"&page="+urllib.quote_plus(str(currpage-1))
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-        if currpage < totalpages:
-            li = xbmcgui.ListItem('下一页')
-            u = sys.argv[0]+"?mode=2&name="+urllib.quote_plus(name)+"&id="+urllib.quote_plus(id)+"&thumb="+urllib.quote_plus(thumb)+"&page="+urllib.quote_plus(str(currpage+1))
-            xbmcplugin.addDirectoryItem(pluginhandle, u, li, True, totalItems)
-
-    xbmcplugin.setContent(pluginhandle, 'episodes')
-    xbmcplugin.endOfDirectory(pluginhandle)
 
 
 def selResolution(items):
@@ -427,31 +145,14 @@ def getVMS(tvid, vid):
     key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
     sc = hashlib.md5(str(t) + key + vid).hexdigest()
     vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
-    return simplejson.loads(GetHttpData(vmsreq))
+    return simplejson.loads(getHttpData(vmsreq))
 
 
-def PlayVideo(name, id, thumb):
-    id = id.split(',')
-    if len(id) == 1:
-        try:
-            if ("http:" in id[0]):
-                link = GetHttpData(id[0])
-                tvId = re.compile('data-player-tvid="(.+?)"', re.DOTALL).findall(link)[0]
-                videoId = re.compile('data-player-videoid="(.+?)"', re.DOTALL).findall(link)[0]
-            else:
-                url = 'http://cache.video.qiyi.com/avlist/%s/' % (id[0])
-                link = GetHttpData(url)
-                data = link[link.find('=')+1:]
-                json_response = simplejson.loads(data)
-                tvId = str(json_response['data']['vlist'][0]['id'])
-                videoId = json_response['data']['vlist'][0]['vid'].encode('utf-8')
-        except:
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '未能获取视频地址')
-            return
-    else:
-        tvId = id[0]
-        videoId = id[1]
+def PlayVideo(params):
+    tvId = params['tvId']
+    videoId = params['vid']
+    title = params['title']
+    thumb = params['thumb']
 
     info = getVMS(tvId, videoId)
     if info["code"] != "A00000":
@@ -466,81 +167,370 @@ def PlayVideo(name, id, thumb):
 
     video_links = vs[sel]["m3u"]
 
-    listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-    listitem.setInfo(type="Video", infoLabels={"Title": name})
+    listitem = xbmcgui.ListItem(title, thumbnailImage=thumb)
+    listitem.setInfo(type="Video", infoLabels={"Title": title})
     xbmc.Player().play(video_links, listitem)
 
 
-def performChanges(name, listpage, cat, area, year, order, paytype):
-    change = False
-    catlist = getcatList(listpage, name, cat)
-    dialog = xbmcgui.Dialog()
-    if len(catlist) > 0:
-        list = [x[1] for x in catlist]
-        sel = dialog.select('类型', list)
-        if sel != -1:
-            cat = catlist[sel][0]
-            change = True
-    if name not in ('纪录片', '教育', '时尚'):
-        arealist = getareaList(listpage, name, area)
-        if len(arealist) > 0:
-            list = [x[1] for x in arealist]
-            sel = dialog.select('地区', list)
-            if sel != -1:
-                area = arealist[sel][0]
-                change = True
-    if name in ('电影', '电视剧'):
-        yearlist = getyearList(listpage, name, year)
-        if len(yearlist) > 0:
-            list = [x[1] for x in yearlist]
-            sel = dialog.select('年份', list)
-            if sel != -1:
-                year = yearlist[sel][0]
-                change = True
-    list = [x[1] for x in ORDER_LIST]
-    sel = dialog.select('排序方式', list)
-    if sel != -1:
-        order = ORDER_LIST[sel][0]
-        change = True
-    if change:
-        progList(name, '1', cat, area, year, order, paytype)
+def mainMenu():
+    li = xbmcgui.ListItem('[COLOR FF00FF00] 【爱奇艺 - 搜索】[/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-#  main program begins here #########
-pluginhandle = int(sys.argv[1])
+    url = LIST_URL + '/www/1/----------------iqiyi--.html'
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('ul', {'class': 'mod_category_item'})
+
+    grp = soup[0].find_all('a')
+    Items = len(grp) - 1
+    for prog in grp[:-1]:
+        name = prog.text.strip(' ')
+        href = httphead(prog['href'])
+        li = xbmcgui.ListItem(name)
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=videolist&name=' + name
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def listSubMenu(params):
+    url = params['url']
+    name = params['name']
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+
+    ul = url.split('/')[-1]
+    page = ul.split('-')[14]
+    if page == '':
+        page = '1'
+
+    li = xbmcgui.ListItem(name + '[第%s页](分类过滤)' % page)
+    u = sys.argv[0] + '?url=' + url.encode('ascii')
+    u += '&mode=filter&name=' + urllib.quote_plus(name)
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    li = xbmcgui.ListItem(BANNER_FMT % '排序方式')
+    u = sys.argv[0] + '?url=' + url
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = tree.find_all('div', {'class': 'sort-result-l'})
+    arrange = soup[0].find_all('a')
+    for sort in arrange:
+        href = httphead(sort['href'])
+        title = sort.text
+        select = sort.get('class', '')
+        if 'selected' in select:
+            title = INDENT_FMT1 % title
+        else:
+            title = INDENT_FMT0 % title
+        li = xbmcgui.ListItem(title)
+        u = sys.argv[0] + '?url=' + href.encode('ascii')
+        u += '&mode=videolist&name=' + urllib.quote_plus(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    soup = tree.find_all('div', {'class': 'site-piclist_pic'})
+    for item in soup:
+        href = item.a.get('href')
+        img = item.img.get('src', '')
+        title = item.a.get('title', '')
+        try:
+            info = item.find('span', {'class': 'icon-vInfo'}).text
+        except:
+            info = ''
+        info = info.strip(' ')
+        try:
+            vip = item.find('span', {'class': 'icon-vip-zx'}).text
+        except:
+            vip = ''
+        albumId = item.a.get('data-qidanadd-albumid', 'X')
+        tvId = item.a.get('data-qidanadd-tvid', 'X')
+        if albumId == 'X':
+            albumId = tvId
+        li = xbmcgui.ListItem(title + '(' + info + '|' + vip + ')',
+                              iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=episodelist&name=' + urllib.quote_plus(name)
+        u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+        u += '&albumId=%s&tvId=%s' % (albumId, tvId)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    u = sys.argv[0] + '?url=' + href
+    li = xbmcgui.ListItem(INDENT_FMT0 % ('分页'))
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    pages = tree.find_all('div', {'class': 'mod-page'})
+    pages = pages[0].find_all('a')
+    for page in pages:
+        title = page.text
+        href = httphead(page['href'])
+        li = xbmcgui.ListItem(title)
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=videolist'
+        u += '&name=' + urllib.quote_plus(name)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def episodesList(params):
+    albumId = params['albumId']
+    tvId = params['tvId']
+    title = params['title']
+    thumb = params['thumb']
+    print '=============albumId %s, ======' % (albumId)
+    url = 'http://cache.video.qiyi.com/a/%s' % albumId
+    link = getHttpData(url)
+    data = link[link.find('=')+1:]
+    json_response = simplejson.loads(data)
+    item = json_response['data']
+    if item['tvYear']:
+        p_year = item['tvYear']
+    else:
+        p_year = '0'
+    p_director = ' / '.join(item['directors'])
+    p_cast = [x for x in item['mainActors']]
+    info = item['tvDesc']
+    tvId = item['tvId']
+    videoId = item['vid']
+    albumType = item['albumType']
+    albumId = item['albumId']
+
+    print '=============albumId %d, albumType %d tvId %s======' % (albumId, albumType, tvId)
+
+    li = xbmcgui.ListItem(BANNER_FMT % title, iconImage=thumb, thumbnailImage=thumb)
+    li.setInfo(type="Video", infoLabels={"Title": title, 'Plot': info})
+    u = sys.argv[0] + '?mode=playvideo&title=' + title
+    u += '&tvId=%s&vid=%s' % (tvId, videoId) + '&thumb=' + thumb
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    if albumId == int(tvId):
+        pass
+    elif albumType in (1, 6, 8, 9, 12, 13, 22, 27, 29, 31):
+        url = 'http://cache.video.qiyi.com/jp/sdvlst/%d/%d/' % (albumType, albumId)
+        link = getHttpData(url)
+        data = link[link.find('=')+1:]
+        json_response = simplejson.loads(data)
+
+        for item in json_response['data']:
+            tvId = str(item['tvId'])
+            videoId = item['vid']
+            p_thumb = item['aPicUrl']
+            p_name = item['videoName'] + item['tvYear']
+            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+            u = sys.argv[0] + '?mode=playvideo&title=' + p_name
+            u += '&tvId=%s&vid=%s' % (tvId, videoId) + '&thumb=' + p_thumb
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    else:
+        page = params.get('page', '1')
+        url = 'http://cache.video.qiyi.com/avlist/%d/%s/' % (albumId, page)
+        link = getHttpData(url)
+        data = link[link.find('=')+1:]
+        json_response = simplejson.loads(data)
+
+        totalpages = json_response['data']['pgt']
+        currpage = int(page)
+
+        for item in json_response['data']['vlist']:
+            tvId = str(item['id'])
+            videoId = item['vid']
+            p_thumb = item['vpic']
+            p_name = item['vn']
+            if item['vt']:
+                p_name = p_name + ' ' + item['vt']
+            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+            u = sys.argv[0] + '?mode=playvideo&title=' + p_name
+            u += '&tvId=%s&vid=%s' % (tvId, videoId) + '&thumb=' + p_thumb
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+        um = sys.argv[0] + '?mode=episodelist&title=' + title
+        um += '&albumId=%d' % (albumId) + '&thumb=' + thumb + '&page='
+        if currpage > 1:
+            li = xbmcgui.ListItem('上一页')
+            u = um + str(currpage-1)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        if currpage < totalpages:
+            li = xbmcgui.ListItem('下一页')
+            u = um + str(currpage+1)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    # recommend
+    li = xbmcgui.ListItem(BANNER_FMT % '相关视频', iconImage=thumb, thumbnailImage=thumb)
+    li.setInfo(type="Video", infoLabels={"Title": title})
+    u = sys.argv[0]+'?url=' + url
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    url = 'http://mixer.video.iqiyi.com/jp/recommend/videos?albumId=%d&area=swan&type=video' % albumId
+    link = getHttpData(url)
+    data = link[link.find('=')+1:]
+    json_response = simplejson.loads(data)
+    items = json_response['mixinVideos']
+    for series in items:
+        title = series['name']
+        videoId = series['vid']
+        tvId = series['tvId']
+        albumId = series['albumId']
+        thumb = series['imageUrl']
+        info = series['description']
+        li = xbmcgui.ListItem(title, iconImage='thumb', thumbnailImage=thumb)
+        li.setInfo(type='Video', infoLabels={'Title': title,
+                                             'Plot': info})
+        u = sys.argv[0] + '?title=' + title + '&thumb=' + thumb
+        if tvId == albumId:
+            u += '&mode=playvideo&tvId=%d&vid=%s' % (tvId, videoId)
+            dir = False
+        else:
+            u += '&mode=episodelist&albumId=%d' % albumId
+            dir = True
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, isFolder=dir)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def findToPlay(params):
+    url = params.get('url')
+    link = getHttpData(url)
+    tvId = re.compile('data-player-tvid="(.+?)"', re.DOTALL).findall(link)
+    videoId = re.compile('data-player-videoid="(.+?)"', re.DOTALL).findall(link)
+    if len(tvId) > 0 and len(videoId) > 0:
+        params['tvId'] = tvId[0]
+        params['vid'] = videoId[0]
+        PlayVideo(params)
+    else:
+        albumId = re.compile('albumid="(.+?)"', re.DOTALL).findall(link)
+        params['tvId'] = ''
+        if len(albumId) > 0:
+            params['albumId'] = albumId[0]
+            episodesList(params)
+        else:
+            return
+
+
+def changeList(params):
+    url = params.get('url')
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    filter = tree.find_all('div', {'class': 'mod_sear_list'})
+
+    surl = url.split('/')
+    lurl = surl[-1].split('-')
+
+    dialog = xbmcgui.Dialog()
+
+    for item in filter[1:]:
+        title = item.h3.text
+        si = item.find_all('li')
+        list = []
+        for x in si:
+            if x.get('class') and 'selected' in x.get('class'):
+                list.append('[COLOR FFF0F000]' + x.text + '[/COLOR]')
+            else:
+                list.append(x.text)
+
+        sel = dialog.select(title, list)
+
+        if sel < 0:
+            continue
+
+        selurl = si[sel].a['href'].split('/')
+        selurl = selurl[-1].split('-')
+        if '#' in selurl:
+            continue
+        for i in range(0, len(selurl)):
+            if selurl[i] == '#':
+                continue
+            if (selurl[i] != '') and (selurl[i] != lurl[i]):
+                lurl[i] = selurl[i]
+
+    surl[-1] = '-'.join(lurl)
+    url = '/'.join(surl)
+    params['url'] = httphead(url).encode('ascii')
+    listSubMenu(params)
+
+
+###########################################################################
+# search in http://so.iqiyi.com/so/q_%s?source=hot
+############################################################################
+def searchiQiyi(params):
+    keyboard = Apps('', '请输入搜索内容')
+    xbmc.sleep(1000)
+    keyboard.doModal()
+    if (keyboard.isConfirmed()):
+        keyword = keyboard.getText()
+        key = urllib.quote_plus(keyword)
+        url = 'http://so.iqiyi.com/so/q_' + key + '?source=hot'
+    else:
+        return
+
+    link = getHttpData(url)
+    if link is None:
+        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + '   [/COLOR]的相关视频')
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+
+    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]')
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    # fetch and build the video series episode list
+    content = BeautifulSoup(link, 'html.parser')
+    soup = content.find_all('ul', {'class': 'mod_result_list'})
+    for items in soup:
+        list = items.find_all('li', {'class': 'list_item'})
+        album = items.find_all('li', {'class': 'album_item'})
+        for series in list + album:
+            href = httphead(series.a['href'])
+            try:
+                img = series.img.get('src')
+            except:
+                img = ''
+            try:
+                title = series.img.get('title')
+            except:
+                title = series.a.get('title','')
+            if title == '':
+                continue
+            text = series.find('span', {'class': 'result_info_txt'})
+            try:
+                info = text.text
+            except:
+                info = ''
+            li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
+            li.setInfo(type='Video',
+                       infoLabels={'Title': title, 'Plot': info})
+
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playfound'
+            u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+# main programs goes here #########################################
+dialog = xbmcgui.Dialog()
+pDialog = xbmcgui.DialogProgress()
+
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
-thumb = params.get('thumb')
-url = params.get('url')
-page = params.get('page', '1')
-cat = params.get('cat', '')
-id = params.get('id')
-name = params.get('name')
-area = params.get('area', '')
-year = params.get('year', '')
-order = params.get('order', '3')
-paytype = params.get('paytype', '0')
 mode = params.get('mode')
 
-if mode is None:
-    for name in CHANNEL_LIST:
-        li = xbmcgui.ListItem(name)
-        u = sys.argv[0]+"?mode=1&name="+urllib.quote_plus(name) + \
-            "&id="+urllib.quote_plus(CHANNEL_LIST[name]) + \
-            "&cat="+urllib.quote_plus("") + \
-            "&area="+urllib.quote_plus("") + \
-            "&year="+urllib.quote_plus("") + \
-            "&order="+urllib.quote_plus("11") + \
-            "&page="+urllib.quote_plus("1") + \
-            "&paytype="+urllib.quote_plus("0")
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
-    xbmcplugin.endOfDirectory(pluginhandle)
+runlist = {
+    None: 'mainMenu()',
+    'videolist': 'listSubMenu(params)',
+    'episodelist': 'episodesList(params)',
+    'playfound': 'findToPlay(params)',
+    'playvideo': 'PlayVideo(params)',
+    'search': 'searchiQiyi(params)',
+    'filter': 'changeList(params)'
+}
 
-elif mode == '1':
-    progList(name, page, cat, area, year, order, paytype)
-elif mode == '2':
-    seriesList(name, id, thumb, page)
-elif mode == '3':
-    PlayVideo(name, id, thumb)
-elif mode == '4':
-    performChanges(name, page, cat, area, year, order, paytype)
+eval(runlist[mode])

@@ -41,7 +41,7 @@ __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
 cookieFile = __profile__ + 'cookies.letv'
 
-if (__addon__.getSetting('keyboard')=='0'):
+if (__addon__.getSetting('keyboard') == '0'):
     from xbmc import Keyboard as Apps
 else:
     from ChineseKeyboard import Keyboard as Apps
@@ -70,7 +70,6 @@ FLVCD_PARSER_PHP = 'http://www.flvcd.com/parse.php'
 FLVCD_DIY_URL = 'http://www.flvcd.com/diy/diy00'
 
 CFRAGMAX = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
-
 
 
 ##################################################################################
@@ -545,7 +544,7 @@ def getHttpData(url, binary=False, mCheck=False):
                 break
 
     if (not binary):
-        httpdata = re.sub('\r|\n|\t', '', httpdata)
+        httpdata = re.sub('\r|\n|\t', ' ', httpdata)
         match = re.compile('<meta.+?charset=["]*(.+?)"').findall(httpdata)
         if len(match):
             charset = match[0].lower()
@@ -593,8 +592,8 @@ def listSubMenu(params):
     #  sort mode
     soup = tree.find_all('div', {'class': 'sort_navy'})
     soup = soup[0].find_all('a')
-    url = url
-    li = xbmcgui.ListItem(BANNER_FMT % '排序方式')
+
+    li = xbmcgui.ListItem(BANNER_FMT % (name + '[排序方式]'))
     u = sys.argv[0] + '?url=' + url
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
     for grp in soup:
@@ -662,7 +661,7 @@ def listSubMenu(params):
         liz = xbmcgui.ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -698,6 +697,7 @@ def normalSelect(params):
     urlsplit[-1] = u1
     url = '/'.join(urlsplit)
     params['url'] = url
+    listSubMenu(params)
 
 
 def educationSelect(params):
@@ -724,6 +724,7 @@ def educationSelect(params):
     sel = dialog.select(list1[sel], list2)
     if sel >= 0:
         params['url'] = LIST_URL + href[sel]
+    listSubMenu(params)
 
 
 def changeList(params):
@@ -732,7 +733,6 @@ def changeList(params):
         educationSelect(params)
     else:
         normalSelect(params)
-    listSubMenu(params)
 
 
 def album2series(url):
@@ -760,7 +760,8 @@ def episodesList(params):
             match[0] = str(match[0])
         vid = match[0]
     else:
-        vid = re.compile('/vplay/(\d+).html').findall(url)[0]
+        aurl = url.split('/')[-1]
+        vid = aurl[:-5]
 
     html = getHttpData(ALBULM_URL % (vid))
     jsdata = simplejson.loads(html)
@@ -841,96 +842,73 @@ def episodesList(params):
             u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
     '''
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 ##################################################################################
 # Routine to search LeTV site based on user given keyword for:
 ##################################################################################
-def searchLeTV():
-    result = ''
-
+def searchLeTV(params):
     keyboard = Apps('', '请输入搜索内容')
     # keyboard.setHiddenInput(hidden)
-    xbmc.sleep(1500)
+    xbmc.sleep(1000)
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         keyword = keyboard.getText()
-        letvSearchList(keyword, '1')
-    else:
-        return
+        params['keyword'] = keyword
+        params['page'] = '1'
+        letvSearchList(params)
 
+
+def letvSearchList(params):
+    keyword = params['keyword']
+    page = params['page']
     p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd=%s'
-    p_url = p_url % (urllib.quote(name))
+    p_url = p_url % urllib.quote_plus(keyword)
     link = getHttpData(p_url)
 
-    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + name + ')[/COLOR]【[COLOR FF00FF00]' + '点此输入新搜索内容' + '[/COLOR]】')
-    u = sys.argv[0] + "?mode=31&name=" + urllib.quote_plus(name) + "&page=" + page
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')
+    u = sys.argv[0] + "?name=" + urllib.quote_plus(keyword) + "&page=" + page
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     if link is None:
-        li = xbmcgui.ListItem('  抱歉，没有找到[COLOR FFFF0000] ' + name + ' [/COLOR]的相关视频')
+        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + ' [/COLOR]的相关视频')
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
         return
 
     # fetch and build the video series episode list
-    content = simplejson.loads(link)
-    vlist = content['data_list']
-    totalItems = len(vlist)
-    for i in range(0, totalItems):
-        vid = str(vlist[i]['vid'])
-        v_url = 'http://www.letv.com/ptv/vplay/%s.html' % vid
-        p_title = vlist[i]['name'].encode('utf-8')
-
+    content = BeautifulSoup(link, 'html.parser')
+    soup = content.find_all('li', {'class': 'list_item'})
+    soup1 = content.find_all('div', {'class': 'So-detail Movie-so'})
+    for item in soup + soup1:
         try:
-            p_thumb = vlist[i]['images']['150*200']
-        except KeyError:
-            p_thumb = vlist[i]['images']['160*120']
+            href = item.a['href']
         except:
-            pass
-
-        p_categoryName = vlist[i]['categoryName']
-        if (p_categoryName != None):
-            p_list = p_name = str(i + 1) + '. [COLOR FF00FFFF][' + p_categoryName.encode('utf-8') + '][/COLOR] ' + p_title + ' '
-        else:
-            p_list = p_name = str(i + 1) + '. ' + p_title + ' '
-
+            continue
+        title = item.a['title']
         try:
-            p_rating = float(vlist[i]['rating'])
-            if (p_rating != None and p_rating > 0.01):
-                p_rating = "%0.1f" % p_rating
-                p_list += '[COLOR FFFF00FF][' + p_rating + '][/COLOR]'
+            img = item.a['src']
         except:
-            pass
+            img = item.img['src']
 
-        p_dx = int(vlist[i]['duration'])
-        if (p_dx is not None):
-            p_duration = "[%02d:%02d]" % (int(p_dx / 60), (p_dx % 60))
-            p_list += '[COLOR FFFFFF00]' + p_duration + '[/COLOR]'
+        info = item.find('div', {'class': 'info-cnt'})
+        try:
+            info = info.text
+        except:
+            info = ''
+        print '==========================', href
+        li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
+        li.setInfo(type='Video',
+                   infoLabels={'Title': title, 'Plot': info})
 
-        p_artists = vlist[i]['actor']
-        if ((p_artists is not None) and len(p_artists)):
-            p_artist = ""
-            p_list += '['
-            for key in p_artists:
-                p_artist += p_artists[key].encode('utf-8') + ' '
-            p_list += p_artist[:-1] + ']'
-
-        li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
-        u = sys.argv[0] + "?mode=10" + "&name=" + urllib.quote_plus(p_list) + "&url=" + urllib.quote_plus(v_url) + "&thumb=" + urllib.quote_plus(p_thumb)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
-
-    # Fetch and build page selection menu
-    p_itemCount = content['video_count']
-    pages = getPages(p_itemCount, page)
-
-    for page in pages:
-        li = xbmcgui.ListItem("... 第" + str(page) + "页")
-        u = sys.argv[0] + "?mode=32" + "&name=" + urllib.quote_plus(name) + "&page=" + str(page)
+        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
+        u += '&name=' + urllib.quote_plus('电视剧')
+        u += '&thumb=' + urllib.quote_plus(img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -944,8 +922,6 @@ params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
 mode = params.get('mode')
-if mode is not None:
-    del(params['mode'])
 
 runlist = {
     None: 'mainMenu()',

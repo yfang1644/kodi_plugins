@@ -333,7 +333,7 @@
 
 <addon id="plugin.video.letv"
     name="乐视网 (LeTV)"
-    version="1.6.1"
+    version="1.6.3"
     provider-name="cmeng,taxigps,yfang1644">
   	<requires>
         <import addon="script.module.keyboard.chinese" version="2.0.4"/>
@@ -434,7 +434,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
 
 <addon id="plugin.video.qiyi"
     name="奇艺视频(QIYI)"
-    version="2.2.7"
+    version="2.2.8"
     provider-name="taxigps,yfang1644">
     <requires>
     </requires>
