@@ -856,16 +856,13 @@ def searchLeTV(params):
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         keyword = keyboard.getText()
-        params['keyword'] = keyword
         params['page'] = '1'
-        letvSearchList(params)
+    else:
+        return
 
-
-def letvSearchList(params):
-    keyword = params['keyword']
     page = params['page']
-    p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd=%s'
-    p_url = p_url % urllib.quote_plus(keyword)
+    p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
+    p_url = p_url + keyword.decode('utf-8').encode('utf-8')
     link = getHttpData(p_url)
 
     li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')
@@ -880,9 +877,11 @@ def letvSearchList(params):
 
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
+    print link
     soup = content.find_all('li', {'class': 'list_item'})
     soup1 = content.find_all('div', {'class': 'So-detail Movie-so'})
-    for item in soup + soup1:
+    soup2 = content.find_all('div', {'class': 'So-detail Tv-so'})
+    for item in soup1 + soup2:
         try:
             href = item.a['href']
         except:

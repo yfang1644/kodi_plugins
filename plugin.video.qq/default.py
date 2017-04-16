@@ -357,8 +357,9 @@ def videoparseX(vid):
     print '------------------------'
     url = PARSING_URL.replace('vids=', 'vids=' + vid)
     print url
-    jspage = GetHttpData(url)
-    jspage = jspage[13:-1]   # remove heading and tail
+    link = GetHttpData(url)
+    jspage = jspage[link.find('=')+1:-1]   # remove heading and tail
+
     print jspage
     jsdata = json.loads(jspage)
 
@@ -421,8 +422,8 @@ def videoparseX(vid):
     appver = '3.2.19.358'
     encryptver = '5.4'
     for i in range(1, int(files)+1):
-        jspage = GetHttpData(url + '.%d.mp4' % i)
-        jspage = jspage[13:-1]   # remove heading and tail
+        link = GetHttpData(url + '.%d.mp4' % i)
+        jspage = jspage[link.find('=')+1:-1]   # remove heading and tail
         jsdata = json.loads(jspage)
         print jsdata
         key = jsdata.get('key')
