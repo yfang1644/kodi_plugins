@@ -27,27 +27,29 @@ UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) Apple
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 HOST_URL = 'https://v.qq.com'
-CHANNEL_LIST = {'电视剧': '/x/list/tv',
-                '综艺': '/x/list/variety',
-                '电影': '/x/list/movie',
-                '动漫': '/x/list/cartoon',
-                '少儿': '/x/list/children',
-                '娱乐': '/x/list/ent',
-                '音乐': '/x/list/music',
-                '纪录片': '/x/list/doco',
-                '(微电影)': '/dv',
-                '新闻': '/x/list/news',
-                '体育': '/x/list/sports',
-                '搞笑': '/x/list/fun',
-                '(原创)': '/videoplus',
-                '(时尚)': '/fashion',
-                '(生活)': '/life',
-                '(科技)': '/tech',
-                '(汽车)': '/auto',
-                '(财经)': '/finance'}
+CHANNEL_LIST = {u'电视剧': '/x/list/tv',
+                u'综艺': '/x/list/variety',
+                u'电影': '/x/list/movie',
+                u'动漫': '/x/list/cartoon',
+                u'少儿': '/x/list/children',
+                u'娱乐': '/x/list/ent',
+                u'音乐': '/x/list/music',
+                u'纪录片': '/x/list/doco',
+                u'(微电影)': '/dv',
+                u'新闻': '/x/list/news',
+                u'体育': '/x/list/sports',
+                u'搞笑': '/x/list/fun',
+                u'(原创)': '/videoplus',
+                u'(时尚)': '/fashion',
+                u'(生活)': '/life',
+                u'(科技)': '/tech',
+                u'(汽车)': '/auto',
+                u'(财经)': '/finance'}
 
-RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
-PARSING_URL = 'http://vv.video.qq.com/getinfo?vids=&defn=sd&otype=json'
+PARSING_URL = 'http://h5vv.video.qq.com/getinfo?vid=%s'
+PARSING_URL += '&defaultfmt=auto&platform=10901&otype=json'
+PARSING_URL += '&defn=sd&otype=json&show1080p=1&isHLS=0'
+#https://h5vv.video.qq.com/getinfo?vid=p00235uxz74&platform=10901&defaultfmt=auto&otype=json&defn=fhd&fhdswitch=0&show1080p=1&isHLS=1
 VIDEO_SRV = ('http://182.254.72.11',
              'http://182.254.72.110',
              'http://182.254.72.117',
@@ -66,15 +68,6 @@ VIDEO_SRV = ('http://182.254.72.11',
              'http://111.47.228.23')
 
 # p203(270), p212(360), p201(720)
-
-dbg = False
-dbglevel = 3
-
-
-def log(description, level=0):
-    if dbg and dbglevel > level:
-        print description
-
 
 def GetHttpData(url):
     req = urllib2.Request(url)
@@ -172,7 +165,6 @@ def listSubMenu(params):
     strparam = buildParams(params)
     aurl = url + '?' + strparam[1:]
     html = GetHttpData(aurl)
-    print '---------AURL------',aurl
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'filter_line'})
 
@@ -328,13 +320,11 @@ def musicList(params):
 def fashion(params):
     url = params['url']
     del(params['url'])
-    print '=====================',url
     strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'mod_title'})
 
-    print soup
     show = soup[1].find_all('a')
     for item in show:
         title = item['title']
@@ -354,35 +344,32 @@ def videoparse(vid):
 
 
 def videoparseX(vid):
-    print '------------------------'
-    url = PARSING_URL.replace('vids=', 'vids=' + vid)
-    print url
-    link = GetHttpData(url)
-    jspage = jspage[link.find('=')+1:-1]   # remove heading and tail
+    RESOLUTION = ['sd', 'hd', 'shd', 'fhd']
 
-    print jspage
+    url = PARSING_URL % vid
+    jspage = GetHttpData(url)
+    jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
+
     jsdata = json.loads(jspage)
+
+    types = jsdata['fl']['fi']
+
+    sel = int(__addon__.getSetting('resolution'))
+    if sel == 4:
+        list = [x['cname'] for x in types]
+        sel = xbmcgui.Dialog().select('清晰度选择', list)
+
+    if (sel < 0):
+        sel = 0
+    if sel > len(types):
+        sel = len(types) - 1
+
+    typeid = str(types[sel]['id'])
 
     js = jsdata['vl']['vi'][0]
     fvkey = js['fvkey']
-    fmd5 = js['fmd5']
-    typelist = jsdata['fl']['fi']
-    files = js['cl']['fc']
+    title = js['ti']
 
-    typeid = []
-    for idlist in typelist:
-        id = '%d' % idlist['id']
-        if (id == '2') or (id == '320048'):
-            id = typeid[0]['id'][0:3] + '12'
-        if id[0:3] == '100':
-            id = '10' + id[3:]
-
-        typeid.append({'cname': idlist['cname'], 'id': id})
-
-    filename = js['fn'].split('.')
-    fid = filename[0]    # file-id
-    title = js['ti']     # video title
-    dur = js['td']       # video duration in seconds
     preurl = js['ul']['ui']
     url = []
     for u in preurl:
@@ -396,19 +383,18 @@ def videoparseX(vid):
     else:
         server = videoparse(0)
 
-    sel = int(__addon__.getSetting('resolution'))
-    if sel == 4:
-        list = [x['cname'] for x in typeid]
-        sel = xbmcgui.Dialog().select('清晰度选择', list)
+    filelist = js['cl']['ci']
+    urllist = []
+    for x in filelist:
+        s = x['keyid'].split('.')
+        s[1] = 'p' + typeid[2:]
+        file = '.'.join(s)
+        app = '.mp4?vkey=%s' % fvkey
+        app += '&sdtfrom=v1010&platform=11'
+        app += '&guid=daef38ead87c2db3d343ca75f432212f'
+        urllist.append(server + file + app)
+    return urllist, title
 
-    if sel < 0:
-        sel = 0
-
-    if sel >= len(typeid):
-        sel = len(typeid) - 1
-
-    id = typeid[sel]['id']
-    id = '.p' + id[2:]
 
     url = PARSING_URL.replace('getinfo', 'getkey')
     url = url.replace('vids=', 'vid=' + vid)
@@ -422,14 +408,21 @@ def videoparseX(vid):
     appver = '3.2.19.358'
     encryptver = '5.4'
     for i in range(1, int(files)+1):
-        link = GetHttpData(url + '.%d.mp4' % i)
-        jspage = jspage[link.find('=')+1:-1]   # remove heading and tail
+        request = urllib2.Request(url + '.%d.mp4' %i)
+        request.add_header('Referer',
+                           'http://imgcache.qq.com/tencentvideo_v1/playerv3/TencentPlayer.swf?max_age=86400&v=20160819')
+        resp = urllib2.urlopen(request)
+        data = resp.read().decode("utf-8")
+
+        jspage = GetHttpData(url + '.%d.mp4' % i)
+        jspage = jspage[13:-1]   # remove heading and tail
         jsdata = json.loads(jspage)
-        print jsdata
+
         key = jsdata.get('key')
 
-        app = '.%d.mp4?vkey=%s&appver=3.2.19.358&encryptver=5.4' % (i, key)
-        app += '&platform=11'
+        app = '.%d.mp4?vkey=%s' % (i, fvkey)
+        app += '&sdtfrom=v1010&platform=11'
+        app += '&guid=daef38ead87c2db3d343ca75f432212f'
         urllist.append(server + fid + id + app)
 
     return urllist, title
