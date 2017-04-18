@@ -21,35 +21,58 @@ __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 __cwd__       = __addon__.getAddonInfo('path')
+__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+cacheFile = __profile__ + 'cache.qq'
+if (__addon__.getSetting('keyboard') != '0'):
+    from xbmc import Keyboard as Apps
+else:
+    from ChineseKeyboard import Keyboard as Apps
 
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
+BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
+INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
+INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
+
 HOST_URL = 'https://v.qq.com'
-CHANNEL_LIST = {u'电视剧': '/x/list/tv',
-                u'综艺': '/x/list/variety',
-                u'电影': '/x/list/movie',
-                u'动漫': '/x/list/cartoon',
-                u'少儿': '/x/list/children',
-                u'娱乐': '/x/list/ent',
-                u'音乐': '/x/list/music',
-                u'纪录片': '/x/list/doco',
-                u'(微电影)': '/dv',
-                u'新闻': '/x/list/news',
-                u'体育': '/x/list/sports',
-                u'搞笑': '/x/list/fun',
-                u'(原创)': '/videoplus',
-                u'(时尚)': '/fashion',
-                u'(生活)': '/life',
-                u'(科技)': '/tech',
-                u'(汽车)': '/auto',
-                u'(财经)': '/finance'}
+CHANNEL_LIST = {'电视剧': '/x/list/tv',
+                '综艺': '/x/list/variety',
+                '电影': '/x/list/movie',
+                '动漫': '/x/list/cartoon',
+                '少儿': '/x/list/children',
+                '娱乐': '/x/list/ent',
+                '音乐': '/x/list/music',
+                '纪录片': '/x/list/doco',
+                '微电影': '/dv',
+                '新闻': '/x/list/news',
+                '体育': '/x/list/sports',
+                '搞笑': '/x/list/fun',
+                '原创': '/videoplus',
+                'TED': '/vplus/ted/folders',
+                '时尚': '/fashion',
+                '生活': '/life',
+                '科技': '/tech',
+                '汽车': '/auto',
+                '财经': '/finance'}
 
 PARSING_URL = 'http://h5vv.video.qq.com/getinfo?vid=%s'
-PARSING_URL += '&defaultfmt=auto&platform=10901&otype=json'
-PARSING_URL += '&defn=sd&otype=json&show1080p=1&isHLS=0'
-#https://h5vv.video.qq.com/getinfo?vid=p00235uxz74&platform=10901&defaultfmt=auto&otype=json&defn=fhd&fhdswitch=0&show1080p=1&isHLS=1
+PARSING_URL += '&defaultfmt=auto&platform=10901&newplatform=10901'
+PARSING_URL += '&defn=%s&otype=json&show1080p=1&isHLS=0&charge=0'
+#PARSING_URL += '&callback=txplayerJsonpCallBack_getinfo_8458820'
+PARSING_URL += '&guid=daef38ead87c2db3d343ca75f432212f'
+PARSING_URL += '&defnpayver=1&appVer=3.0.52&host=v.qq.com'
+#PARSING_URL += '&ehost=%s'
+#https://h5vv.video.qq.com/getinfo?
+#callback=txplayerJsonpCallBack_getinfo_845882
+#&charge=0&vid=t0018ut1022&defaultfmt=auto&otype=json
+#&guid=daef38ead87c2db3d343ca75f432212f&platform=10901
+#&defnpayver=1&appVer=3.0.52&sdtfrom=v1010&host=v.qq.com
+#&ehost=https%3A%2F%2Fv.qq.com%2Fx%2Fcover%2F5c58griiqftvq00%2Ft0018ut1022.html
+#&_rnd=1492350493&defn=hd&fhdswitch=0&show1080p=1&isHLS=0
+#&newplatform=10901&defsrc=2
+
 VIDEO_SRV = ('http://182.254.72.11',
              'http://182.254.72.110',
              'http://182.254.72.117',
@@ -66,8 +89,17 @@ VIDEO_SRV = ('http://182.254.72.11',
              'http://111.47.228.20',
              'http://111.47.228.26',
              'http://111.47.228.23')
-
 # p203(270), p212(360), p201(720)
+
+
+def httphead(url):
+    if url[0:2] == '//':
+        url = 'https:' + url
+    elif url[0] == '/':
+        url = HOST_URL + url
+
+    return url
+
 
 def GetHttpData(url):
     req = urllib2.Request(url)
@@ -93,10 +125,16 @@ def GetHttpData(url):
     return httpdata
 
 
-def listRoot():
+def mainMenu():
+    li = xbmcgui.ListItem('[COLOR FF808F00] 【腾讯视频 - 搜索】[/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     for name in CHANNEL_LIST:
         li = xbmcgui.ListItem(name)
-        if '(' in name:
+        if name in ('TED'):
+            mode = 'tedlist'
+        elif name in ('微电影', '时尚', '原创','生活', '财经', '汽车', '科技'):
             mode = 'otherlist'
         else:
             mode = 'mainlist'
@@ -169,21 +207,17 @@ def listSubMenu(params):
     soup = tree.find_all('div', {'class': 'filter_line'})
 
     if 'offset' in params:
-        page = int(params['offset']) // 30
+        page = int(params['offset']) // 30 + 1
     else:
-        page = 0
-    li = xbmcgui.ListItem(name+'【第%d页】(分类过滤)' % (page + 1))
+        page = 1
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'【第%d页】(分类过滤)' % page))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
     u += '&mode=select' + strparam
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    if 'mode' not in params:
-        strparam += '&mode=episodelist'
     soup = tree.find_all('li', {'class': 'list_item'})
     for mainpage in soup:
-        img = mainpage.img['r-lazyload']
-        if img[0:2] == '//':
-            img = 'http:' + img
+        img = httphead(mainpage.img['r-lazyload'])
         title = mainpage.strong.a.text
         info = mainpage.find('span', {'class': 'figure_info'})
         if info:
@@ -198,14 +232,21 @@ def listSubMenu(params):
         li = xbmcgui.ListItem(title + info, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?url=' + href + strparam
+        u += '&mode=episodelist&thumb=' + img + '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     # PAGE LISTING
     soup = tree.find_all('div', {'class': 'mod_pages'})
     pages = soup[0].find_all('a')
-    for page in pages:
-        title = page.text
-        href = page['href']
+    for site in pages:
+        title = site.text
+        try:
+            number = int(title)
+        except:
+            number = -99
+        if number == page:
+            continue
+        href = site['href']
         if href[0] == '?':
             href = href[1:]
 
@@ -254,63 +295,134 @@ def seriesList(params):
 def episodesList(params):
     url = params['url']
     del(params['url'])
+    thumb = params.get('thumb')
+    del(params['thumb'])
+    title = params.get('title')
+    del(params['title'])
     strparam = buildParams(params)
+
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
+    con = tree.find('meta', {'name': 'description'})
+    info = con['content']
 
     match = re.compile('var LIST_INFO = ({.+?}});{0,}\n').search(html)
     js = json.loads(match.group(1))
-    vidlist = js['vid']
-    if len(vidlist) == 1:
-        params['vid'] = vidlist[0]
-        playVideo(params)
-    else:
-        for item in vidlist:
-            try:
-                title = js['data'][item]['title']
-            except:
-                break
-            vid = js['data'][item]['vid']
+    li = xbmcgui.ListItem(BANNER_FMT % title,
+                          iconImage=thumb, thumbnailImage=thumb)
+    li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+    u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
+    u += '&title=' + title + '&thumb=' + thumb
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    for item in js['vid']:
+        try:
+            title = js['data'][item]['title']
+        except:
+            continue
+        vid = js['data'][item]['vid']
+        try:
             img = js['data'][item]['preview']
-            if img[0:2] == '//':
-                img = 'http:' + img
-                li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-                u = sys.argv[0] + '?mode=playvideo&vid=' + vid + strparam
-                u += '&name=' + urllib.quote_plus(title.encode('utf-8'))
-                xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        except:
+            img = thumb
+        img = httphead(img)
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        u = sys.argv[0] + '?mode=playvideo&vid=' + vid + strparam
+        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+        u += '&thumb=' + img
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+    li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
+    u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
+    u += '&title=' + title + '&thumb=' + thumb
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-
-def musicList(params):
-    url = params['url']
-    del(params['url'])
-    strparam = buildParams(params)
-    html = GetHttpData(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find('div', {'class': 'player_side_bd'})
-    soup = soup.find_all('li', {'class': 'list_item'})
-
+    soup = tree.find_all('li', {'class': 'list_item'})
     for item in soup:
         vid = item.get('data-vid')
         if not vid:
-            vid = item.get('id')
-        if not vid:
-            continue
-        title = item.img['alt']
+            vid = item.get('id', '')
         img = item.img.get('r-lazyload')
         if not img:
             img = item.img.get('src')
         if not img:
             img = ''
-
-        if img[0:2] == '//':
-            img = 'http:' + img
-        href = item.a['href']
-        if href[0] == '/':
-            href = HOST_URL + href
+        img = httphead(img)
+        href = httphead(item.a['href'])
+        href = href.replace('?', '&')
+        titlemsg = item.find('a', {'_stat': 'tabs-columns:title'})
+        if titlemsg:
+            title = titlemsg.text
+        else:
+            try:
+                title = item.img['alt']
+            except:
+                title = item.a['title']
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
+        u = sys.argv[0] + '?mode=episodelist'
+        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+        u += '&url=' + urllib.quote_plus(href)
+        u += '&thumb=' + img
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'video')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def tedAlbum(params):
+    url = params['url']
+    del(params['url'])
+    strparam = buildParams(params)
+    html = GetHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'mod_video_list_content ui_scroll_content'})
+    soup = soup[0].find_all('li', {'class': 'item'})
+
+    for item in soup:
+        vid = item.a['id']
+        info = item.a['desc']
+        title = item.a['title']
+        li = xbmcgui.ListItem(title)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?mode=playvideo&vid=' + vid
+        u += '&title=' + title + '&thumb='
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'video')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def tedFolders(params):
+    url = params['url']
+    del(params['url'])
+    strparam = buildParams(params)
+    html = GetHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'site_container'})
+    maintitle = soup[0].find('span', {'class': 'count_num'}).text
+
+    li = xbmcgui.ListItem(BANNER_FMT % maintitle.encode('utf-8'))
+    u = sys.argv[0] + '?url=' + url + '&mode=tedlist'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = soup[0].find_all('li', {'class': 'list_item'})
+
+    for item in soup:
+        href = httphead(item.a['href'])
+        img = httphead(item.img['src'])
+        text = item.find('strong', {'class': 'album_title'})
+        if text is None:
+            title = item.a['title']
+        else:
+            title = text.text
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        if '.html' in href:
+            mode = 'tedalbum'
+        else:
+            mode = 'tedlist'
+        u = sys.argv[0] + '?url=' + href + '&mode=' + mode
+        u += '&title=' + title
+        u += '&thumb=' + urllib.quote_plus(img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'video')
@@ -323,14 +435,21 @@ def fashion(params):
     strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'mod_title'})
+    soup = tree.find_all('div', {'class': 'nav_area'})
+    list1 = soup[0].find_all('a')
+    soup = tree.find_all('div', {'class': 'slider_nav'})
+    list2 = soup[0].find_all('a')
 
-    show = soup[1].find_all('a')
-    for item in show:
-        title = item['title']
-        href = HOST_URL + '/x/cover/' + item['data-cid'] + '.html'
-        li = xbmcgui.ListItem(title)
+    for item in list1 + list2:
+        title = item.text
+        href = httphead(item['href'])
+        try:
+            img = httphead(item['data-bgimage'])
+        except:
+            img = ''
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?url=' + href + '&mode=episodelist' + strparam
+        u += '&title=' + title + '&thumb=' + img
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'video')
@@ -345,85 +464,78 @@ def videoparse(vid):
 
 def videoparseX(vid):
     RESOLUTION = ['sd', 'hd', 'shd', 'fhd']
+    sel = int(__addon__.getSetting('resolution'))
+    if sel == 4:
+        list = ['流畅(270P)', '高清(360P)', '超清(720P)', '蓝光(1080P)']
+        sel = xbmcgui.Dialog().select('清晰度选择', list)
+        if (sel < 0):
+            sel = 1         # default set to 360P or 480P
 
-    url = PARSING_URL % vid
-    jspage = GetHttpData(url)
+    jspage = GetHttpData(PARSING_URL % (vid, RESOLUTION[sel]))
     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
-
     jsdata = json.loads(jspage)
 
     types = jsdata['fl']['fi']
-
-    sel = int(__addon__.getSetting('resolution'))
-    if sel == 4:
-        list = [x['cname'] for x in types]
-        sel = xbmcgui.Dialog().select('清晰度选择', list)
-
-    if (sel < 0):
-        sel = 0
-    if sel > len(types):
-        sel = len(types) - 1
-
-    typeid = str(types[sel]['id'])
+    sel = min(sel, len(types) - 1)
+    typeid = types[sel]['id']    # typeid: 10203 (int)
 
     js = jsdata['vl']['vi'][0]
     fvkey = js['fvkey']
-    title = js['ti']
-
-    preurl = js['ul']['ui']
-    url = []
-    for u in preurl:
-        pattern = 'http://(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})'
-        addr = re.compile(pattern).search(u['url'])
-        if addr:
-            url.append(u)
-
-    if len(url) > 0:
-        server = url[0]['url']
+    if fvkey == '':
+        fvkey = open(cacheFile, 'r').read()
     else:
-        server = videoparse(0)
+        open(cacheFile, 'w').write(fvkey)
+    oldkey = fvkey
 
-    filelist = js['cl']['ci']
+    title = js['ti']               # title in chinese
+    filename = js['fn']           # filename 't0019fi7ura.p203.mp4'
+    fc = js['cl']['fc']          # file counter
+    preurl = js['ul']['ui']
+    # url = []
+    # for u in preurl:
+    #     pattern = 'http://(\d{1,3}.\d{1,3}.\d{1,3}.\d{1,3})'
+    #     addr = re.compile(pattern).search(u['url'])
+    #     if addr:
+    #         url.append(u)
+
+    # if len(url) > 0:
+    #     server = url[0]['url']
+    # else:
+    #     server = videoparse(0)
+    server = preurl[0]['url']
     urllist = []
-    for x in filelist:
-        s = x['keyid'].split('.')
-        s[1] = 'p' + typeid[2:]
-        file = '.'.join(s)
-        app = '.mp4?vkey=%s' % fvkey
-        app += '&sdtfrom=v1010&platform=11'
-        app += '&guid=daef38ead87c2db3d343ca75f432212f'
-        urllist.append(server + file + app)
-    return urllist, title
-
-
-    url = PARSING_URL.replace('getinfo', 'getkey')
-    url = url.replace('vids=', 'vid=' + vid)
-    url += '&format=' + typeid[sel]['id']
-    url += '&filename=' + fid + id
-    urllist = []
-
-    series = int(float(dur) / 300.0)       # each piece 5 minutes
-    if series == 0:
-        series = 1
-    appver = '3.2.19.358'
-    encryptver = '5.4'
-    for i in range(1, int(files)+1):
-        request = urllib2.Request(url + '.%d.mp4' %i)
-        request.add_header('Referer',
-                           'http://imgcache.qq.com/tencentvideo_v1/playerv3/TencentPlayer.swf?max_age=86400&v=20160819')
-        resp = urllib2.urlopen(request)
-        data = resp.read().decode("utf-8")
-
-        jspage = GetHttpData(url + '.%d.mp4' % i)
-        jspage = jspage[13:-1]   # remove heading and tail
-        jsdata = json.loads(jspage)
-
-        key = jsdata.get('key')
-
-        app = '.%d.mp4?vkey=%s' % (i, fvkey)
-        app += '&sdtfrom=v1010&platform=11'
-        app += '&guid=daef38ead87c2db3d343ca75f432212f'
-        urllist.append(server + fid + id + app)
+    root = 'http://h5vv.video.qq.com/getkey?vid=' + vid
+    if fc == 0:
+        url = root + '&format=%d&filename=%s' % (typeid, filename)
+        url += '&platform=10901&otype=json'
+        html = GetHttpData(url)
+        jspage = html[html.find('=')+1:-1]   # remove heading and tail
+        jspage = json.loads(jspage)
+        try:
+            key = jspage['key']
+        except:
+            key = oldkey
+        app = '?sdtfrom=v1010&type=mp4'
+        app += '&guid=DAEF38EAD87C2DB3D343CA75F432212F'
+        app += '&fmt=%s&vkey=%s' % (types[sel]['name'], key)
+        urllist.append(server + filename + app)
+    else:
+        for i in range(1, fc+1):
+            file = filename.replace('mp4', '%d.mp4' % i)
+            url = root + '&format=%d&filename=%s' % (typeid, file)
+            url += '&platform=10901&otype=json'
+            html = GetHttpData(url)
+            jspage = html[html.find('=')+1:-1]   # remove heading and tail
+            jspage = json.loads(jspage)
+            try:
+                key = jspage['key']
+            except:
+                key = oldkey
+            app = '?sdtfrom=v1010&type=mp4'
+            app += '&guid=DAEF38EAD87C2DB3D343CA75F432212F'
+            app += '&fmt=%s&vkey=%s' % (types[sel]['name'], key)
+            urllist.append(server + file + app)
+            oldkey = key
 
     return urllist, title
 
@@ -454,6 +566,68 @@ def playVideo(params):
         xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址')
 
 
+def searchTencent(params):
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
+    xbmc.sleep(1500)
+    keyboard.doModal()
+    if (keyboard.isConfirmed()):
+        keyword = keyboard.getText()
+        url = HOST_URL + '/x/search/?q=' + urllib.quote_plus(keyword)
+        url += '&stag=0'
+    else:
+        return
+
+    link = GetHttpData(url)
+    if link is None:
+        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + '   [/COLOR]的相关视频')
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+
+    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]')
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    # fetch and build the video series episode list
+    content = BeautifulSoup(link, 'html.parser')
+    soup = content.find_all('div', {'class': 'result_item'})
+
+    for items in soup:
+        href = httphead(items.a['href'])
+        print '=============', href
+        img = httphead(items.img['src'])
+        title = items.img['alt']
+        '''
+        info = items.find('span', {'class': 'desc_text'})
+        try:
+            info = info.text
+        except:
+            info = ''
+        '''
+        info = ''
+        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
+        u += '&title=' + title + '&thumb=' + img
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+        list = items.find_all('div', {'class': 'item'})
+        list = None
+        if list is None:
+            continue
+        for series in list:
+            title = series.a.text
+            href = httphead(series.a['href'])
+            li = xbmcgui.ListItem(title)
+            u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+            u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
 # main programs goes here #########################################
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
@@ -464,10 +638,13 @@ if mode is not None:
     del(params['mode'])
 
 runlist = {
-    None: 'listRoot()',
+    None: 'mainMenu()',
     'mainlist': 'listSubMenu(params)',
     'episodelist': 'episodesList(params)',
     'otherlist': 'fashion(params)',
+    'tedlist': 'tedFolders(params)',
+    'tedalbum': 'tedAlbum(params)',
+    'search': 'searchTencent(params)',
     'select': 'changeList(params)',
     'playvideo': 'playVideo(params)'
     }
