@@ -61,7 +61,7 @@ PARSING_URL = 'http://h5vv.video.qq.com/getinfo?vid=%s'
 PARSING_URL += '&defaultfmt=auto&platform=10901&newplatform=10901'
 PARSING_URL += '&defn=%s&otype=json&show1080p=1&isHLS=0&charge=0'
 #PARSING_URL += '&callback=txplayerJsonpCallBack_getinfo_8458820'
-PARSING_URL += '&guid=daef38ead87c2db3d343ca75f432212f'
+#PARSING_URL += '&guid=daef38ead87c2db3d343ca75f432212f'
 PARSING_URL += '&defnpayver=1&appVer=3.0.52&host=v.qq.com'
 #PARSING_URL += '&ehost=%s'
 #https://h5vv.video.qq.com/getinfo?
@@ -122,6 +122,16 @@ def GetHttpData(url):
         charset = charset.lower()
         if (charset != 'utf-8') and (charset != 'utf8'):
             httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
+
+    tree = BeautifulSoup(httpdata, 'html.parser')
+    try:
+        jump = tree.title.text
+    except:
+        return httpdata
+    if u'正在跳转' in jump:
+        url = tree.link['href']
+        httpdata = GetHttpData(url)
+
     return httpdata
 
 
@@ -134,7 +144,8 @@ def mainMenu():
         li = xbmcgui.ListItem(name)
         if name in ('TED'):
             mode = 'tedlist'
-        elif name in ('微电影', '时尚', '原创','生活', '财经', '汽车', '科技'):
+        elif name in ('微电影', '时尚', '原创',
+                      '生活', '财经', '汽车', '科技'):
             mode = 'otherlist'
         else:
             mode = 'mainlist'
@@ -431,8 +442,7 @@ def tedFolders(params):
 
 def fashion(params):
     url = params['url']
-    del(params['url'])
-    strparam = buildParams(params)
+    name = params['name']
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'nav_area'})
@@ -440,19 +450,43 @@ def fashion(params):
     soup = tree.find_all('div', {'class': 'slider_nav'})
     list2 = soup[0].find_all('a')
 
+    li = xbmcgui.ListItem(BANNER_FMT % name)
+    u = sys.argv[0] + '?url=' + url + '&mode=otherlist'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     for item in list1 + list2:
         title = item.text
         href = httphead(item['href'])
         try:
             img = httphead(item['data-bgimage'])
         except:
-            img = ''
+            img = 'xxx'
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        u = sys.argv[0] + '?url=' + href + '&mode=episodelist' + strparam
+        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
         u += '&title=' + title + '&thumb=' + img
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'video')
+
+    li = xbmcgui.ListItem(BANNER_FMT % '其他视频')
+    u = sys.argv[0] + '?url=' + url + '&mode=otherlist'
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = tree.find_all('ul', {'class': 'figures_list'})
+    for group in soup:
+        items = group.find_all('li', {'class': 'list_item'})
+        for item in items:
+            title = item.a['title']
+            href = item.a['href']
+            try:
+                img = item.img['src']
+            except:
+                img = item.img['lz_src']
+            li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+            u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
+            u += '&title=' + title + '&thumb=' + img
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -460,6 +494,72 @@ def videoparse(vid):
     i_url = randrange(len(VIDEO_SRV))
     server = VIDEO_SRV[i_url] + '/vlive.qqvideo.tc.qq.com/'
     return server
+
+
+
+def qq_by_vid(vid):
+    info_api = 'http://vv.video.qq.com/getinfo?otype=json&appver=3%2E2%2E19%2E333&platform=10901&defnpayver=1&vid=' + vid
+    jspage = GetHttpData(info_api)
+    jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
+    video_json = json.loads(jspage)
+
+    parts_vid = video_json['vl']['vi'][0]['vid']
+    parts_ti = video_json['vl']['vi'][0]['ti']
+    parts_prefix = video_json['vl']['vi'][0]['ul']['ui'][0]['url']
+    parts_formats = video_json['fl']['fi']
+    if parts_prefix.endswith('/'):
+        parts_prefix = parts_prefix[:-1]
+    # find best quality
+    # only looking for fhd(1080p) and shd(720p) here.
+    # 480p usually come with a single file, will be downloaded as fallback.
+    best_quality = ''
+    for part_format in parts_formats:
+        if part_format['name'] == 'fhd':
+            best_quality = 'fhd'
+            break
+
+        if part_format['name'] == 'shd':
+            best_quality = 'shd'
+
+    for part_format in parts_formats:
+        if (not best_quality == '') and (not part_format['name'] == best_quality):
+            continue
+        part_format_id = part_format['id']
+        part_format_sl = part_format['sl']
+        part_urls = []
+        if part_format_sl == 0:
+            total_size = 0
+            try:
+                # For fhd(1080p), every part is about 100M and 6 minutes
+                # try 100 parts here limited download longest single video of 10 hours.
+                for part in range(1,100):
+                    filename = vid + '.p' + str(part_format_id % 10000) + '.' + str(part) + '.mp4'
+                    key_api = "http://vv.video.qq.com/getkey?otype=json&platform=10901&format=%s&vid=%s&filename=%s" % (part_format_id, parts_vid, filename)
+                    #print(filename)
+                    #print(key_api)
+                    jspage = GetHttpData(key_api)
+                    jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
+                    key_json = json.loads(jspage)
+                    #print(key_json)
+                    vkey = key_json['key']
+                    url = '%s/%s?vkey=%s' % (parts_prefix, filename, vkey)
+                    part_urls.append(url)
+            except:
+                pass
+
+        else:
+            fvkey = video_json['vl']['vi'][0]['fvkey']
+            mp4 = video_json['vl']['vi'][0]['cl'].get('ci')
+            if mp4:
+                old_id = mp4[0]['keyid'].split('.')[1]
+                new_id = 'p' + str(int(old_id) % 10000)
+                mp4 = mp4[0]['keyid'].replace(old_id, new_id) + '.mp4'
+            else:
+                mp4 = video_json['vl']['vi'][0]['fn']
+            url = '%s/%s?vkey=%s' % (parts_prefix, mp4, fvkey)
+            part_urls.append(url)
+
+    return part_urls, parts_ti
 
 
 def videoparseX(vid):
@@ -478,7 +578,7 @@ def videoparseX(vid):
     types = jsdata['fl']['fi']
     sel = min(sel, len(types) - 1)
     typeid = types[sel]['id']    # typeid: 10203 (int)
-
+    format_sl = types[sel]['sl']   # sl
     js = jsdata['vl']['vi'][0]
     fvkey = js['fvkey']
     if fvkey == '':
@@ -505,8 +605,16 @@ def videoparseX(vid):
     server = preurl[0]['url']
     urllist = []
     root = 'http://h5vv.video.qq.com/getkey?vid=' + vid
+    lenfc = fc + 1
     if fc == 0:
-        url = root + '&format=%d&filename=%s' % (typeid, filename)
+        lenfc = 2
+    for i in range(1, lenfc):
+        if fc == 0:
+            file = filename
+        else:
+            file = filename.replace('mp4', '%d.mp4' % i)
+
+        url = root + '&format=%d&filename=%s' % (typeid, file)
         url += '&platform=10901&otype=json'
         html = GetHttpData(url)
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
@@ -515,27 +623,9 @@ def videoparseX(vid):
             key = jspage['key']
         except:
             key = oldkey
-        app = '?sdtfrom=v1010&type=mp4'
-        app += '&guid=DAEF38EAD87C2DB3D343CA75F432212F'
-        app += '&fmt=%s&vkey=%s' % (types[sel]['name'], key)
-        urllist.append(server + filename + app)
-    else:
-        for i in range(1, fc+1):
-            file = filename.replace('mp4', '%d.mp4' % i)
-            url = root + '&format=%d&filename=%s' % (typeid, file)
-            url += '&platform=10901&otype=json'
-            html = GetHttpData(url)
-            jspage = html[html.find('=')+1:-1]   # remove heading and tail
-            jspage = json.loads(jspage)
-            try:
-                key = jspage['key']
-            except:
-                key = oldkey
-            app = '?sdtfrom=v1010&type=mp4'
-            app += '&guid=DAEF38EAD87C2DB3D343CA75F432212F'
-            app += '&fmt=%s&vkey=%s' % (types[sel]['name'], key)
-            urllist.append(server + file + app)
-            oldkey = key
+        app = '?fmt=%s&vkey=%s' % (types[sel]['name'], key)
+        urllist.append(server + file + app)
+        oldkey = key
 
     return urllist, title
 
@@ -551,6 +641,7 @@ def playVideo(params):
         vid = vid.strip('"')
 
     urllist, title = videoparseX(vid)
+    # urllist, title = qq_by_vid(vid)
     ulen = len(urllist)
     if ulen > 0:
         playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
