@@ -586,7 +586,7 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
 </addon>
 
 <addon id="plugin.video.youkutv"
-    name="YouKu TV" version="1.7.6"
+    name="YouKu TV" version="1.7.7"
     provider-name="catro, yfang1644">
     <requires>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
@@ -602,6 +602,30 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
+</addon>
+
+<addon id="plugin.video.tudou"
+    name="土豆(Tudou)"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
+    </requires>
+    <extension
+        point="xbmc.python.pluginsource"
+        library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Tudou video plugin</summary>
+        <summary lang="zh">土豆在线视频</summary>
+        <description lang="en">Online videos from www.tudou.com</description>
+        <description lang="zh">每个人都是生活的导演</description>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.tudou</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
 </addon>
 
 <addon id="repository.xbmc-chinese-videos"
@@ -624,4 +648,5 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
         <platform>all</platform>
     </extension>
 </addon>
+
 </addons>

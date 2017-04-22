@@ -1885,14 +1885,15 @@ class youkuDecoder:
         e_code = self.trans_e(self.f_code_1, base64.b64decode(ep))
         return e_code.split('_')
 
-    def generate_ep(self, no, streamfileids, sid, token):
-        number = hex(int(str(no), 10))[2:].upper()
-        if len(number) == 1:
-            number = '0' + number
-        fileid = streamfileids[0:8] + number + streamfileids[10:]
-        tmp = self.trans_e(self.f_code_2, sid + '_' + fileid + '_' + token)
-        ep = urllib.quote(base64.b64encode(tmp), safe='~()*!.\'')
-        return fileid, ep
+    def generate_ep(self, fileid, sid, token):
+        ep = urllib.quote(base64.b64encode(
+            ''.join(self.trans_e(
+                self.f_code_2,  #use the 86 fcode if using 86
+                '%s_%s_%s' % (sid, fileid, token)))),
+            safe='~()*!.\''
+            )
+
+        return ep
 
 
 def getNumber(data, k):
@@ -2010,12 +2011,12 @@ def play(vid, playContinue=False):
                 break
     except:
         xbmc.executebuiltin("Dialog.Close(busydialog)")
-        xbmcgui.Dialog().ok('提示框', '解析地址异常，无法播放')
+        xbmcgui.Dialog().ok('提示框', '分辨率不匹配，无法播放')
         return
 
     if 'stream_type' not in stream:
         xbmc.executebuiltin("Dialog.Close(busydialog)")
-        xbmcgui.Dialog().ok('提示框', '解析地址异常，无法播放')
+        xbmcgui.Dialog().ok('提示框', '未找到设置的分辨率，无法播放')
         return
 
     #Calculate the URLs
@@ -2057,16 +2058,15 @@ def play(vid, playContinue=False):
 
         urls = []
         segs = stream['segs']
-        streamfileid = stream['stream_fileid']
-
         oip = movdat['security']['ip']
         ep = movdat['security']['encrypt_string']
         sid, token = youkuDecoder().get_sid(ep)
 
         for no in range(len(segs)):
             k = segs[no]['key']
+            fileid = segs[no]['fileid']
             assert k != -1
-            fileid, ep = youkuDecoder().generate_ep(no, streamfileid, sid, token)
+            ep = youkuDecoder().generate_ep(fileid, sid, token)
             q = urllib.urlencode(dict(
                 ctype = 12,
                 ev    = 1,
@@ -2107,7 +2107,7 @@ def play(vid, playContinue=False):
             playlist.add(playurl, listitem)
     except:
         xbmc.executebuiltin("Dialog.Close(busydialog)")
-        xbmcgui.Dialog().ok('提示框', '解析地址异常，无法播放')
+        xbmcgui.Dialog().ok('提示框', '异常地址，无法播放')
         return
 
     xbmc.executebuiltin("Dialog.Close(busydialog)")

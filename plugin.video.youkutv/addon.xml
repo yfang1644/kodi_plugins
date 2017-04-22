@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.youkutv"
-    name="YouKu TV" version="1.7.6"
+    name="YouKu TV" version="1.7.7"
     provider-name="catro, yfang1644">
     <requires>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
