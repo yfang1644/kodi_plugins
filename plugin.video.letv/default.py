@@ -439,7 +439,7 @@ def playVideoLetv(params):
     if len(v_urls):
         if videom3u8 == 'true':
             listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-            listitem.setInfo(type="Video", infoLabels={"Title":name})
+            listitem.setInfo(type="Video", infoLabels={"Title": name})
             xbmc.Player().play(__m3u8__, listitem)
         else:
             xplayer.play(name, thumb, v_urls)
@@ -450,7 +450,7 @@ def playVideoLetv(params):
             pDialog.close()
     else:
         # if '解析失败' in link: (license constraint etc)
-        dialog.ok(__addonname__, '未匹配到视频文件')
+        xbmcgui.Dialog().ok(__addonname__, '未匹配到视频文件')
 
 
 ##################################################################################
@@ -913,8 +913,6 @@ def searchLeTV(params):
 
 # main programs goes here #########################################
 xplayer = LetvPlayer()
-mplaylist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-dialog = xbmcgui.Dialog()
 pDialog = xbmcgui.DialogProgress()
 
 params = sys.argv[2][1:]

@@ -49,7 +49,7 @@ def urlopen_with_retry(*args, **kwargs):
             print('request attempt %s timeout' % str(i + 1))
 
 
-def get_content(url, headers={}, decoded=True):
+def get_content(url, headers={}, decoded=True, binary=False):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:
@@ -68,6 +68,9 @@ def get_content(url, headers={}, decoded=True):
 
     response = urlopen_with_retry(req)
     data = response.read()
+
+    if binary:
+        return data
 
     # Handle HTTP compression for gzip and deflate (zlib)
     content_encoding = response.headers.get('Content-Encoding')

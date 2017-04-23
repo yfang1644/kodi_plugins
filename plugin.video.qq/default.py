@@ -57,12 +57,8 @@ CHANNEL_LIST = {'电视剧': '/x/list/tv',
                 '汽车': '/auto',
                 '财经': '/finance'}
 
-PARSING_URL = 'http://h5vv.video.qq.com/getinfo?vid=%s'
-PARSING_URL += '&defaultfmt=auto&platform=10901&newplatform=10901'
-PARSING_URL += '&defn=%s&otype=json&show1080p=1&isHLS=0&charge=0'
 #PARSING_URL += '&callback=txplayerJsonpCallBack_getinfo_8458820'
 #PARSING_URL += '&guid=daef38ead87c2db3d343ca75f432212f'
-PARSING_URL += '&defnpayver=1&appVer=3.0.52&host=v.qq.com'
 #PARSING_URL += '&ehost=%s'
 #https://h5vv.video.qq.com/getinfo?
 #callback=txplayerJsonpCallBack_getinfo_845882
@@ -72,24 +68,6 @@ PARSING_URL += '&defnpayver=1&appVer=3.0.52&host=v.qq.com'
 #&ehost=https%3A%2F%2Fv.qq.com%2Fx%2Fcover%2F5c58griiqftvq00%2Ft0018ut1022.html
 #&_rnd=1492350493&defn=hd&fhdswitch=0&show1080p=1&isHLS=0
 #&newplatform=10901&defsrc=2
-
-VIDEO_SRV = ('http://182.254.72.11',
-             'http://182.254.72.110',
-             'http://182.254.72.117',
-             'http://182.254.8.74',
-             'http://124.89.197.14',
-             'http://124.89.197.16',
-             'http://111.47.228.17',
-             'http://111.47.228.19',
-             'http://117.135.168.23',
-             'http://117.135.168.25',
-             'http://117.135.168.26',
-             'http://117.135.128.159',
-             'http://117.135.128.160',
-             'http://111.47.228.20',
-             'http://111.47.228.26',
-             'http://111.47.228.23')
-# p203(270), p212(360), p201(720)
 
 
 def httphead(url):
@@ -193,18 +171,6 @@ def buildParams(params):
     for item in params:
             str += '&%s=' % item + urllib.quote_plus(params[item])
     return str
-
-
-def getMovieInfo(url):
-    html = GetHttpData(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('span', {'class': 'item'})
-
-    info = tree.find('meta', {'name': 'description'})['content']
-    if info:
-        return info
-    else:
-        return ''
 
 
 def listSubMenu(params):
@@ -314,8 +280,7 @@ def episodesList(params):
 
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
-    con = tree.find('meta', {'name': 'description'})
-    info = con['content']
+    info = tree.find('meta', {'name': 'description'})['content']
 
     match = re.compile('var LIST_INFO = ({.+?}});{0,}\n').search(html)
     js = json.loads(match.group(1))
@@ -491,14 +456,30 @@ def fashion(params):
 
 
 def videoparse(vid):
+    VIDEO_SRV = ('http://182.254.72.11',
+                 'http://182.254.72.110',
+                 'http://182.254.72.117',
+                 'http://182.254.8.74',
+                 'http://124.89.197.14',
+                 'http://124.89.197.16',
+                 'http://111.47.228.17',
+                 'http://111.47.228.19',
+                 'http://117.135.168.23',
+                 'http://117.135.168.25',
+                 'http://117.135.168.26',
+                 'http://117.135.128.159',
+                 'http://117.135.128.160',
+                 'http://111.47.228.20',
+                 'http://111.47.228.26',
+                 'http://111.47.228.23')
+
     i_url = randrange(len(VIDEO_SRV))
     server = VIDEO_SRV[i_url] + '/vlive.qqvideo.tc.qq.com/'
     return server
 
 
-
 def qq_by_vid(vid):
-    info_api = 'http://vv.video.qq.com/getinfo?otype=json&appver=3%2E2%2E19%2E333&platform=10901&defnpayver=1&vid=' + vid
+    info_api = 'http://vv.video.qq.com/getinfo?otype=json&appver=3%2E2%2E19%2E333&platform=11&defnpayver=1&vid=' + vid
     jspage = GetHttpData(info_api)
     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
     video_json = json.loads(jspage)
@@ -514,12 +495,12 @@ def qq_by_vid(vid):
     # 480p usually come with a single file, will be downloaded as fallback.
     best_quality = ''
     for part_format in parts_formats:
-        if part_format['name'] == 'fhd':
-            best_quality = 'fhd'
+        if part_format['name'] == 'hd':
+            best_quality = 'hd'
             break
 
-        if part_format['name'] == 'shd':
-            best_quality = 'shd'
+        if part_format['name'] == 'sd':
+            best_quality = 'sd'
 
     for part_format in parts_formats:
         if (not best_quality == '') and (not part_format['name'] == best_quality):
@@ -528,13 +509,12 @@ def qq_by_vid(vid):
         part_format_sl = part_format['sl']
         part_urls = []
         if part_format_sl == 0:
-            total_size = 0
             try:
                 # For fhd(1080p), every part is about 100M and 6 minutes
                 # try 100 parts here limited download longest single video of 10 hours.
                 for part in range(1,100):
                     filename = vid + '.p' + str(part_format_id % 10000) + '.' + str(part) + '.mp4'
-                    key_api = "http://vv.video.qq.com/getkey?otype=json&platform=10901&format=%s&vid=%s&filename=%s" % (part_format_id, parts_vid, filename)
+                    key_api = "http://vv.video.qq.com/getkey?otype=json&platform=11&format=%s&vid=%s&filename=%s" % (part_format_id, parts_vid, filename)
                     #print(filename)
                     #print(key_api)
                     jspage = GetHttpData(key_api)
@@ -563,17 +543,31 @@ def qq_by_vid(vid):
 
 
 def videoparseX(vid):
+    info_api = 'http://h5vv.video.qq.com/getinfo?vid=%s'
+    info_api += '&defnpayver=1&appVer=3.0.52'
+    info_api += '&defaultfmt=auto&defn=%s'
+    info_api += '&otype=json&show1080p=1&isHLS=0&charge=0'
+    if __addon__.getSetting('Version') == '0':
+        platform = '&platform=11'
+    else:
+        platform = '&platform=10901'
     RESOLUTION = ['sd', 'hd', 'shd', 'fhd']
     sel = int(__addon__.getSetting('resolution'))
     if sel == 4:
         list = ['流畅(270P)', '高清(360P)', '超清(720P)', '蓝光(1080P)']
         sel = xbmcgui.Dialog().select('清晰度选择', list)
         if (sel < 0):
-            sel = 1         # default set to 360P or 480P
+            return False, False
 
-    jspage = GetHttpData(PARSING_URL % (vid, RESOLUTION[sel]))
+    jspage = GetHttpData(info_api % (vid, RESOLUTION[sel]) + platform)
     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
     jsdata = json.loads(jspage)
+
+    if jsdata['exem'] < 0:   # try again
+        platform = '&platform=10901'
+        jspage = GetHttpData(info_api % (vid, RESOLUTION[sel]) + platform)
+        jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
+        jsdata = json.loads(jspage)
 
     types = jsdata['fl']['fi']
     sel = min(sel, len(types) - 1)
@@ -604,26 +598,22 @@ def videoparseX(vid):
     #     server = videoparse(0)
     server = preurl[0]['url']
     urllist = []
-    root = 'http://h5vv.video.qq.com/getkey?vid=' + vid
+    root = 'http://h5vv.video.qq.com/getkey?otype=json&vid=' + vid + platform
     lenfc = fc + 1
     if fc == 0:
         lenfc = 2
     for i in range(1, lenfc):
-        if fc == 0:
-            file = filename
-        else:
-            file = filename.replace('mp4', '%d.mp4' % i)
-
+        file = filename.split('.')
+        if fc != 0:
+            file.insert(2, str(i))
+            file[1] = 'p' + str(typeid % 10000)
+        file = '.'.join(file)
         url = root + '&format=%d&filename=%s' % (typeid, file)
-        url += '&platform=10901&otype=json'
         html = GetHttpData(url)
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
         jspage = json.loads(jspage)
-        try:
-            key = jspage['key']
-        except:
-            key = oldkey
-        app = '?fmt=%s&vkey=%s' % (types[sel]['name'], key)
+        key = jspage.get('key', fvkey)
+        app = '?vkey=%s&type=mp4' % key
         urllist.append(server + file + app)
         oldkey = key
 
@@ -640,8 +630,12 @@ def playVideo(params):
         vid = re.sub(' ', '', vid[0])
         vid = vid.strip('"')
 
+    #urllist, title = qq_by_vid(vid)
     urllist, title = videoparseX(vid)
-    # urllist, title = qq_by_vid(vid)
+    if urllist is False:
+        xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址')
+        return
+
     ulen = len(urllist)
     if ulen > 0:
         playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -653,8 +647,6 @@ def playVideo(params):
             playlist.add(urllist[i], liz)
 
         xbmc.Player().play(playlist)
-    else:
-        xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址')
 
 
 def searchTencent(params):

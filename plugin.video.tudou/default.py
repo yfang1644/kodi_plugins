@@ -29,6 +29,7 @@ __addonname__ = __addon__.getAddonInfo('name')
 __addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
+cookieFile = __profile__ + 'cookies.tudou'
 
 if (__addon__.getSetting('keyboard')=='0'):
     from xbmc import Keyboard as Apps
@@ -46,6 +47,248 @@ BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 TIMER_FMT = '[COLOR FF8040C0](%s)[/COLOR]'
 INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
+CFRAGMAX = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
+
+
+###########################################################################
+# LeTv player class
+###########################################################################
+class LetvPlayer(xbmc.Player):
+    def __init__(self):
+        xbmc.Player.__init__(self)
+
+    def play(self, name, thumb, v_urls=None):
+        self.name = name
+        self.thumb = thumb
+        self.v_urls_size = 0
+        self.curpos = 0
+        self.is_active = True
+        self.load_url_sync = False
+        self.xbmc_player_stop = False
+        self.title = name
+        self.mCheck = True
+        self.LOVS = 0
+
+        self.v_urls = v_urls
+        if (v_urls):    # single video file playback
+            self.curpos = int(__addon__.getSetting('video_fragmentstart')) * 10
+            self.v_urls_size = len(v_urls)
+        else:    # ugc playlist playback
+            self.curpos = int(name.split('.')[0]) - 1
+            # Get the number of video items in PlayList for ugc playback
+            self.playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            self.psize = self.playlist.size()
+
+        self.videoplaycont = __addon__.getSetting('video_vplaycont')
+        self.maxfp = CFRAGMAX[int(__addon__.getSetting('video_cfragmentmax'))]
+
+        # Start filling first buffer video and start playback
+        self.geturl()
+
+    def geturl(self):
+        if (self.v_urls and (self.curpos < self.v_urls_size)):
+            # Use double buffering for smooth playback
+            x = (self.curpos / self.maxfp) % 2
+            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
+            fs = open(self.videourl, 'wb')
+
+            endIndex = min((self.curpos + self.maxfp), self.v_urls_size)
+            self.title = "%s - 第(%s~%s)/%s节" % (self.name, str(self.curpos+1), str(endIndex), str(self.v_urls_size))
+            # print "### Preparing: " + self.title
+            self.listitem = xbmcgui.ListItem(self.title, thumbnailImage=self.thumb)
+            self.listitem.setInfo(type="Video", infoLabels={"Title": self.title})
+
+            for i in range(self.curpos, endIndex):
+                # Stop further video loading and terminate if user stop playback
+                if (self.xbmc_player_stop or pDialog.iscanceled()):
+                    self.videourl = None
+                    i = self.v_urls_size
+                    break
+
+                if (not self.isPlayingVideo()):
+                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
+                    pDialog.update(((i - self.curpos) * 100 / self.maxfp), line2="### " + self.title)
+                else:
+                    pDialog.close()
+
+                v_url = self.v_urls[i]
+                print '------------------',v_url
+                bfile = getHttpData(v_url,
+                                    headers={'User-Agent': UserAgent},
+                                    decoded=True,
+                                    binary=True
+                                   )
+                # give another trial if playback is active and bfile is invalid
+                if ((len(bfile) < 30) and self.isPlayingVideo()):
+                    bfile = getHttpData(v_url,
+                                        headers={'User-Agent': UserAgent},
+                                        decoded=True,
+                                        binary=True
+                                       )
+                fs.write(bfile)
+
+                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
+                if (not self.isPlayingVideo() and (i < self.v_urls_size) and (((i - self.curpos) % 4) == 3)):
+                    pDialog.close()
+                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
+                    self.load_url_sync = False
+                    xbmc.Player.play(self, self.videourl, self.listitem)
+                    # give some time to xmbc to upate its player status before continue
+                    xbmc.sleep(100)
+                    # Only reset fragment start after successful playback
+                    __addon__.setSetting('video_fragmentstart', '0')
+
+            fs.close()
+            # print "### Last video file download fragment: " + str(i)
+            # set self.curpos to the next loading video index
+            self.curpos = i + 1
+
+            # Last of video segment loaded, enable play once only
+            if (self.curpos == self.v_urls_size):
+                self.LOVS = 1
+            else:    # reset
+                self.LOVS = 0
+
+            # Start next video segment loading if sync loading not enable
+            if (not self.load_url_sync and (self.curpos < self.v_urls_size)):
+                # Reset to sync loading on subsequent video segment
+                self.load_url_sync = True
+                self.playrun()
+
+        # ugc auto playback
+        elif ((self.v_urls is None) and (self.curpos < self.psize)):
+            if (self.mCheck and not self.isPlayingVideo()):
+                pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
+
+            # find next not play item in ugc playlist
+            for idx in range(self.curpos, self.psize):
+                p_item = self.playlist.__getitem__(idx)
+                p_url = p_item.getfilename(idx)
+                # p_url auto replaced with self.videourl by xbmc after played. To refresh, back and re-enter
+                if "http:" in p_url:
+                    p_list = p_item.getdescription(idx)
+                    self.listitem = p_item  # pass all li items including the embedded thumb image
+                    self.listitem.setInfo(type="Video", infoLabels={"Title":p_list})
+                    self.curpos = idx
+                    break
+
+            x = self.curpos % 2
+            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
+            fs = open(self.videourl, 'wb')
+
+            v_urls = decrypt_url(p_url, self.mCheck)
+            self.v_urls_size = len(v_urls)
+            self.title = "UGC list @ %s (size = %s): %s" % (str(self.curpos), str(self.v_urls_size), p_list)
+            # print "### Preparing: " + self.title
+
+            for i, v_url in enumerate(v_urls):
+                if (self.xbmc_player_stop or pDialog.iscanceled()):
+                    self.videourl = None
+                    i = self.v_urls_size
+                    break
+
+                if (not self.isPlayingVideo()):
+                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
+                    pDialog.update((i * 100 / self.v_urls_size), line2=self.title)
+                else:
+                    pDialog.close()
+
+                bfile = getHttpData(v_url, True, True)
+                fs.write(bfile)
+
+                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
+                if (not self.isPlayingVideo() and (i < self.v_urls_size) and ((i % 4) == 3)):
+                    pDialog.close()
+                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
+                    self.load_url_sync = False
+                    xbmc.Player.play(self, self.videourl, self.listitem)
+                    # give some time to xmbc to upate its player status before continue
+                    xbmc.sleep(100)
+            fs.close()
+            # print "### Last video file download total fragment: %s ==> %s" % (str(i), self.title)
+            # set self.curpos to the next loading ugc index
+            self.curpos += 1
+
+            # Last of video segment loaded, enable play once only
+            if (self.curpos == self.psize):
+                self.LOVS = 1
+            else:    # reset
+                self.LOVS = 0
+
+            # Start next video segment loading if sync loading not enable
+            if (not self.load_url_sync and (self.curpos < self.psize)):
+                # Do not display dialog on subsequent UGC list loading
+                self.mCheck = False
+
+                # Reset to sync loading on subsequent ugc item
+                self.load_url_sync = True
+                self.playrun()
+
+        # close dialog on all mode when fetching end
+        pDialog.close()
+
+    def playrun(self):
+        if (self.videourl and not self.isPlayingVideo()):
+            # print "### Player resume: %s \n### %s" % (self.title, self.videourl)
+            pDialog.close()
+            # Next video segment loading must wait until player started to avoid race condition
+            self.load_url_sync = True
+            xbmc.Player.play(self, self.videourl, self.listitem)
+            xbmc.sleep(100)
+        elif ((self.curpos < self.v_urls_size) or self.videoplaycont):
+           # print "### Async fetch next video segment @ " + str(self.curpos)
+           self.geturl()
+
+    def onPlayBackStarted(self):
+        # may display next title to playback due to async
+        # print "### onPlayBackStarted Callback: " + self.title
+        pDialog.close()
+        if (self.load_url_sync):
+            if ((self.curpos < self.v_urls_size) or self.videoplaycont):
+                # print "### Sync fetch next video segment @ " + str(self.curpos)
+                self.geturl()
+        xbmc.Player.onPlayBackStarted(self)
+
+    def onPlayBackSeek(self, time, seekOffset):
+        # print "### Player seek forward: %s / %s" % (str(time), str(seekOffset))
+        xbmc.Player.onPlayBackSeek(self, time, seekOffset)
+
+    def onPlayBackSeekChapter(self, chapter):
+        # no effect, valid on playlist playback by xmbc
+        self.curpos += 1
+        # print "### Player seek next chapter: " + str(self.curpos)
+        xbmc.Player.onPlayBackSeek(self, chapter)
+
+    def onPlayBackEnded(self):
+        # Do not restart resume playback if video aborted due to starve network data
+        if (self.videourl and self.load_url_sync):
+        # if (self.videourl):
+            # print "### onPlayBackEnded callback: Continue next video playback !!! " + str(self.LOVS)
+            if (self.LOVS < 2):
+                self.playrun()
+            else:   # reset
+                self.LOVS = 0
+            # set flag to play last video segment once only
+            if (self.LOVS == 1):
+                self.LOVS += 1
+        else:
+            # print "### onPlayBackEnded callback: Ended-Deleted !!!"
+            ## self.delTsFile(10)
+            xbmc.Player.onPlayBackEnded(self)
+
+    def onPlayBackStopped(self):
+        # print "### onPlayBackStopped callback - Ending playback!!!"
+        self.is_active = False
+        self.xbmc_player_stop = True
+
+    def delTsFile(self, end_index):
+        for k in range(end_index):
+            tsfile = __profile__ + 'vfile-' + str(k) + '.ts'
+            if os.path.isfile(tsfile):
+                try:
+                    os.remove(tsfile)
+                except:
+                    pass
 
 
 ############################################################################
@@ -57,26 +300,47 @@ def PlayVideo(params):
     vcode = params.get('vcode')
     iid = params.get('iid')
 
-    if vcode:
+    print '------{}---{}-----'.format(vcode, iid)
+    if vcode and vcode[-2:] == '==':
         urls = getaddress_by_vid(vcode, stream_id=level)
+        print urls
+        ulen = len(urls)
+        if ulen > 0:
+            playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            playlist.clear()
+            for i in range(ulen):
+                name = title + '(%d/%d)' % (i + 1, ulen)
+                listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+                listitem.setInfo(type="Video", infoLabels={"Title": name})
+                playlist.add(urls[i], listitem)
+
+            xbmc.Player().play(playlist)
     elif iid:
         urls = tudou_download_by_iid(iid)
+        ulen = len(urls)
+        if ulen > 0:
+            playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+            playlist.clear()
+            for i in range(ulen):
+                name = title + '(%d/%d)' % (i + 1, ulen)
+                listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+                listitem.setInfo(type="Video", infoLabels={"Title": name})
+                playlist.add(urls[i], listitem)
+
+            xbmc.Player().play(playlist)
+        pass
+        pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
+        urls = tudou_download_by_iid(iid)
+        pDialog.close()
+        if len(urls) > 0:
+            xplayer.play(title, thumb, urls)
+
+            # need xmbc.sleep to make xbmc callback working properly
+            while xplayer.is_active:
+                xbmc.sleep(100)
     else:
-        dialog = xbmcgui.Dialog()
-        ok = dialog.ok(__addonname__, '未匹配到VID')
+        xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
         return
-
-    ulen = len(urls)
-    if ulen > 0:
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        playlist.clear()
-        for i in range(0, ulen):
-            name = title + '(%d/%d)' % (i + 1, ulen)
-            listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-            listitem.setInfo(type="Video", infoLabels={"Title": name})
-            playlist.add(urls[i], listitem)
-
-        xbmc.Player().play(playlist)
 
 
 def httphead(url):
@@ -96,7 +360,8 @@ def tudou_download_by_iid(iid):
     data = simplejson.loads(html)
 
     key = data.keys()
-    temp = data[key[-1]]
+    print '==================',key,iid
+    temp = data[key[0]]
 
     vids = [t['k'] for t in temp]
     urls = []
@@ -110,18 +375,15 @@ def tudou_download_by_iid(iid):
     return urls
 
 
-def r1(pattern, text):
-    m = re.search(pattern, text)
-    if m:
-        return m.group(1)
-
-
 def tudou_download_by_id(id):
     html = getHttpData('http://www.tudou.com/programs/view/%s/' % id,
                        headers={'User-Agent': UserAgent})
 
-    iid = r1(r'iid\s*[:=]\s*(\S+)', html)
-    tudou_download_by_iid(iid)
+    iid = re.search(r'iid\s*[:=]\s*(\S+)', html)
+    if iid:
+        return tudou_download_by_iid(iid)
+    else:
+        return None
 
 
 def buildParams(params):
@@ -322,7 +584,7 @@ def listSubMenu2(params):
             mode = 'videolist2'
         u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
         u += '&name=' + urllib.quote_plus(name)
-        u += '&mode=%s&title=%s' % (mode, urllib.quote_plus(title))
+        u += '&mode=%s&title=%s' % (mode, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
     jsdata = simplejson.loads(html)
     items = jsdata['data']
@@ -332,14 +594,14 @@ def listSubMenu2(params):
         iid = item['itemId']
         img = item['bigPicUrl']
         time = item['totalTimeStr']
-        code = item['code']
+        href = HOST_URL + '/programs/view/%s/' % item['code']
         li = xbmcgui.ListItem(title + TIMER_FMT % time,
                               iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?mode=albumlist'
         u += '&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(img)
-        u += '&title=' + urllib.quote_plus(title)
-        u += '&iid=%d&code=%s' % (iid, code)
+        u += '&thumb=' + img + '&url=' + href
+        u += '&title=' + title
+        u += '&iid=%d' % (iid)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if currentPage[:3] == 'ach':
@@ -447,42 +709,47 @@ def relatedAlbumList(params):
 
 
 def relatedPlayList(params):
-    iid = params.get('iid')
+    url = params.get('url')
     title = params.get('title')
     img = params.get('thumb')
-    code = params.get('code')
-    vcode = params.get('vcode')
-    if iid:
-        u = sys.argv[0] + '?mode=playvideo&iid=%s' % iid
+    iid = [params.get('iid')]
+    if url:
+        html = getHttpData(url, headers={'User-Agent': UserAgent})
+        iid = re.compile('iid: (\d+)').findall(html)
+        vcode = re.compile('youkuCode: "(.+?)"').findall(html)
+        print '---------------------------', url, iid, vcode
+        u = sys.argv[0] + '?mode=playvideo&thumb=' + img
+        if iid:
+            u += '&iid=' + iid[0]
         if vcode:
-            u += '&vcode=' + vcode
-        u += '&title=' + urllib.quote_plus(title) + '&thumb=' + img
+            u += '&vcode=' + vcode[0]
+        u += '&title=' + urllib.quote_plus(title)
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-        rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
+    rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
 
-        jspage = getHttpData(rel_list % iid, headers={'User-Agent': UserAgent})
-        jsdata = simplejson.loads(jspage)
-        items = jsdata['data']['pList']
+    jspage = getHttpData(rel_list % iid[0], headers={'User-Agent': UserAgent})
+    jsdata = simplejson.loads(jspage)
+    items = jsdata['data']['pList']
 
-        u = sys.argv[0] + '?mode=codelist&iid=%s' % iid
-        u += '&title=相关视频'
-        li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    u = sys.argv[0] + '?mode=codelist&iid=%s' % iid[0]
+    u += '&title=' + '相关视频'.decode('utf-8')
+    li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-        for item in items:
-            title = item['name']
-            img = item['picUrl']
-            info = item['description']
-            code = item['code']
-            li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-            li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
-            u = sys.argv[0] + '?mode=codelist'
-            u += '&title=%s&code=%s' % (urllib.quote_plus(title), code)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    for item in items:
+        title = item['name']
+        img = item['picUrl']
+        info = item['description']
+        code = item['code']
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?mode=codelist'
+        u += '&title=%s&code=%s' % (title, code)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-        code = items[0]['code']
+    code = items[0]['code']
 
     rel_list = 'http://www.tudou.com/crp/plist.action?lcode=%s'
 
@@ -491,7 +758,7 @@ def relatedPlayList(params):
     items = jsdata['items']
 
     u = sys.argv[0] + '?mode=codelist&iid=%s' % iid
-    u += '&title=主题视频'
+    u += '&title=' + '主题视频'.decode('utf-8')
     li = xbmcgui.ListItem(BANNER_FMT % '主题视频')
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
@@ -503,7 +770,7 @@ def relatedPlayList(params):
         li = xbmcgui.ListItem(title + '(' + time + ')',
                               iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?mode=playvideo'
-        u += '&title=%s&thumb=%s&iid=%d' % (urllib.quote_plus(title), img, iid)
+        u += '&title=%s&thumb=%s&iid=%d' % (title, img, iid)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
@@ -539,6 +806,8 @@ def searchInTudou(params):
 
 
 # main programs goes here #########################################
+xplayer = LetvPlayer()
+pDialog = xbmcgui.DialogProgress()
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
