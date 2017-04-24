@@ -5,9 +5,8 @@ import xbmc
 import xbmcaddon
 import xbmcgui
 import xbmcplugin
-
+import time
 import re
-import socket
 import traceback
 import urllib
 import urllib2
@@ -24,29 +23,128 @@ mainList = {
     'chengshi': '城市频道'
 }
 
-cityList = [["anhui", "安徽"],
-            ["beijing", "北京"],
-            ["fujian", "福建"],
-            ["gansu", "甘肃"],
-            ["guangdong", "广东"],
-            ["guangxi", "广西"],
-            ["hebei", "河北"],
-            ["heilongjiang", "黑龙江"],
-            ["hubei", "湖北"],
-            ["jilin", "吉林"],
-            ["jiangsu", "江苏"],
-            ["jiangxi", "江西"],
-            ["liaoning", "辽宁"],
-            ["neimenggu", "内蒙古"],
-            ["shandong", "山东"],
-            ["shaanxi", "陕西"],
-            ["shanghai", "上海"],
-            ["sichuan", "四川"],
-            ["tianjin", "天津"],
-            ["xizang", "西藏"],
-            ["xinjiang", "新疆"],
-            ["yunnan", "云南"],
-            ["zhejiang", "浙江"]]
+cityList = [{"area": "安徽", 'id': 'anhui', 'channel': []},
+            {"area": "北京", 'id': 'beijing',
+             'channel': [{"btv2": "BTV文艺"},
+                         {"btv3": "BTV科教"},
+                         {"btv4": "BTV影视"},
+                         {"btv5": "BTV财经"},
+                         {"btv6": "BTV体育"},
+                         {"btv7": "BTV生活"},
+                         {"btv8": "BTV青年"},
+                         {"btv9": "BTV新闻"},
+                         {"btvchild": "BTV卡酷少儿"},
+                         {"btvjishi": "BTV纪实"},
+                         {"btvInternational": "BTV国际"}]},
+            {"area": "福建", 'id': 'fujian',
+             'channel': [{"xiamen1": "厦门一套"},
+                         {"xiamen2": "厦门二套"},
+                         {"xiamen3": "厦门三套"},
+                         {"xiamen4": "厦门四套"},
+                         {"xiamenyidong": "厦门移动"}]},
+            {"area": "甘肃", 'id': 'gansu',
+             'channel': [{"jingcailanzhou": "睛彩兰州"}]},
+            {"area": "广东", 'id': 'guangdong',
+             'channel': [{"cztv1": "潮州综合"},
+                         {"cztv2": "潮州公共"},
+                         {"foshanxinwen": "佛山新闻综合"},
+                         {"guangzhouxinwen": "广州新闻"},
+                         {"guangzhoujingji": "广州经济"},
+                         {"guangzhoushaoer": "广州少儿"},
+                         {"guangzhouzonghe": "广州综合"},
+                         {"guangzhouyingyu": "广州英语"},
+                         {"shaoguanzonghe": "韶关综合"},
+                         {"shaoguangonggong": "韶关公共"},
+                         {"shenzhencjsh": "深圳财经"},
+                         {"zhuhaiyitao": "珠海一套"},
+                         {"zhuhaiertao": "珠海二套"}]},
+            {"area": "广西", 'id': 'guangxi', 'channel': []},
+            {"area": "河北", 'id': 'hebei',
+             'channel': [{"hebeinongmin": "河北农民频道"},
+                         {"hebeijingji": "河北经济"},
+                         {"shijiazhuangyitao": "石家庄一套"},
+                         {"shijiazhuangertao": "石家庄二套"},
+                         {"shijiazhuangsantao": "石家庄三套"},
+                         {"shijiazhuangsitao": "石家庄四套"},
+                         {"xingtaizonghe": "邢台综合"},
+                         {"xingtaishenghuo": "邢台生活"},
+                         {"xingtaigonggong": "邢台公共"},
+                         {"xingtaishahe": "邢台沙河"}]},
+            {"area": "黑龙江", 'id': 'heilongjiang',
+             'channel': [{"haerbinnews": "哈尔滨新闻综合"}]},
+            {"area": "湖北", 'id': 'hubei',
+             'channel': [{"hubeidst": "湖北电视台综合频道"},
+                         {"hubeigonggong": "湖北公共"},
+                         {"hubeijiaoyu": "湖北教育"},
+                         {"hubeitiyu": "湖北体育"},
+                         {"hubeiyingshi": "湖北影视"},
+                         {"hubeijingshi": "湖北经视"},
+                         {"hubeigouwu": "湖北购物"},
+                         {"jznews": "荆州新闻频道"},
+                         {"wuhanetv": "武汉教育"},
+                         {"jzlongs": "湖北垄上频道"},
+                         {"xiangyangtai": "襄阳广播电视台"}]},
+            {"area": "吉林", 'id': 'jilin',
+             'channel': [{"yanbianguangbo": "延边卫视视频广播"},
+                         {"yanbianam": "延边卫视AM"},
+                         {"yanbianfm": "延边卫视FM"}]},
+            {"area": "江苏", 'id': 'jiangsu',
+             'channel': [{"nanjingnews": "南京新闻"},
+                         {"nantongxinwen": "南通新闻频道"},
+                         {"nantongshejiao": "南通社教频道"},
+                         {"nantongshenghuo": "南通生活频道"},
+                         {"wuxixinwenzonghe": "无锡新闻综合"},
+                         {"wuxidoushizixun": "无锡都市资讯"},
+                         {"wuxiyuele": "无锡娱乐"},
+                         {"wuxijingji": "无锡经济"},
+                         {"wuxiyidong": "无锡移动"},
+                         {"wuxishenghuo": "无锡生活"}]},
+            {"area": "江西", 'id': 'jiangxi',
+             'channel': [{"ganzhou", "赣州新闻综合"},
+                         {"ganzhou": "赣州新闻综合"},
+                         {"nanchangnews": "南昌新闻"}]},
+            {"area": "辽宁", 'id': 'liaoning',
+             'channel': [{"daliannews": "大连一套"},
+                         {"liaoningds": "辽宁都市"}]},
+            {"area": "内蒙古", 'id': 'neimenggu',
+             'channel': [{"neimenggu2", "蒙语频道"},
+                         {"neimengwh": "内蒙古文化频道"}]},
+            {"area": "山东", 'id': 'shandong',
+             'channel': [{"jinannews": "济南新闻"},
+                         {"qingdaonews": "青岛新闻综合"},
+                         {"yantaixinwenzonghe": "烟台新闻综合"},
+                         {"yantaixinjingjishenghuo": "烟台经济生活"},
+                         {"yantaigonggong": "烟台公共频道"}]},
+            {"area": "陕西", 'id': 'shaanxi',
+             'channel': [{"xiannews": "西安新闻"}]},
+            {"area": "上海", 'id': 'shanghai',
+             'channel': [{"shnews": "上海新闻综合"}]},
+            {"area": "四川", 'id': 'sichuan',
+             'channel': [{"cdtv1": "成都新闻综合"},
+                         {"cdtv2new": "成都经济资讯服务"},
+                         {"cdtv5": "成都公共"}]},
+            {"area": "天津", 'id': 'tianjin',
+             'channel': [{"tianjin2": "天津2套"},
+                         {"tianjinbh": "滨海新闻综合"},
+                         {"tianjinbh2": "滨海综艺频道"}]},
+            {"area": "西藏", 'id': 'xizang',
+             'channel': [{"xizang2": "藏语频道"}]},
+            {"area": "新疆", 'id': 'xinjiang',
+             'channel': [{"xjtv2": "维语新闻综合"},
+                         {"xjtv3": "哈语新闻综合"},
+                         {"xjtv5": "维语综艺"},
+                         {"xjtv8": "哈语综艺"},
+                         {"xjtv9": "维语经济生活"}]},
+            {"area": "云南", 'id': 'yunnan',
+             'channel': [{"lijiangnews": "丽江新闻综合频道"},
+                         {"lijiangpublic": "丽江公共频道"}]},
+            {"area": "浙江", 'id': 'zhejiang',
+             'channel': [{"nbtv1": "宁波一套"},
+                         {"nbtv2": "宁波二套"},
+                         {"nbtv3": "宁波三套"},
+                         {"nbtv4": "宁波四套"},
+                         {"nbtv5": "宁波五套"}]},
+            ]
 
 cctvList = [["cctv1", "1-综合"],
             ["cctv2", "2-财经"],
@@ -61,7 +159,7 @@ cctvList = [["cctv1", "1-综合"],
             ["cctv8", "8-电视剧"],
             ["cctv9", "CCTV-NEWS"],
             ["cctvjilu", "9-纪录"],
-            ["cctvdoc", "9-纪录(英语)"],
+            ["cctvdocumentary", "9-纪录(英语)"],
             ["cctv10", "10-科教"],
             ["cctv11", "11-戏曲"],
             ["cctv12", "12-社会与法"],
@@ -82,9 +180,11 @@ weishList = [["anhui", "安徽卫视"],
              ["hebei", "河北卫视"],
              ["henan", "河南卫视"],
              ["heilongjiang", "黑龙江卫视"],
+             ['hnss', '三沙卫视'],
              ["hubei", "湖北卫视"],
              ["hunan", "湖南卫视"],
              ["jilin", "吉林卫视"],
+             ["jiangsu", "江苏卫视"],
              ["jiangxi", "江西卫视"],
              ["kangba", "康巴卫视"],
              ["liaoning", "辽宁卫视"],
@@ -92,9 +192,8 @@ weishList = [["anhui", "安徽卫视"],
              ["neimenggu", "内蒙古卫视"],
              ["ningxia", "宁夏卫视"],
              ["qinghai", "青海卫视"],
-             ["shandong", "山东卫视"],
              ["sdetv", "山东教育台"],
-             ["shenzhen", "深圳卫视"],
+             ["shandong", "山东卫视"],
              ["shan1xi", "山西卫视"],
              ["shan3xi", "陕西卫视"],
              ["shenzhen", "深圳卫视"],
@@ -148,39 +247,81 @@ def getQualityRange(quality):
     return "300-500"
 
 
+def fixURL(tmpurl):
+#    tmpurl = tmpurl.replace("vtime.cntv.cloudcdn.net:8000", "vtime.cntv.cloudcdn.net") #Global (HDS/FLV) - wrong port
+#    tmpurl = tmpurl.replace("tv.fw.live.cntv.cn", "tvhd.fw.live.cntv.cn") #China - 403 Forbidden
+    return tmpurl
+
+
+def tryStream(jsondata, subkey, type):
+    print("Trying stream {0}".format(subkey))
+
+    if subkey in jsondata[type] and jsondata[type][subkey] != "":
+        try:
+            tmpurl = jsondata[type][subkey]
+            tmpurl = fixURL(tmpurl)
+
+            if tmpurl[:7] != 'http://':
+                tmpurl = 'http://' + tmpurl
+            tmpurl = tmpurl.replace(' ', '')
+            print tmpurl
+            req = urllib2.Request(tmpurl)
+            conn = urllib2.urlopen(req, timeout=TIMEOUT_S)
+            conn.read(8) #Try reading a few bytes
+
+            return tmpurl
+        except Exception:
+            print("{0} failed.".format(subkey))
+            print(traceback.format_exc())
+
+    return None
+
+
+def tryHDSStream(jsondata, streamName):
+    if streamName in jsondata["hds_url"]:
+        url = jsondata["hds_url"][streamName]
+        url = url + "&hdcore=2.11.3"
+
+        return url
+
+
+def programList(city):
+    prog_api = 'http://api.cntv.cn/epg/Epg24h?serviceId=channel&t=jsonp&cb=%s=&c=%s'
+    resp = urllib2.urlopen(prog_api % (city, city))
+    data = resp.read()
+    data = data.decode('utf-8').encode('utf-8', 'ignore')
+    jsdata = jsonimpl.loads(data[data.find('=(')+2:-2])
+    info = ''
+    try:
+        jsprog = jsdata['programs']
+        for item in jsprog[:8]:    # list recent 8 programs
+            begin = time.localtime(item['startTime'])
+            end = time.localtime(item['endTime'])
+            title = item['ptitle']
+            info += '%02d:%02d--' % (begin[3], begin[4])
+            info += '%02d:%02d    ' % (end[3], end[4])
+            info += title  +'\n'
+    except:
+        pass
+
+    return info
+
+
+def addStream(channelID, channelName):
+    li = xbmcgui.ListItem(channelName, iconImage=addon_path + "/resources/media/" + channelID + ".png")
+    info = programList(channelID)
+    li.setInfo(type='Video',
+               infoLabels={'Title': channelName, 'Plot': info})
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?stream=" + channelID, listitem=li)
+
+
+def addCity(cityID, cityName):
+    li = xbmcgui.ListItem(cityName, iconImage=addon_path + "/resources/media/" + cityID + ".png")
+    xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?city=" + cityID, listitem=li, isFolder=True)
+
+
 def main():
     if param.startswith("?stream="):
-        def fixURL(tmpurl):
-            tmpurl = tmpurl.replace("vtime.cntv.cloudcdn.net:8000", "vtime.cntv.cloudcdn.net") #Global (HDS/FLV) - wrong port
-            tmpurl = tmpurl.replace("tv.fw.live.cntv.cn", "tvhd.fw.live.cntv.cn") #China - 403 Forbidden
-            return tmpurl
-
-        def tryHLSStream(jsondata, subkey):
-            print("Trying stream {0}".format(subkey))
-
-            if subkey in jsondata["hls_url"] and jsondata["hls_url"][subkey] != "":
-                try:
-                    tmpurl = jsondata["hls_url"][subkey]
-                    tmpurl = fixURL(tmpurl)
-
-                    req = urllib2.Request(tmpurl)
-                    conn = urllib2.urlopen(req, timeout=TIMEOUT_S)
-                    conn.read(8) #Try reading a few bytes
-
-                    return tmpurl
-                except Exception:
-                    print("{0} failed.".format(subkey))
-                    print(traceback.format_exc())
-
-            return None
-
-        def tryFLVStream(jsondata, streamName):
-            if streamName in jsondata["hds_url"]:
-                url = jsondata["hds_url"][streamName]
-                url = url + "&hdcore=2.11.3"
-
-                return url
-
         pDialog = xbmcgui.DialogProgress()
         pDialog.create(addon.getLocalizedString(30009), addon.getLocalizedString(30010))
         pDialog.update(0)
@@ -194,7 +335,7 @@ def main():
                 return
 
             url = None
-            jsondata = jsonimpl.loads(data)
+            jsondata = jsonimpl.loads(data.encode('utf-8'))
             urlsTried = 0
             urlsToTry = 5
 
@@ -202,16 +343,18 @@ def main():
                 for i in range(1, urlsToTry + 1):
                     urlsTried += 1
                     pDialog.update(urlsTried * 500 / urlsToTry,
-                                   "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%s"%i))
-                    url = tryHLSStream(jsondata, "hls%s"%i)
+                                   "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%d"%i))
+                    url = tryStream(jsondata, "hls%d"%i, 'hls_url')
                     if url is not None:
                         break
+                    if pDialog.iscanceled():
+                        return
 
-            if pDialog.iscanceled():
-                return
-
-            #if url is None and jsondata.has_key("hls_url"):
-            #    tryHLSStream(jsondata, "hls4")
+            if url is None and 'flv_url' in jsondata:
+                for i in range(1, 7):
+                    url = tryStream(jsondata, "flv%d"%i, 'flv_url')
+                    if url is not None:
+                        break
 
             if url is None:
                 showNotification(30002)
@@ -234,143 +377,19 @@ def main():
 
     elif param.startswith("?city="):
         city = param[6:]
+        for area in cityList:        # find area in cityList
+            if area['id'] == city:
+                break
 
-        def addStream(channelID, channelName):
-            li = xbmcgui.ListItem(channelName, iconImage=addon_path + "/resources/media/" + city + ".png")
-            xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?stream=" + channelID, listitem=li)
-
-        if city == "anhui":
-            addStream("anqingxinwen", "安庆新闻综合")
-        if city == "beijing":
-            addStream("btv2", "BTV文艺")
-            addStream("btv3", "BTV科教")
-            addStream("btv4", "BTV影视")
-            addStream("btv5", "BTV财经")
-            addStream("btv6", "BTV体育")
-            addStream("btv7", "BTV生活")
-            addStream("btv8", "BTV青少")
-            addStream("btv9", "BTV新闻")
-            addStream("btvchild", "BTV卡酷少儿")
-            addStream("btvjishi", "BTV纪实")
-            addStream("btvInternational", "BTV国际")
-        if city == "tianjin":
-            addStream("tianjin1", "天津1套")
-            addStream("tianjin2", "天津2套")
-            addStream("tianjinbh", "滨海新闻综合")
-            addStream("tianjinbh2", "滨海综艺频道")
-        if city == "guangxi":
-            addStream("gxzy", "广西综艺")
-        if city == "guangdong":
-            addStream("cztv1", "潮州综合")
-            addStream("cztv2", "潮州公共")
-            addStream("foshanxinwen", "佛山新闻综合")
-            addStream("guangzhouxinwen", "广州新闻")
-            addStream("guangzhoujingji", "广州经济")
-            addStream("guangzhoushaoer", "广州少儿")
-            addStream("guangzhouzonghe", "广州综合")
-            addStream("guangzhouyingyu", "广州英语")
-            addStream("shaoguanzonghe", "韶关综合")
-            addStream("shaoguangonggong", "韶关公共")
-            addStream("shenzhencjsh", "深圳财经")
-            addStream("zhuhaiyitao", "珠海一套")
-            addStream("zhuhaiertao", "珠海二套")
-        if city == "sichuan":
-            addStream("cdtv1", "成都新闻综合")
-            addStream("cdtv2new", "成都经济资讯服务")
-            addStream("cdtv5", "成都公共")
-        if city == "liaoning":
-            addStream("daliannews", "大连一套")
-            addStream("liaoningds", "辽宁都市")
-        if city == "jiangxi":
-            addStream("ganzhou", "赣州新闻综合")
-            addStream("nanchangnews", "南昌新闻")
-        if city == "hubei":
-            addStream("hubeidst", "湖北电视台综合频道")
-            addStream("hubeigonggong", "湖北公共")
-            addStream("hubeijiaoyu", "湖北教育")
-            addStream("hubeitiyu", "湖北体育")
-            addStream("hubeiyingshi", "湖北影视")
-            addStream("hubeijingshi", "湖北经视")
-            addStream("hubeigouwu", "湖北购物")
-            addStream("jznews", "荆州新闻频道")
-            addStream("wuhanetv", "武汉教育")
-            addStream("jzlongs", "湖北垄上频道")
-            addStream("xiangyangtai", "襄阳广播电视台")
-        if city == "heilongjiang":
-            addStream("haerbinnews", "哈尔滨新闻综合")
-        if city == "xinjiang":
-            addStream("xjtv2", "维语新闻综合")
-            addStream("xjtv3", "哈语新闻综合")
-            addStream("xjtv5", "维语综艺")
-            addStream("xjtv8", "哈语综艺")
-            addStream("xjtv9", "维语经济生活")
-        if city == "hebei":
-            addStream("hebeinongmin", "河北农民频道")
-            addStream("hebeijingji", "河北经济")
-            addStream("shijiazhuangyitao", "石家庄一套")
-            addStream("shijiazhuangertao", "石家庄二套")
-            addStream("shijiazhuangsantao", "石家庄三套")
-            addStream("shijiazhuangsitao", "石家庄四套")
-            addStream("xingtaizonghe", "邢台综合")
-            addStream("xingtaishenghuo", "邢台生活")
-            addStream("xingtaigonggong", "邢台公共")
-            addStream("xingtaishahe", "邢台沙河")
-        if city == "shandong":
-            addStream("jinannews", "济南新闻")
-            addStream("qingdaonews", "青岛新闻综合")
-            addStream("yantaixinwenzonghe", "烟台新闻综合")
-            addStream("yantaixinjingjishenghuo", "烟台经济生活")
-            addStream("yantaigonggong", "烟台公共频道")
-        if city == "gansu":
-            addStream("jingcailanzhou", "睛彩兰州")
-        if city == "yunnan":
-            addStream("lijiangnews", "丽江新闻综合频道")
-            addStream("lijiangpublic", "丽江公共频道")
-        if city == "neimenggu":
-            addStream("neimenggu2", "蒙语频道")
-            addStream("neimengwh", "内蒙古文化频道")
-        if city == "jiangsu":
-            addStream("nanjingnews", "南京新闻")
-            addStream("nantongxinwen", "南通新闻频道")
-            addStream("nantongshejiao", "南通社教频道")
-            addStream("nantongshenghuo", "南通生活频道")
-            addStream("wuxixinwenzonghe", "无锡新闻综合")
-            addStream("wuxidoushizixun", "无锡都市资讯")
-            addStream("wuxiyuele", "无锡娱乐")
-            addStream("wuxijingji", "无锡经济")
-            addStream("wuxiyidong", "无锡移动")
-            addStream("wuxishenghuo", "无锡生活")
-        if city == "zhejiang":
-            addStream("nbtv1", "宁波一套")
-            addStream("nbtv2", "宁波二套")
-            addStream("nbtv3", "宁波三套")
-            addStream("nbtv4", "宁波四套")
-            addStream("nbtv5", "宁波五套")
-        if city == "shanghai":
-            addStream("shnews", "上海新闻综合")
-        if city == "fujian":
-            addStream("xiamen1", "厦门一套")
-            addStream("xiamen2", "厦门二套")
-            addStream("xiamen3", "厦门三套")
-            addStream("xiamen4", "厦门四套")
-            addStream("xiamenyidong", "厦门移动")
-        if city == "shaanxi":
-            addStream("xiannews", "西安新闻")
-        if city == "xizang":
-            addStream("xizang2", "藏语频道")
-        if city == "jilin":
-            addStream("yanbianguangbo", "延边卫视视频广播")
-            addStream("yanbianam", "延边卫视AM")
-            addStream("yanbianfm", "延边卫视FM")
+        channels = len(area['channel'])
+        for i in range(channels):
+            key = area['channel'][i].keys()[0]
+            addStream(key, area['channel'][i][key])
 
         xbmcplugin.endOfDirectory(addon_handle)
 
     elif param.startswith("?category="):
         category = param[10:]
-
-        def addStream(channelID, channelName):
-            li = xbmcgui.ListItem(channelName, iconImage=addon_path + "/resources/media/" + channelID + ".png")
-            xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?stream=" + channelID, listitem=li)
 
         if category == "yangshi":
             for item in cctvList:
@@ -382,16 +401,13 @@ def main():
 
         if category == "shuzi":
             addStream("zhongxuesheng", "CCTV中学生")
+            addStream("cctvfxzl", "CCTV发现之旅")
             addStream("xinkedongman", "CCTV新科动漫")
             addStream("zhinan", "CCTV电视指南")
 
         if category == "chengshi":
-            def addCity(cityID, cityName):
-                li = xbmcgui.ListItem(cityName, iconImage=addon_path + "/resources/media/" + cityID + ".png")
-                xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?city=" + cityID, listitem=li, isFolder=True)
-
             for item in cityList:
-                addCity(item[0], item[1])
+                addCity(item['id'], item['area'])
 
         xbmcplugin.endOfDirectory(addon_handle)
 
