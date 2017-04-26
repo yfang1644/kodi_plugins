@@ -112,7 +112,6 @@ class LetvPlayer(xbmc.Player):
                     pDialog.close()
 
                 v_url = self.v_urls[i]
-                print '------------------',v_url
                 bfile = getHttpData(v_url,
                                     headers={'User-Agent': UserAgent},
                                     decoded=True,
@@ -369,21 +368,26 @@ def tudou_download_by_iid(iid):
         html = getHttpData('http://cnc.v2.tudou.com/f?id=%d&jp=1' % vid,
                            headers={'User-Agent': UserAgent})
         y = re.compile('<f.+?>(http.+?)<\/f>').findall(html)
+        if len(y) < 1:
+            break
         y = y[0].replace('&amp;', '&')
         urls.append(y.strip())
-
+    print urls
     return urls
+
+
+def r1(pattern, text):
+    m = re.search(pattern, text)
+    if m:
+        return m.group(1)
 
 
 def tudou_download_by_id(id):
     html = getHttpData('http://www.tudou.com/programs/view/%s/' % id,
                        headers={'User-Agent': UserAgent})
 
-    iid = re.search(r'iid\s*[:=]\s*(\S+)', html)
-    if iid:
-        return tudou_download_by_iid(iid)
-    else:
-        return None
+    iid = r1(r'iid\s*[:=]\s*(\S+)', html)
+    tudou_download_by_iid(iid)
 
 
 def buildParams(params):
@@ -422,46 +426,66 @@ def mainMenu():
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
+def findTags(string):
+    group = re.compile('(a|b|c|d|e|f|g|h|i|j|k|l|m|n)(\d+)').findall(string)
+    return dict(group)
+
+
+def mergeTags(tags):
+    str = ''
+    for x in tags:
+        str += '&tags=' + tags[x]
+    return str
+
+
 def listSubMenu1(params):
     # http://www.tudou.com/list/ach3a-2b-2c-2d-2e-2f1003g-2h-2i-2j-2k-2l-2m-2n1sort2.html
     # http://www.tudou.com/list/ach3a42b55c324d-2e-2f1003g-2h-2i-2j-2k-2l-2m-2n-2sort2.html
-    #a42:地区
-    #b55:类型
-    #c324:状态
-    #dxx:年代
-    #exxx:付费
-    #f1002:清晰度
+    # a42:地区
+    # b55:类型
+    # c324:状态
+    # dxx:年代
+    # exxx:付费
+    # f1002:清晰度
     # &tags=&tags=....
     # sort1:最新 sort2: 人气
     name = params['name']
     url = params['url']
+    filter = params.get('filter', '')
     urlpage = getHttpData(url, headers={'User-Agent': UserAgent})
     page = params.get('pageNo', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
+    tags = findTags(piece)
 
-    list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
+    if tags.get('n'):
+        AtoZ = chr(int(tags['n']) + 64)
+        del(tags['n'])
+    else:
+        AtoZ = ''
 
     params = {'name': name,
               'pageSize': '30',
               'app': 'mainsitepc',
               'deviceType': '1',
-              'tags': '',            # 地区类型...清晰度  , etc.
               'tagType': '3',
               'firstTagId': tagId,
               'areaCode': '',
-              'initials': '',        # 首字母  2n2sort2
+              'initials': AtoZ,        # 首字母  nXXsort2
               'hotSingerId': '',
               'pageNo': page
              }
+             # 'tags': '',            # 地区类型...清晰度  , etc.
     strparam = buildParams(params)
-    strparam = '?' + strparam[1:]
+    strparam = '?' + strparam[1:] + mergeTags(tags)
+
+    list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
     html = getHttpData(list_api + strparam, headers={'User-Agent': UserAgent})
     jsdata = simplejson.loads(html)
     items = jsdata['items']
     total = jsdata['total']
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'【第%s页】(分类过滤)' % page))
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -520,14 +544,14 @@ def listSubMenu1(params):
         li = xbmcgui.ListItem(BANNER_FMT % '上一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist1&pageNo=%d' % (int(page)-1)
-        u += '&name=' + name
+        u += '&name=' + urllib.quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if int(page) <= total // 30:
         li = xbmcgui.ListItem(BANNER_FMT % '下一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist1&pageNo=%d' % (int(page)+1)
-        u += '&name=' + name
+        u += '&name=' + urllib.quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
@@ -537,28 +561,37 @@ def listSubMenu1(params):
 def listSubMenu2(params):
     name = params['name']
     url = params['url']
+    filter = params.get('filter', '')
     urlpage = getHttpData(url, headers={'User-Agent': UserAgent})
     page = params.get('page', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
+    tags = findTags(piece)
 
-    list_api = 'http://www.tudou.com/list/itemData.action'
+    if tags.get('n'):
+        AtoZ = chr(int(tags['n']) + 64)
+        del(tags['n'])
+    else:
+        AtoZ = ''
+
     params = {'name': name,
               'pageSize': '30',
               'sort': '2',
-              'tags': '',            # 地区类型...清晰度  , etc.
               'tagType': '1',
               'firstTagId': tagId,
               'areaCode': '',
-              'initials': '',        # 首字母  2n2sort2
+              'initials': AtoZ,        # 首字母  2n2sort2
               'hotSingerId': '',
               'page': page
              }
+             #  'tags': '',            # 地区类型...清晰度  , etc.
     strparam = buildParams(params)
-    strparam = '?' + strparam[1:]
+    strparam = '?' + strparam[1:] + mergeTags(tags)
+
+    list_api = 'http://www.tudou.com/list/itemData.action'
     html = getHttpData(list_api + strparam, headers={'User-Agent': UserAgent})
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'【第%s页】(分类过滤)' % page))
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -627,7 +660,57 @@ def listSubMenu2(params):
 
 
 def normalSelect(params):
-    return
+    url = params.get('url')
+    name = params.get('name')
+    surl = url.split('/')
+    purl = surl[-1]
+    if len(purl) < 10:
+        purl = purl[:-5] + 'a-2b-2c-2d-2e-2f-2g-2h-2i-2j-2k-2l-2m-2n-2sort2.html'
+    filter = params.get('filter', '')
+
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'category_item fix'})
+
+    print '======================='
+    dialog = xbmcgui.Dialog()
+    color = '[COLOR FF00FF00]%s[/COLOR]'
+    for iclass in soup:
+        si = iclass.find_all('li')
+        list = []
+        i = 0
+        for subitem in si:
+            title = subitem.text
+            if subitem.get('class'):
+                title = color % title
+                mark = i
+            list.append(title)
+            i += 1
+        sel = dialog.select(iclass.h3.text, list)
+
+        if sel < 0:
+            continue
+        filter += '|' + iclass.h3.text + '(' + si[sel].text + ')'
+        if sel == mark:
+            continue
+
+        seurl = si[sel].a['href'].split('/')[-1]
+        p = re.compile('(a|b|c|d|e|f|g|h|i|j|k|l|m|n)(\d+)').findall(seurl[3:])
+        lp = len(p)
+        print p
+        for i in range(lp):
+            c = p[i][0]
+            purl = re.sub(c + '\d+', c + p[i][1], purl)
+            purl = re.sub(c + '\-2', c + p[i][1], purl)
+
+    surl[-1] = purl
+    params['url'] = '/'.join(surl)
+    params['filter'] = filter.encode('utf-8')
+    print params['url']
+    if purl[0] == 'a':
+        listSubMenu1(params)
+    else:
+        listSubMenu2(params)
 
 
 def relatedAlbumList(params):
@@ -652,8 +735,6 @@ def relatedAlbumList(params):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
-    print '======================'
-    print album_api,aid
     jspage = getHttpData(album_api % aid,
                          headers={'User-Agent': UserAgent},
                          decoded=False)
@@ -717,7 +798,7 @@ def relatedPlayList(params):
         html = getHttpData(url, headers={'User-Agent': UserAgent})
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
-        print '---------------------------', url, iid, vcode
+
         u = sys.argv[0] + '?mode=playvideo&thumb=' + img
         if iid:
             u += '&iid=' + iid[0]

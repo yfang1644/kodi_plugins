@@ -516,7 +516,7 @@ def Segmentation(httpurl, duration):
     start = 0
     while start < duration:
         if start + during > duration:
-            during = duration -start
+            during = duration - start
         seg1 = re.sub('m3u8\?type=m3u8',
                       'ts?start=%d&during=%d&type=m3u8'%(start, during), httpurl)
         seg1 = re.sub('%3D', '=', seg1)
