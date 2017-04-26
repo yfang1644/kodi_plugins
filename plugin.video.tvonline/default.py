@@ -36,7 +36,7 @@ INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
 
 # collected from http://www.haoqu.net/3
-CHANNELS = {973: '河南政法频道',
+CHANNELS_LE = {973: '河南政法频道',
             974: '河南国际频道',
             975: '上海第一财经',
             976: '上海星尚频道',
@@ -78,6 +78,11 @@ CHANNELS = {973: '河南政法频道',
             1012: '郭德纲'
            }
 
+CHANNELS_SZ = {
+    '苏州新闻综合': 'http://pull.8686c.com/sztv1/sbs1hd/playlist.m3u8',
+    '苏州社会经济': 'http://livetv.2500city.com/live/sbs2hd/index.m3u8',
+    '苏州文化生活': 'http://livetv.2500city.com/live/sbs3hd/index.m3u8',
+    '苏州生活资讯': 'http://livetv.2500city.com/live/sbs5hd/index.m3u8'}
 
 def getHttpData(url):
     req = urllib2.Request(url)
@@ -112,25 +117,32 @@ def PlayVideoNJTV(params):
     html = getHttpData(timeUrl)
     timestamp = simplejson.loads(html)['time']
     t = float(timestamp)
-    timestamp = int(t/1000)
+    timestamp = int(t)
 
     bitrateUrl = 'http://live-api.xwei.tv/api/getCDNByChannelId/' + id
     html = getHttpData(bitrateUrl)
-    rate = simplejson.loads(html)
-    rate = rate['streams'].keys()
+    jsdata = simplejson.loads(html)
+    rate = jsdata['streams'].keys()
     if (__addon__.getSetting('resolution') == '0'):
         rate = rate[0]
     else:
         rate = rate[-1]
-
-    playurl = 'http://live.xwei.tv/channels/njtv/video_shh/flv:%s/live?%d'
-
+    channel = jsdata['channel_name']
+    playurl = 'http://live.xwei.tv/channels/njtv/%s/flv:%s/live?%d'
     li = xbmcgui.ListItem(title)
-    xbmc.Player().play(playurl % (rate, timestamp), li)
+    xbmc.Player().play(playurl % (channel, rate, timestamp), li)
 
 
 ############################################################################
-def PlayVideoOtherTV(params):
+def PlayVideoSZTV(params):
+    url = params['url']
+    title = params['title']
+    li = xbmcgui.ListItem(title)
+    xbmc.Player().play(url, li)
+
+
+############################################################################
+def PlayVideoLeTV(params):
     '''
     http://minisite.letv.com/tuiguang/index.shtml?islive=1&channelId=989&typeFrom=letv_live_360live&ark=100&cid=4&wmode=opaque
     '''
@@ -183,11 +195,14 @@ def getProgramList(channelId):
 
 
 def mainMenu():
+    li = xbmcgui.ListItem(BANNER_FMT % '南京电视台')
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     channelAPI = 'http://live-api.xwei.tv/api/getChannels'
     html = getHttpData(channelAPI)
 
     results = simplejson.loads(html)['result']
-
     for channel in results:
         title = channel['display_name']
         channelId = channel['id']
@@ -197,11 +212,37 @@ def mainMenu():
         u = sys.argv[0] + '?mode=playnjtv&id=%s&title=%s' % (channelId, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    for id in CHANNELS:
-        title = CHANNELS[id]
+    li = xbmcgui.ListItem(BANNER_FMT % '乐视直播')
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    info_api = 'http://player.pc.letv.com/player/startup_by_channel_id/1001/%s?host=letv.com'
+
+    for id in range(973, 1013):
+        html = getHttpData(info_api % id)
+        jsdata = simplejson.loads(html)
+        title = jsdata['channelName']
+        logos = jsdata['defaultLogo']
+        img = logos.items()[0][1]
+
+        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        u = sys.argv[0] + '?mode=playletv&id=%d&title=%s' % (id, title)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    li = xbmcgui.ListItem(BANNER_FMT % '苏州')
+    # http://tv.cutv.com/
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    info_api = 'http://liveapp.cutv.com/crossdomain/timeshiftinglive/getTSLAllChannelList/first/sztv'
+
+    for channel in CHANNELS_SZ:
+        title = channel
+        url = CHANNELS_SZ[channel]
         li = xbmcgui.ListItem(title)
         li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?mode=playtv&id=%d&title=%s' % (id, title)
+        u = sys.argv[0] + '?mode=playsztv&title=' + title
+        u += '&url=' + url
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -212,13 +253,12 @@ params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
 mode = params.get('mode')
-if mode is not None:
-    del(params['mode'])
 
 runlist = {
     None: 'mainMenu()',
     'playnjtv': 'PlayVideoNJTV(params)',
-    'playtv': 'PlayVideoOtherTV(params)',
+    'playletv': 'PlayVideoLeTV(params)',
+    'playsztv': 'PlayVideoSZTV(params)',
 }
 
 eval(runlist[mode])
