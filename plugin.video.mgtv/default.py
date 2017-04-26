@@ -24,6 +24,7 @@ UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) Apple
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
+BANNER_FMT2 = '[COLOR FFDE0087]%s[/COLOR]'
 INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 
@@ -153,11 +154,18 @@ def listSubMenu(params):
         try:
             exinfo = '(' + item.em.text + ')'
         except:
-            exinfo =''
+            exinfo = ''
+
+        # pay info
+        pay = item.find('i', {'class': 'v-mark-v5'})
+        if pay:
+            pay = '(' + pay.text + ')'
+        else:
+            pay = ''
 
         pinfo = item.find('span', {'class': 'u-desc'})
         info = pinfo.text.replace(' ', '')
-        li = xbmcgui.ListItem(title + exinfo,
+        li = xbmcgui.ListItem(title + exinfo + pay,
                               iconImage=thumb, thumbnailImage=thumb)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u += '&name=' + urllib.quote_plus(name)
@@ -167,46 +175,68 @@ def listSubMenu(params):
 
     # multiple pages
     setpage = tree.find_all('div', {'class': 'w-pages'})
-    pages = setpage[0].find_all('li')
-
-    for page in pages:
-        try:
-            title = page.a['title']
-        except:
-            continue
-        href = page.a['href']
-        if href == 'javascript:;':
-            continue
-        else:
-            href = httphead(href)
-        li = xbmcgui.ListItem(BANNER_FMT % title)
-        u = sys.argv[0] + '?url=' + href + '&mode=mainlist'
-        u += '&name=' + urllib.quote_plus(name)
-        u += '&filter=' + urllib.quote_plus(filter)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    try:
+        pages = setpage[0].find_all('li')
+        for page in pages:
+            try:
+                title = page.a['title']
+            except:
+                continue
+            href = page.a['href']
+            if href == 'javascript:;':
+                continue
+            else:
+                href = httphead(href)
+            li = xbmcgui.ListItem(BANNER_FMT % title)
+            u = sys.argv[0] + '?url=' + href + '&mode=mainlist'
+            u += '&name=' + urllib.quote_plus(name)
+            u += '&filter=' + urllib.quote_plus(filter)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    except:
+        pass
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def episodesList(params):
-    episode_api = 'http://pcweb.api.mgtv.com/episode/list?video_id=%s&page=1&size=50'
     url = params['url']
-    id = url.split('/')[-1]
-    id = re.compile('(\d+).html').findall(id)[0]
-    html = GetHttpData(episode_api % id)
+    name = params.get('name')
+    episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
+    episode_api = 'http://pcweb.api.mgtv.com/episode/list'
+    episode_api += '?video_id=%s&page=%d&size=40'
+    thumb = params.get('thumb')
+    page = params.get('page', '0')
+    page = int(page)
+    if url[-1] == '/':    # is a directory
+        html = GetHttpData(url)
+        id = re.compile('vid: (\d+)').findall(html)[0]
+    else:
+        id = url.split('/')[-1]
+        id = re.compile('(\d+).html').findall(id)[0]
+
+    html = GetHttpData(episode_api % (id, page))
     jsdata = simplejson.loads(html)
 
     data = jsdata['data']
     list = data.get('list')
+    total_page = data.get('total_page', 1)
+
     for series in list:
-        title = series['t1'] +' ' + series['t2']
+        title = series['t1'] + ' ' + series['t2']
         if series['isnew'] != '0':
             title = title + u'(预)'
         img = series['img']
         href = httphead(series['url'])
         vid = series['video_id']
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+
+        vip = series.get('isvip')
+        if vip and vip != '0':
+            pay = '(VIP)'
+        else:
+            pay = ''
+
+        li = xbmcgui.ListItem(title + pay, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
         u += '&thumb=' + img
@@ -219,44 +249,74 @@ def episodesList(params):
             title = title + u'(预)'
         img = series['img']
         href = httphead(series['url'])
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        vid = series['video_id']
+
+        vip = series.get('isvip')
+        if vip and vip != '0':
+            pay = '(VIP)'
+        else:
+            pay = ''
+
+        li = xbmcgui.ListItem(title + pay, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
         u += '&thumb=' + img
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
+    if page > 0:
+        li = xbmcgui.ListItem(BANNER_FMT % '上一页')
+        u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
+        u += '&thumb=' + thumb + '&page=%d' % (page-1)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    if page < total_page - 1:
+        li = xbmcgui.ListItem(BANNER_FMT % '下一页')
+        u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
+        u += '&thumb=' + thumb + '&page=%d' % (page+1)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     related = data.get('related')
+    if related:
+        title = related['t1'] + ' ' + related['t2']
+        img = related['img']
+        href = httphead(related['url'])
+
+        li = xbmcgui.ListItem(BANNER_FMT2 % title,
+                              iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title})
+        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
+        u += '&thumb=' + img
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def get_mgtv_real_url(url):
+def get_mgtv_real_url(m3u_url):
     """str->list of str
     Give you the real URLs."""
-    content = simplejson.loads(GetHttpData(url))
-    m3u_url = content['info']
-    split = urlsplit(m3u_url)
+    from os.path import dirname
+    import urlparse
+    split = urlparse.urlsplit(m3u_url)
 
-    base_url = "{scheme}://{netloc}{path}/".format(scheme = split[0],
-                                                   netloc = split[1],
-                                                   path = dirname(split[2]))
+    base_url = "{scheme}://{netloc}{path}/".format(scheme=split[0],
+                                                   netloc=split[1],
+                                                   path=dirname(split[2]))
 
-    content = GetHttpData(content['info'])  #get the REAL M3U url, maybe to be changed later?
+    # get the REAL M3U url, maybe to be changed later?
+    content = GetHttpData(m3u_url)
     segment_list = []
     segments_size = 0
     for i in content.split():
-        if not i.startswith('#'):  #not the best way, better we use the m3u8 package
+        if not i.startswith('#'):  # not the best way, better we use the m3u8 package
             segment_list.append(base_url + i)
             # use ext-info for fast size calculate
         elif i.startswith('#EXT-MGTV-File-SIZE:'):
             segments_size += int(i[i.rfind(':')+1:])
 
-    return m3u_url, segments_size, segment_list
+    return segment_list
 
 
-def playVideo(params):
-    vid = params['vid']
-    thumb = params['thumb']
+def get_url_from_vid(vid):
     api_endpoint = 'http://pcweb.api.mgtv.com/player/video?video_id='
     html = GetHttpData(api_endpoint + vid)
     content = simplejson.loads(html)
@@ -268,15 +328,32 @@ def playVideo(params):
     if level == 4:
         level = 0
 
-    purl = content['data']['stream'][level]['url']
+    url = content['data']['stream'][level]['url']
 
-    url = domain + re.sub(r'(\&arange\=\d+)', '', purl)  #Un-Hum
+    url = domain + re.sub(r'(\&arange\=\d+)', '', url)  # Un-Hum
     content = simplejson.loads(GetHttpData(url))
-    m3u_url = content['info']
+    url = content['info']
 
+    return url, title
+
+
+def playVideo(params):
+    vid = params['vid']
+    thumb = params['thumb']
+    m3u_url, title = get_url_from_vid(vid)
     li = xbmcgui.ListItem(title, thumbnailImage=thumb)
-    playlist = xbmc.Player().play(m3u_url, li)
+    xbmc.Player().play(m3u_url, li)
 
+    '''
+    urllist = get_mgtv_real_url(m3u_url)
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    ulen = len(urllist)
+    for i in range(ulen):
+        playlist.add(urllist[i], li)
+
+    xbmc.Player().play(playlist)
+    '''
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
