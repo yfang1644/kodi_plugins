@@ -547,7 +547,7 @@ def videoparseX(vid):
     info_api += '&defnpayver=1&appVer=3.0.52'
     info_api += '&defaultfmt=auto&defn=%s'
     info_api += '&otype=json&show1080p=1&isHLS=0&charge=0'
-    if __addon__.getSetting('Version') == '0':
+    if __addon__.getSetting('version') == '0':
         platform = '&platform=11'
     else:
         platform = '&platform=10901'

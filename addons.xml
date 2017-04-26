@@ -656,6 +656,28 @@ For Non-PRC OS environment (Windows7|WindowsXP):[CR]"Control Panel"|"Region and 
 	</extension>
 </addon>
 
+<addon id="plugin.video.mgtv"
+    name="芒果TV"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Mangguo Video plugin</summary>
+        <summary lang="zh">MGTV 视频插件</summary>
+        <description lang="en">Online videos from tv.sohu.com</description>
+        <description lang="zh">本插件视频解析自芒果TV网站(www.mgtv.com)</description>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.mgtv</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
 <addon id="repository.xbmc-chinese-videos"
     name="Audio-Video Add-ons" version="1.0.0"
     provider-name="yfang1644">
