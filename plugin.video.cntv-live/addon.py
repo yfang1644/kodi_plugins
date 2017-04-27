@@ -52,7 +52,7 @@ cityList = [{"area": "安徽", 'id': 'anhui', 'channel': []},
                          {"guangzhoujingji": "广州经济"},
                          {"guangzhoushaoer": "广州少儿"},
                          {"guangzhouzonghe": "广州综合"},
-                         {"guangzhouyingyu": "广州英语"},
+                         {"guangzhooyingyu": "广州英语"},
                          {"shaoguanzonghe": "韶关综合"},
                          {"shaoguangonggong": "韶关公共"},
                          {"shenzhencjsh": "深圳财经"},
@@ -101,7 +101,6 @@ cityList = [{"area": "安徽", 'id': 'anhui', 'channel': []},
                          {"wuxishenghuo": "无锡生活"}]},
             {"area": "江西", 'id': 'jiangxi',
              'channel': [{"ganzhou", "赣州新闻综合"},
-                         {"ganzhou": "赣州新闻综合"},
                          {"nanchangnews": "南昌新闻"}]},
             {"area": "辽宁", 'id': 'liaoning',
              'channel': [{"daliannews": "大连一套"},
@@ -215,11 +214,9 @@ xbmcplugin.setContent(addon_handle, "movies")
 
 TIMEOUT_S = 2.0
 
-param = sys.argv[2]
-
 
 def getHttp(url):
-    resp = urllib2.urlopen(url)
+    resp = urllib2.urlopen(url, timeout=TIMEOUT_S)
     data = resp.read()
     data = data.decode('utf-8')
     resp.close()
@@ -264,7 +261,7 @@ def tryStream(jsondata, subkey, type):
             if tmpurl[:7] != 'http://':
                 tmpurl = 'http://' + tmpurl
             tmpurl = tmpurl.replace(' ', '')
-            print tmpurl
+
             req = urllib2.Request(tmpurl)
             conn = urllib2.urlopen(req, timeout=TIMEOUT_S)
             conn.read(8) #Try reading a few bytes
@@ -300,34 +297,126 @@ def programList(city):
             title = item['ptitle']
             info += '%02d:%02d--' % (begin[3], begin[4])
             info += '%02d:%02d    ' % (end[3], end[4])
-            info += title  +'\n'
+            info += title + '\n'
     except:
         pass
 
     return info
 
 
-def addStream(channelID, channelName):
-    li = xbmcgui.ListItem(channelName, iconImage=addon_path + "/resources/media/" + channelID + ".png")
+def addStream(channelID, channelName, mode='?stream='):
+    thumb = addon_path + '/resources/media%s.png' % channelID
     info = programList(channelID)
+    li = xbmcgui.ListItem(channelName, iconImage=thumb)
     li.setInfo(type='Video',
                infoLabels={'Title': channelName, 'Plot': info})
-    xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?stream=" + channelID, listitem=li)
+    u = sys.argv[0] + mode + channelID + '&thumb=' + thumb
+    u += '&title=' + channelName
+    xbmcplugin.addDirectoryItem(addon_handle, u, li)
 
 
 def addCity(cityID, cityName):
-    li = xbmcgui.ListItem(cityName, iconImage=addon_path + "/resources/media/" + cityID + ".png")
-    xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?city=" + cityID, listitem=li, isFolder=True)
+    thumb = addon_path + '/resources/media/%s.png' % cityID
+    li = xbmcgui.ListItem(cityName, iconImage=thumb)
+    u = sys.argv[0] + '?city=' + cityID + '&thumb=' + thumb
+    xbmcplugin.addDirectoryItem(addon_handle, u, li, isFolder=True)
+
+
+class XBMCPlayer(xbmc.Player):
+    def __init__(self, *args):
+        self.channel = 'cctv00'
+        self.media_ended = False
+        self.media_stopped = False
+
+        pass
+        xbmc.log('#=#=#=# '+ self.channel + ' XBMCPlayer Initialized #=#=#=#')
+
+    def __del__(self):
+        xbmc.log('#=#=#=# '+ self.channel + ' XBMCPlayer Destructed #=#=#=#')
+
+    def nPlayBackPaused(self):
+        xbmc.log('#=#=#=# Status: ' + self.channel + ' Playback Paused #=#=#=#')
+
+    def onPlayBackResumed(self):
+        xbmc.log('#=#=#=# Status: ' + self.channel + ' Playback Resumed #=#=#=#')
+
+    def onPlayBackStarted(self):
+        # Will be called when xbmc starts playing a file
+        xbmc.log('#=#=#=# Status: ' + self.channel + ' Playback Started #=#=#=#')
+        self.media_ended = False
+        self.media_stopped = False
+
+    def onPlayBackEnded(self):
+        # Will be called when xbmc ended playing a file
+        xbmc.log('#=#=#=# Status: ' + self.channel + ' Playback Ended, #=#=#=#')
+        self.media_ended = True
+        # let treated media_ended the same as media_stopped for now
+        self.media_stopped = True
+
+    def onPlayBackStopped(self):
+        # Will be called when user stops xbmc playing a file
+        xbmc.log('#=#=#=# Status: ' + self.channel + ' Playback Stopped #=#=#=#')
+        self.media_stopped = True
+        # self.stop()
+
+
+class XBMCMonitor(xbmc.Monitor):
+    def __init__(self, *args):
+        pass
+        xbmc.log("#=#=#=# Monitor initialized  #=#=#=#")
+
+    def __del__(self):
+        xbmc.log("#=#=#=# Monitor destructed #=#=#=#")
+
+    def abortRequested(self):
+        # Returns True if abort has been requested.
+        xbmc.log("#=#=#=# Status: ** abort *** has been requestd #=#=#=#")
+
+
+def cn_time_s():  # return CST (China Standard Time) in seconds
+    lc_time = time.localtime()
+    gm_time_s = time.mktime(time.gmtime())
+    return gm_time_s + (8 - lc_time.tm_isdst)*3600 # CST = GMT + 8h, tm_isdst = {1,0,-1}
+
+
+def cntvReplay(ch, title, thumb):
+    b_url = 'http://v.cctv.com/live_back/nettv_%s/%s-' % (ch, ch)
+    player = XBMCPlayer()
+    monitor = XBMCMonitor()
+
+    while(not player.media_stopped):
+        cur = cn_time_s()
+        hr = time.strftime("%Y-%m-%d-%H", time.localtime(cur-600))
+        seg = '-%03d.mp4' % (int((time.strftime("%M", time.localtime(cur-600))))/5+1)
+        url = b_url + hr + seg + '?wsiphost=local'
+        li = xbmcgui.ListItem('央视重播', iconImage=thumb, thumbnailImage=thumb)
+        li.setInfo(type='Video', infoLabels={"Title": title})
+        player.play(item=url, listitem=li)
+        for x in range(1, 300):
+            if monitor.waitForAbort(1) or player.media_stopped: # Sleep/wait for abort for 1 second
+                xbmc.log('#=#=#=# ' + ch + ' aborted or media_stopped #=#=#=#')
+                player.media_stopped
+                break   # Abort was requested while waiting. Exit the while loop.
+    player.stop()
+    xbmc.log('#=#=#=# left ' + ch + ' #=#=#=#')
 
 
 def main():
-    if param.startswith("?stream="):
+    params = sys.argv[2][1:]
+    params = dict(urllib2.urlparse.parse_qsl(params))
+
+    cntv = params.get('stream')
+    city = params.get('city')
+    category = params.get('category')
+    replay = params.get('replay')
+
+    if cntv:
         pDialog = xbmcgui.DialogProgress()
         pDialog.create(addon.getLocalizedString(30009), addon.getLocalizedString(30010))
         pDialog.update(0)
         try:
             #Locate the M3U8 file
-            resp = urllib2.urlopen("http://vdn.live.cntv.cn/api2/live.do?channel=pa://cctv_p2p_hd" + param[8:])
+            resp = urllib2.urlopen("http://vdn.live.cntv.cn/api2/live.do?channel=pa://cctv_p2p_hd" + cntv)
             data = resp.read()
             data = data.decode('utf-8')
             resp.close()
@@ -343,8 +432,8 @@ def main():
                 for i in range(1, urlsToTry + 1):
                     urlsTried += 1
                     pDialog.update(urlsTried * 500 / urlsToTry,
-                                   "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%d"%i))
-                    url = tryStream(jsondata, "hls%d"%i, 'hls_url')
+                                   "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%d" % i))
+                    url = tryStream(jsondata, "hls%d" % i, 'hls_url')
                     if url is not None:
                         break
                     if pDialog.iscanceled():
@@ -352,7 +441,7 @@ def main():
 
             if url is None and 'flv_url' in jsondata:
                 for i in range(1, 7):
-                    url = tryStream(jsondata, "flv%d"%i, 'flv_url')
+                    url = tryStream(jsondata, "flv%d" % i, 'flv_url')
                     if url is not None:
                         break
 
@@ -375,8 +464,7 @@ def main():
             pDialog.close()
             return
 
-    elif param.startswith("?city="):
-        city = param[6:]
+    elif city:
         for area in cityList:        # find area in cityList
             if area['id'] == city:
                 break
@@ -388,9 +476,7 @@ def main():
 
         xbmcplugin.endOfDirectory(addon_handle)
 
-    elif param.startswith("?category="):
-        category = param[10:]
-
+    elif category:
         if category == "yangshi":
             for item in cctvList:
                 addStream(item[0], item[1])
@@ -409,7 +495,16 @@ def main():
             for item in cityList:
                 addCity(item['id'], item['area'])
 
+        if category == 'cctvreplay':
+            for item in cctvList:
+                addStream(item[0], item[1], '?replay=')
+
         xbmcplugin.endOfDirectory(addon_handle)
+
+    elif replay:
+        title = params['title']
+        thumb = params['thumb']
+        cntvReplay(replay, title, thumb)
 
     else:
         def addCategory(categoryID, categoryName):
@@ -419,6 +514,7 @@ def main():
         for title in mainList:
             addCategory(title, mainList[title])
 
+        addCategory('cctvreplay', '央视重播节目')
         xbmcplugin.endOfDirectory(addon_handle)
 
 main()

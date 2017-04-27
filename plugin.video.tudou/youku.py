@@ -97,15 +97,15 @@ class Youku():
 
     # Last updated: 2015-11-24
     stream_types = [
-        #{'id': 'mp4hd3', 'alias-of' : 'hd3'},
-        #{'id': 'hd3',    'container': 'flv', 'video_profile': '1080P'},
+        {'id': 'mp4hd3', 'alias-of' : 'hd3'},
+        {'id': 'hd3',    'container': 'flv', 'video_profile': '1080P'},
         {'id': 'mp4hd2', 'alias-of' : 'hd2'},
         {'id': 'hd2',    'container': 'flv', 'video_profile': '超清'},
-        #{'id': 'mp4hd',  'alias-of' : 'mp4'},
+        {'id': 'mp4hd',  'alias-of' : 'mp4'},
         {'id': 'mp4',    'container': 'mp4', 'video_profile': '高清'},
         {'id': 'flvhd',  'container': 'flv', 'video_profile': '标清'},
         {'id': 'flv',    'container': 'flv', 'video_profile': '标清'},
-        #{'id': '3gphd',  'container': '3gp', 'video_profile': '标清（3GP）'},
+        {'id': '3gphd',  'container': '3gp', 'video_profile': '标清（3GP）'},
     ]
 
     f_code_1 = 'becaf9be'
@@ -331,17 +331,15 @@ class Youku():
                 i['url'] = 'http://v.youku.com/v_show/id_{}'.format(i['vid'])
 
     def extract(self, **kwargs):
-        if 'stream_id' in kwargs and kwargs['stream_id']:
-            # Extract the stream
-            stream_id = kwargs['stream_id']
-            stream_id = self.stream_types[stream_id]['id']
-
-            if stream_id not in self.streams:
-                print('[Error] Invalid video format.')
-                exit(2)
+        stream_level = kwargs.get('stream_id')
+        if stream_level:   # reverse order
+            l = len(self.streams_sorted)
+            level = max(l - stream_level - 1, 0)
         else:
             # Extract stream with the best quality
-            stream_id = self.streams_sorted[0]['id']
+            level = 0
+
+        stream_id = self.streams_sorted[level]['id']
 
         e_code = self.trans_e(
             self.f_code_1,
@@ -360,6 +358,7 @@ class Youku():
                         k = segs[no]['key']
                         fileid = segs[no]['fileid']
                         if k == -1:
+                            break
                             k = oldk
                         else:
                             oldk = k

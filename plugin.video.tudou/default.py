@@ -672,7 +672,6 @@ def normalSelect(params):
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'category_item fix'})
 
-    print '======================='
     dialog = xbmcgui.Dialog()
     color = '[COLOR FF00FF00]%s[/COLOR]'
     for iclass in soup:
@@ -696,17 +695,14 @@ def normalSelect(params):
 
         seurl = si[sel].a['href'].split('/')[-1]
         p = re.compile('(a|b|c|d|e|f|g|h|i|j|k|l|m|n)(\d+)').findall(seurl[3:])
-        lp = len(p)
-        print p
-        for i in range(lp):
-            c = p[i][0]
-            purl = re.sub(c + '\d+', c + p[i][1], purl)
-            purl = re.sub(c + '\-2', c + p[i][1], purl)
+        for x in p:
+            purl = re.sub(x[0] + '\d+', x[0] + x[1], purl)
+            purl = re.sub(x[0] + '\-2', x[0] + x[1], purl)
 
     surl[-1] = purl
     params['url'] = '/'.join(surl)
     params['filter'] = filter.encode('utf-8')
-    print params['url']
+
     if purl[0] == 'a':
         listSubMenu1(params)
     else:
@@ -725,11 +721,11 @@ def relatedAlbumList(params):
         u = sys.argv[0] + '?mode=playvideo&iid=%s&vcode=%s' % (iid[0], vcode[0])
         u += '&title=' + urllib.quote_plus(title)
         u += '&thumb=' + img
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    u = sys.argv[0] + '?mode=albumlist&albumId=%s' % aid
-    u += '&title=' + title + '&thumb=' + img
+    else:
+        u = sys.argv[0] + '?mode=albumlist&albumId=%s' % aid
+        u += '&title=' + title + '&thumb=' + img
+
     li = xbmcgui.ListItem(BANNER_FMT % title,
                           iconImage=img, thumbnailImage=img)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)

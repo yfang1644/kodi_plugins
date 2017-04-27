@@ -6,8 +6,10 @@
   	<requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
         <import addon="script.module.keyboard.chinese" version="2.0.4"/>
-  	</requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
+    </requires>
+    <extension
+        point="xbmc.python.pluginsource"
+        library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
