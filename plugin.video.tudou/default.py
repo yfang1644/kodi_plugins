@@ -296,13 +296,17 @@ def PlayVideo(params):
     thumb = params.get('thumb')
     level = int(__addon__.getSetting('resolution'))
 
+    if level == 4:
+        dialog = xbmcgui.Dialog()
+        level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
+        level = max(0, level)
+
     vcode = params.get('vcode')
     iid = params.get('iid')
 
     print '------{}---{}-----'.format(vcode, iid)
-    if vcode and vcode[-2:] == '==':
+    if vcode:
         urls = getaddress_by_vid(vcode, stream_id=level)
-        print urls
         ulen = len(urls)
         if ulen > 0:
             playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -359,7 +363,6 @@ def tudou_download_by_iid(iid):
     data = simplejson.loads(html)
 
     key = data.keys()
-    print '==================',key,iid
     temp = data[key[0]]
 
     vids = [t['k'] for t in temp]
@@ -372,7 +375,6 @@ def tudou_download_by_iid(iid):
             break
         y = y[0].replace('&amp;', '&')
         urls.append(y.strip())
-    print urls
     return urls
 
 
@@ -733,23 +735,30 @@ def relatedAlbumList(params):
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
     jspage = getHttpData(album_api % aid,
                          headers={'User-Agent': UserAgent},
-                         decoded=False)
+                         decoded=True)
 
-    jsdata = simplejson.loads(jspage)
+    jsdata = simplejson.loads(jspage.encode('utf-8'))
     jsdata = jsdata['items']
 
     for item in jsdata:
         title = item['kw']
-        info = item.get('comments')
+        info = item.get('comments', '')
+        if info is None:
+            info = ''
         time = item['time']
+        if time is None:
+            time = ''
+
         img = item['pic']
+        if img is None:
+            img = ''
         vcode = item['vcode']
         iid = item['iid']
         u = sys.argv[0] + '?mode=playvideo'
-        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+        u += '&title=' + title
         u += '&thumb=' + img
         u += '&vcode=%s&iid=%d' % (vcode, iid)
-        li = xbmcgui.ListItem(title + '(' + time + ')',
+        li = xbmcgui.ListItem(title + time,
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)

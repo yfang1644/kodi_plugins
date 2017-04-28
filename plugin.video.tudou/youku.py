@@ -332,7 +332,7 @@ class Youku():
 
     def extract(self, **kwargs):
         stream_level = kwargs.get('stream_id')
-        if stream_level:   # reverse order
+        if stream_level is not None:   # reverse order
             l = len(self.streams_sorted)
             level = max(l - stream_level - 1, 0)
         else:

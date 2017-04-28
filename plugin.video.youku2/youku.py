@@ -179,7 +179,7 @@ class Youku():
         return ep
 
     # Obsolete -- used to parse m3u8 on pl.youku.com
-    def parse_m3u8(m3u8):
+    def parse_m3u8(self, m3u8):
         return re.findall(r'(http://[^?]+)\?ts_start=0', m3u8)
 
     def get_vid_from_url(self, url):
@@ -332,7 +332,7 @@ class Youku():
 
     def extract(self, **kwargs):
         stream_level = kwargs.get('stream_id')
-        if stream_level:   # reverse order
+        if stream_level is not None:   # reverse order
             l = len(self.streams_sorted)
             level = max(l - stream_level - 1, 0)
         else:

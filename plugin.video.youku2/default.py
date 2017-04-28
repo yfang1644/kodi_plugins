@@ -296,6 +296,11 @@ def PlayVideo(params):
     thumb = params.get('thumb')
     level = int(__addon__.getSetting('resolution'))
 
+    if level == 4:
+        dialog = xbmcgui.Dialog()
+        level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
+        level = max(0, level)
+
     vcode = get_vid_from_url(url)
 
     if vcode:
@@ -365,8 +370,9 @@ def listSubMenu(params):
     name = params['name']
     url = params['url']
     filter = params.get('filter', '')
+    sort = params.get('sort', '')
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'(分类过滤 %s)' % filter))
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'(分类过滤 %s)' % filter.encode('utf-8')))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -391,17 +397,22 @@ def listSubMenu(params):
 
     # 剧目清单
     #items = soup[0].find_all('div', {'class': 'p-thumb'})
-    items = tree.find_all('div', {'class': 'p-thumb'})
+    items = tree.find_all('div', {'class': 'yk-pack'})
     for item in items:
         title = item.a['title']
         href = httphead(item.a['href'])
         img = httphead(item.img['src'])
         pay = item.find('span', {'class': 'vip-free'})
         if pay:
-            pay = '[COLOR FFFF00FF]' + pay.text + '[/COLOR]'
+            pay = '([COLOR FFFF00FF]%s' + pay.text + '[/COLOR])'
         else:
-            pay = ''
-        li = xbmcgui.ListItem(title + '(' + pay + ')',
+            pay = '%s'
+        pt = item.find('span', {'class': 'p-time'})
+        try:
+            ptime = pt.text + ' '
+        except:
+            ptime = ''
+        li = xbmcgui.ListItem(title + pay % (ptime),
                               iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
         u += '&name=' + urllib.quote_plus(name)
@@ -417,32 +428,104 @@ def normalSelect(params):
     url = params.get('url')
     name = params.get('name')
     filter = params.get('filter', '')
+    surl = url.split('/')
+    purl = surl[-1][:-5].split('_')
+    keystate = {'a': 0,            # 地区
+                'ag': 0,           # 年龄
+                'av': 0,           # AV
+                'c': 0,            # 频道(不出现)
+                'd': 0,            # 排序日期
+                'g': 0,            # 门类
+                'lg': 0,           # 语言
+                'mt': 0,           # 音乐分类
+                'pt': 0,           # 付费
+                'pr': 0,           # 出品
+                'r': 0,            # 时间
+                'u': 0,            # 更新状态
+                's': 0             # 排序方法
+               }
+    keyword = keystate.keys()
 
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'item'})
-
-    dialog = xbmcgui.Dialog()
     color = '[COLOR FF00FF00]%s[/COLOR]'
+
+    list = []
+    soup = tree.find_all('div', {'class': 'item'})
     for iclass in soup[1:]:
+        x = []
         si = iclass.find_all('li')
-        list = []
-        i = 0
+        label = iclass.label.text
         for subitem in si:
             title = subitem.text
             if subitem.get('class'):
                 title = color % title
-                mark = i
-            list.append(title)
-            i += 1
-        sel = dialog.select(iclass.label.text, list)
+                href = ''
+            else:
+                href = subitem.a['href'].encode('utf-8')
+            x.append(dict({title: href}))
+
+        list.append(dict({label: x}))
+
+    sort = tree.find_all('div', {'class': 'yk-sort-item'})
+    for iclass in sort:
+        x = []
+        si = iclass.find_all('li')
+        label = iclass.span.text
+        for subitem in si:
+            title = subitem.text
+            href = subitem.a['href'].encode('utf-8')
+            x.append(dict({title: href}))
+
+        list.append(dict({label: x}))
+
+    dialog = xbmcgui.Dialog()
+
+    for item in list:
+        title = item.keys()[0]
+        y = item[title]
+        l = [x.keys()[0] for x in y]
+        sel = dialog.select(title, l)
 
         if sel < 0:
             continue
-        filter += '|' + iclass.label.text + '(' + si[sel].text + ')'
-        if sel == mark:
+        key = y[sel].keys()[0]
+        filter += '|' + title + '(' + key + ')'
+        seurl = y[sel][key]
+        if seurl == '':
             continue
 
+        seurl = seurl.split('/')[-1]
+        seurl = seurl[:-5].split('_')
+        ls = len(seurl)
+
+        i = 0
+        while i < ls:
+            k, v = seurl[i], seurl[i+1]
+            if v in keyword:
+                v = ''
+                i += 1
+            else:
+                i += 2
+            if keystate[k] != 0:
+                continue
+            try:
+                index = purl.index(k)
+                if purl[index+1] not in keyword:
+                    oldv = purl.pop(index+1)
+                purl.insert(index+1, v)
+
+            except:
+                purl += [k, v]
+
+            if oldv and (oldv != v):
+                keystate[k] += 1
+
+    surl[-1] = '_'.join(purl) + '.html'
+    url = '/'.join(surl)
+    params['url'] = url
+
+    params['filter'] = filter
     listSubMenu(params)
 
 
@@ -455,23 +538,31 @@ def episodesList(params):
     #soup = tree.find_all('div', {'class': 'lists'})
     items = tree.find_all('div', {'class': 'program'})
     if len(items) < 1:
-        PlayVideo(params)
-        return
-
-    for item in items:
-        title = item['title']
-        href = httphead(item.a['href'])
-        img = item.img['src']
-        t = item.find('span', {'class': 'c-time'})
-        time = t.text
-        u = sys.argv[0] + '?url=' + href
+        title = params['title']
+        thumb = params['thumb']
+        u = sys.argv[0] + '?url=' + url
         u += '&mode=playvideo'
-        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
-        u += '&thumb=' + img
-        li = xbmcgui.ListItem(title + '(' + time + ')',
-                              iconImage=img, thumbnailImage=img)
+        u += '&title=' + urllib.quote_plus(title)
+        u += '&thumb=' + thumb
+        li = xbmcgui.ListItem(title,
+                              iconImage=thumb, thumbnailImage=thumb)
         li.setInfo(type='Video', infoLabels={'Title': title})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    else:
+        for item in items:
+            title = item['title']
+            href = httphead(item.a['href'])
+            img = item.img['src']
+            t = item.find('span', {'class': 'c-time'})
+            time = t.text
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playvideo'
+            u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+            u += '&thumb=' + img
+            li = xbmcgui.ListItem(title + '(' + time + ')',
+                                  iconImage=img, thumbnailImage=img)
+            li.setInfo(type='Video', infoLabels={'Title': title})
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
     u = sys.argv[0] + '?url=' + url
@@ -490,7 +581,6 @@ def episodesList(params):
         li = xbmcgui.ListItem(title)
         li.setInfo(type='Video', infoLabels={'Title': title})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 

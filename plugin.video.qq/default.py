@@ -612,7 +612,7 @@ def videoparseX(vid):
         html = GetHttpData(url)
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
         jspage = json.loads(jspage)
-        key = jspage.get('key', fvkey)
+        key = jspage.get('key', oldkey)
         app = '?vkey=%s&type=mp4' % key
         urllist.append(server + file + app)
         oldkey = key
