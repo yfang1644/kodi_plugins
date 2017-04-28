@@ -295,8 +295,8 @@ def programList(city):
             begin = time.localtime(item['startTime'])
             end = time.localtime(item['endTime'])
             title = item['ptitle']
-            info += '%02d:%02d--' % (begin[3], begin[4])
-            info += '%02d:%02d    ' % (end[3], end[4])
+            info += time.strftime('%2H:%2M', begin)
+            info += time.strftime('--%2H:%2M', end)
             info += title + '\n'
     except:
         pass

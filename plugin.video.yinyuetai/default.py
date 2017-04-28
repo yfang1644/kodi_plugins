@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
-import urllib,urllib2,re,os,xbmcplugin,xbmcgui,xbmc
+
+import urllib
+import urllib2
+import re
+import os
+import xbmcplugin
+import xbmcgui
+import xbmc
 import xbmcaddon
 import datetime
 import gzip, StringIO
 import cookielib
 import base64
 import simplejson
-
 
 ##########################################################################
 # 音悦台MV

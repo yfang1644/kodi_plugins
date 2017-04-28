@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 from xbmcswift2 import xbmc, xbmcgui
 import xbmcvfs
 import utils

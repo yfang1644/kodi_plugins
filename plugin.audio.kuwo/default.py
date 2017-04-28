@@ -3,7 +3,6 @@
 # v1.0.0 2009/11/08 by robinttt, initial release
 # v1.1.0 2011/12/04 by d744000, full web scraping, added search.
 
-import urllib
 import urllib2
 import re
 import sys

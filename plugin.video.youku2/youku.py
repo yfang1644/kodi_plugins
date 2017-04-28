@@ -179,7 +179,7 @@ class Youku():
         return ep
 
     # Obsolete -- used to parse m3u8 on pl.youku.com
-    def parse_m3u8(self, m3u8):
+    def parse_m3u8(m3u8):
         return re.findall(r'(http://[^?]+)\?ts_start=0', m3u8)
 
     def get_vid_from_url(self, url):
@@ -401,3 +401,4 @@ class Youku():
 site = Youku()
 
 getaddress_by_vid = site.getaddress_by_vid
+get_vid_from_url = site.get_vid_from_url

@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
 
 import music
-import xbmc, xbmcgui, xbmcplugin
-import urllib, urllib2, sys
+import xbmc
+import xbmcgui
+import xbmcplugin
+import urllib
+import urllib2
+import sys
+
 
 def addList(lists):
     #name, mode, icon, area, type, channelId
@@ -20,6 +25,7 @@ def addList(lists):
         u = "%s?%s" % (plugin, urllib.urlencode(item))
         xbmcplugin.addDirectoryItem(handle, u, li, isFolder, n)
     xbmcplugin.endOfDirectory(handle)
+
 
 def play(params):
     name = params.get("name", "")

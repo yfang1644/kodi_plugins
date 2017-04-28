@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
-import sys,urllib2,urllib,time
-import xbmc,xbmcplugin,xbmcgui
+
+import sys
+import urllib2
+import urllib
+import time
+import xbmc
+import xbmcplugin
+import xbmcgui
 import kugou
 
 

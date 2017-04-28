@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib2, json
+import urllib2
+import json
 
 __UserAgent = 'Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'
 __ChannelUrl = 'http://www.douban.com/j/app/radio/channels'

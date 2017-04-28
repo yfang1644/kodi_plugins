@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import random
 from binascii import b2a_base64, b2a_hex, a2b_hex
 

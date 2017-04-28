@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import gzip
 import urllib2
 from urllib import urlencode, quote_plus
@@ -7,7 +8,6 @@ try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO  # noqa
-
 
 http_proxy = None
 

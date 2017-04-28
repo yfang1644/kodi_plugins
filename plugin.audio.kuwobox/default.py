@@ -3,11 +3,20 @@
 #v1.0.0 2009/11/08 by robinttt, initial release
 #v1.1.0 2011/12/04 by d744000, full web scraping, added search.
 
-import urllib, urllib2, os, re, sys
-import gzip, StringIO #playvideo
-import hashlib, time
+import xbmc
+import xbmcplugin
+import xbmcgui
+import xbmcaddon
+import urllib
+import urllib2
+import os
+import re
+import sys
+import gzip
+import StringIO #playvideo
+import hashlib
+import time
 from bs4 import BeautifulSoup
-import xbmc, xbmcplugin, xbmcgui, xbmcaddon
 
 
 UserAgent = 'Mozilla/5.0 (Windows NT 5.1; rv:8.0) Gecko/20100101 Firefox/8.0'

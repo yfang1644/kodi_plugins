@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import socket, select, threading, time, struct
+import socket
+import select
+import threading
+import time
+import struct
 
 class flv:
     @staticmethod

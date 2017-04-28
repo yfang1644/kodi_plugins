@@ -1,6 +1,20 @@
-﻿# -*- coding: utf-8 -*-
-import xbmc, xbmcgui, xbmcplugin, xbmcaddon, re, sys, os, gzip, StringIO, math
-import base64, time, cookielib, urllib2, urllib
+# -*- coding: utf-8 -*-
+
+import xbmc
+import xbmcgui
+import xbmcplugin
+import xbmcaddon
+import re
+import sys
+import os
+import gzip
+import StringIO
+import math
+import base64
+import time
+import cookielib
+import urllib2
+import urllib
 import simplejson
 
 # Plugin constants

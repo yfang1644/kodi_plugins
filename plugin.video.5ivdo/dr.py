@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 import urllib2
 import urllib
@@ -7,6 +7,7 @@ import sys
 import gzip
 import StringIO
 import urlparse
+import cookielib
 from random import random
 import base64
 import time
@@ -15,8 +16,20 @@ try:
 except ImportError:
     import json as simplejson
 
+    
+UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
+
+RUNFLAG = 0
 
 def GetHttpData(url):
+    global RUNFLAG
+    if (RUNFLAG == 0):
+        cj = cookielib.CookieJar()
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+        opener.addheaders = [('Cookie', '__ysuid={0}'.format(time.time()))]
+        urllib2.install_opener(opener)
+        RUNFLAG = RUNFLAG + 1
+	
     req = urllib2.Request(url)
     req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
                        format('AppleWebKit/537.36 (KHTML, like Gecko) ',
@@ -86,7 +99,7 @@ class YOUKU_DR:
         for i in range(0, len(streamtypes)):
             if streamtypes[i] == 'mp4':
                 return streamtypes[i]
-        return 'mp4'
+        # return 'mp4'
         return streamtypes[0]
 
     def getFileIDMixString(self, seed):
@@ -112,14 +125,14 @@ class YOUKU_DR:
         e_code = self.trans_e(self.f_code_1, base64.b64decode(ep))
         return e_code.split('_')
 
-    def generate_ep(self, no, streamfileids, sid, token):
-        number = hex(int(str(no), 10))[2:].upper()
-        if len(number) == 1:
-            number = '0' + number
-        fileid = streamfileids[0:8] + number + streamfileids[10:]
-        tmp = self.trans_e(self.f_code_2, sid + '_' + fileid + '_' + token)
-        ep = urllib.quote(base64.b64encode(tmp), safe='~()*!.\'')
-        return fileid, ep
+    def generate_ep(self, fileid, sid, token):
+        ep = urllib.quote(base64.b64encode(
+            ''.join(self.trans_e(
+                self.f_code_2,
+                '%s_%s_%s' % (sid, fileid, token)))),
+            '~()*!.\''
+            )
+        return ep
 
     def GetPlayList(self, vid):
         urls = []
@@ -140,10 +153,11 @@ class YOUKU_DR:
                     stream = s
                     break
         segs = stream['segs']
-        streamfileid = stream['stream_fileid']
+
         for no in range(len(segs)):
             k = segs[no]['key']
-            fileid, ep = self.generate_ep(no, streamfileid, sid, token)
+            fileid = segs[no]['fileid']
+            ep = self.generate_ep(fileid, sid, token)
             query = urllib.urlencode(dict(
                 ctype=12, ev =1, K=k, ep=urllib.unquote(ep), oip=oip, token=token, yxon = 1
              ))
@@ -337,7 +351,7 @@ class PPTV_DR:
 
 
 def work(purl):
-    ips = purl.split(', ')
+    ips = purl.split(',')
     if ips[0] == 'DR_YOUKU':
         itype, iurl = YOUKU_DR().GetPlayList(ips[1])
     elif ips[0] == 'DR_SOHU':
@@ -352,3 +366,6 @@ def work(purl):
         itype = 'ERROR'
         iurl = ''
     return itype, iurl
+
+def version():
+    return '20161125'
