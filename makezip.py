@@ -14,9 +14,10 @@ import shutil
 def release(plugin, version):
 
     # zip repo
-    zipname = '%s/%s-%s.zip' % (plugin, plugin, version)
+    zipname = 'repo/%s-%s.zip' % (plugin, version)
     zipcmd = 'zip -r ' + zipname + ' ' + plugin
     os.system(zipcmd)
+
 
 def getVersion(plugin):
     name = '%s/addon.xml' % plugin

@@ -571,16 +571,20 @@ def episodesList(params):
 
     # 相关视频
     soup = tree.find_all('div', {'class': 'textlists'})
-    items = soup[0].find_all('li')
-    for item in items:
-        title = item['title']
-        href = httphead(item.a['href'])
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=playvideo'
-        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
-        li = xbmcgui.ListItem(title)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    try:
+        items = soup[0].find_all('li')
+        for item in items:
+            title = item['title']
+            href = httphead(item.a['href'])
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playvideo'
+            u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+            li = xbmcgui.ListItem(title)
+            li.setInfo(type='Video', infoLabels={'Title': title})
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    except:
+        pass
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
