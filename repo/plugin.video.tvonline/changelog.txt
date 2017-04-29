@@ -1,3 +1,0 @@
-1.0.0 (FangYuan, 2017-04-23)
-- initial NanjingTV
-- rename to tvonline, import programs from www.haoqu.net/letv.com

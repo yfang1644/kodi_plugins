@@ -1,2 +1,0 @@
-﻿[B]Version 1.0.0[/B]
-- kodi plugins for chinese addons, forked from Taxigps(Thanks!)
