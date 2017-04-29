@@ -3,9 +3,9 @@
     name="Audio-Video Add-ons" version="1.0.1"
     provider-name="yfang1644">
     <extension point="xbmc.addon.repository" name="Audio-Video Add-ons">
-        <info compressed="true">https://github.com/yfang1644/kodi_plugins/raw/master/addons.xml</info>
-        <checksum>https://github.com/yfang1644/kodi_plugins/raw/master/addons.xml.md5</checksum>
-        <datadir zip="true">https://github.com/yfang1644/kodi_plugins/raw/master/repo</datadir>
+        <info compressed="true">https://github.com/yfang1644/kodi_plugins/blob/master/addons.xml</info>
+        <checksum>https://github.com/yfang1644/kodi_plugins/blob/master/addons.xml.md5</checksum>
+        <datadir zip="true">https://github.com/yfang1644/kodi_plugins/blob/master/repo</datadir>
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary>Audio-Video Chinese Add-ons Repository</summary>
