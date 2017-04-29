@@ -14,8 +14,11 @@ import shutil
 def release(plugin, version):
 
     # zip repo
-    zipname = 'repo/%s-%s.zip' % (plugin, version)
-    zipcmd = 'zip -r ' + zipname + ' ' + plugin
+    filename = plugin + '-' + version
+
+    zipname = '%s/%s-%s.zip' % (plugin, plugin, version)
+    zipcmd = 'zip -r %s %s -x %s' % (zipname, plugin, filename + '.zip')
+    # zip file is exclusive using -x option of zip command
     os.system(zipcmd)
 
 
