@@ -386,9 +386,9 @@ def cntvReplay(ch, title, thumb):
 
     while(not player.media_stopped):
         cur = cn_time_s()
-        hr = time.strftime("%Y-%m-%d-%H", time.localtime(cur-600))
-        seg = '-%03d.mp4' % (int((time.strftime("%M", time.localtime(cur-600))))/5+1)
-        url = b_url + hr + seg + '?wsiphost=local'
+        hr = time.strftime("%Y-%m-%d-%H-", time.localtime(cur-600))
+        seg = '%03d' % (int((time.strftime("%M", time.localtime(cur-600))))/5+1)
+        url = b_url + hr + seg + '.mp4?wsiphost=local'
         li = xbmcgui.ListItem('央视重播', iconImage=thumb, thumbnailImage=thumb)
         li.setInfo(type='Video', infoLabels={"Title": title})
         player.play(item=url, listitem=li)
