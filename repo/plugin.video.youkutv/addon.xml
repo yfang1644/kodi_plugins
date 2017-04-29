@@ -3,6 +3,7 @@
     name="YouKu TV" version="1.7.7"
     provider-name="catro, yfang1644">
     <requires>
+        <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
     </requires>
     <extension point="xbmc.python.script" library="addon.py">
