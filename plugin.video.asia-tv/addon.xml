@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<addon
+    id="plugin.video.asia-tv"
+    version="2.0.5"
+    name="亚洲电视(Asia TVs)"
+    provider-name="米老康,yfang1644">
+    <extension point="xbmc.python.pluginsource" library="addondev1.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>TV Channels in Asian Laguages</summary>
+        <summary lang="zh">亚洲电视(Asia TVs)</summary>
+        <description>亚洲电视</description>
+        <description lang="zh">亚洲电视(Asia TVs)</description>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.asia-tv</source>
+        <email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
+</addon>

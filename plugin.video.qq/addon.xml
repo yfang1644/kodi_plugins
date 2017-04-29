@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.qq"
+    name="腾讯视频"
+    version="1.0.2"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Tencent Video plugin</summary>
+        <summary lang="zh">QQ视频插件</summary>
+        <description lang="en">Online videos from tv.sohu.com</description>
+        <description lang="zh">本插件视频解析自腾讯视频网站(v.qq.com)</description>
+        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.qq</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>

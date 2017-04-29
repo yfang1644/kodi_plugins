@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="ISO-8859-1" standalone="yes"?>
+<strings>
+	<string id="1">Enter Captcha</string>
+	<string id="2">Please input the captcha</string>
+	<string id="3">Backspace</string>
+	<string id="4">Refresh</string>
+</strings>

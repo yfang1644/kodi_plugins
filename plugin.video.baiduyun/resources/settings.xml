@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<settings>
+	<setting id="show_non_video_files" type="bool" label="是否显示非视频类文件" default="false" />
+	<setting id="video_file_exts" type="text" label="视频文件扩展名（以逗号分开）" default="mkv,rmvb,rm,avi,mpg,mpeg,mp4,mov,3gp,asf,wmv,flv" />
+	<setting id="prefer_transcode" type="bool" label="优先播放转码视频" default="false" />
+	<setting id="transcode_type" type="labelenum" label="默认转码格式" values="M3U8_AUTO_720|M3U8_AUTO_480|M3U8_AUTO_360|M3U8_AUTO_240" default="M3U8_AUTO_480" />
+	<setting id="test_features" type="bool" label="测试功能" default="false" />
+</settings>
