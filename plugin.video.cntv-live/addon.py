@@ -305,7 +305,7 @@ def programList(city):
 
 
 def addStream(channelID, channelName, mode='?stream='):
-    thumb = addon_path + '/resources/media%s.png' % channelID
+    thumb = addon_path + '/resources/media/%s.jpg' % channelID
     info = programList(channelID)
     li = xbmcgui.ListItem(channelName, iconImage=thumb)
     li.setInfo(type='Video',
@@ -316,7 +316,7 @@ def addStream(channelID, channelName, mode='?stream='):
 
 
 def addCity(cityID, cityName):
-    thumb = addon_path + '/resources/media/%s.png' % cityID
+    thumb = addon_path + '/resources/media/%s.jpg' % cityID
     li = xbmcgui.ListItem(cityName, iconImage=thumb)
     u = sys.argv[0] + '?city=' + cityID + '&thumb=' + thumb
     xbmcplugin.addDirectoryItem(addon_handle, u, li, isFolder=True)
