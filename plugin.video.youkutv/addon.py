@@ -2062,10 +2062,13 @@ def play(vid, playContinue=False):
         ep = movdat['security']['encrypt_string']
         sid, token = youkuDecoder().get_sid(ep)
 
+        limit = ''
         for no in range(len(segs)):
             k = segs[no]['key']
+            if k == -1:
+                limit = '[限播]'
+                break
             fileid = segs[no]['fileid']
-            assert k != -1
             ep = youkuDecoder().generate_ep(fileid, sid, token)
             q = urllib.urlencode(dict(
                 ctype = 12,
@@ -2091,19 +2094,21 @@ def play(vid, playContinue=False):
             vc.start(urls)
             port = vc.get_port()
             assert(port != 0)
-            listitem = xbmcgui.ListItem(movdat['video']['title'])
-            listitem.setInfo(type="Video", infoLabels={"Title": movdat['video']['title']})
+            title = limit + movdat['video']['title']
+            listitem = xbmcgui.ListItem(title)
+            listitem.setInfo(type="Video", infoLabels={"Title": title})
             playlist.add('http://127.0.0.1:%d' % port, listitem)
         elif settings_data['play_type'][settings['play']] == 'list':
             for i in range(len(urls)):
-                title = movdat['video']['title'] + u" - 第"+str(i+1)+"/"+str(len(urls)) + u"节"
+                title = limit + movdat['video']['title'] + u" - 第"+str(i+1)+"/"+str(len(urls)) + u"节"
                 listitem = xbmcgui.ListItem(title)
-                listitem.setInfo(type="Videao", infoLabels={"Title": title})
+                listitem.setInfo(type="Video", infoLabels={"Title": title})
                 playlist.add(urls[i], listitem)
         else:
             playurl = 'stack://' + ' , '.join(urls)
-            listitem = xbmcgui.ListItem(movdat['video']['title'])
-            listitem.setInfo(type="Video", infoLabels={"Title": movdat['video']['title']})
+            title = limit + movdat['video']['title']
+            listitem = xbmcgui.ListItem(title)
+            listitem.setInfo(type="Video", infoLabels={"Title": title})
             playlist.add(playurl, listitem)
     except:
         xbmc.executebuiltin("Dialog.Close(busydialog)")
