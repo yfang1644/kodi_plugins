@@ -54,15 +54,10 @@ INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 # Extract all the video list and start playing first found valid link
 # User may press <SPACE> bar to select video resolution for playback
 ############################################################################
-def PlayVideo(params):
-    name = params.get('name', '')
-    url = params['url']
-    thumb = params.get('thumb', '')
-    level = int(__addon__.getSetting('resolution'))
-    site = int(__addon__.getSetting('videosite'))
-
+def get_vid_from_url(url):
     link = getHttpData(url)
-    match1 = re.compile('var vid="(.+?)";').search(link)
+
+    match1 = re.compile("var vid\s*=\s*'(.+?)';").search(link)
     if not match1:
         match1 = re.compile('<a href="(http://[^/]+/[0-9]+/[^\.]+.shtml)" target="?_blank"?><img').search(link)
         if match1:
@@ -73,20 +68,38 @@ def PlayVideo(params):
     if p_vid == '0':
         match1 = re.compile('data-vid="([^"]+)"').search(link)
         if not match1:
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '节目暂不能播放')
-            return
+            return None
         p_vid = match1.group(1)
     if p_vid.find(',') > 0:
         p_vid = p_vid.split(',')[0]
+    return p_vid
 
-    p_url = 'http://hot.vrs.sohu.com/vrs_flash.action?vid=' + p_vid
-    link = getHttpData(p_url)
+
+def PlayVideo(params):
+    p_vid = params.get('vid')
+    if p_vid is None:
+        p_vid = get_vid_from_url(params['url'])
+        if p_vid is None:
+            xbmcgui.Dialog().ok(__addonname__, '节目暂不能播放')
+            return
+
+    thumb = params.get('thumb', '')
+    level = int(__addon__.getSetting('resolution'))
+    site = int(__addon__.getSetting('videosite'))
+
+    v_api1 = 'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s'
+    v_api2 = 'http://my.tv.sohu.com/play/videonew.do?vid=%s&referer=http://my.tv.sohu.com'
+    v_api = v_api1
+    link = getHttpData(v_api % p_vid)
     match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?),').search(link)
     if not match:
-        dialog = xbmcgui.Dialog()
-        ok = dialog.ok(__addonname__, '节目没找到')
-        return
+        v_api = v_api2
+        link = getHttpData(v_api % p_vid)
+        match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?),').search(link)
+        if not match:
+            xbmcgui.Dialog().ok(__addonname__, '节目没找到')
+            return
+
     ratelist = []
     if match.group(4) != '0':
         ratelist.append(['原画', 4])
@@ -113,8 +126,10 @@ def PlayVideo(params):
             rate = level + 1
 
     hqvid = match.group(rate)
-    if hqvid != str(p_vid):
-        link = getHttpData('http://hot.vrs.sohu.com/vrs_flash.action?vid='+hqvid)
+    if hqvid != str(p_vid) and v_api == v_api1:
+        link = getHttpData(v_api % hqvid)
+    else:
+        hqvid = p_vid
 
     info = simplejson.loads(link)
     host = info['allot']
@@ -122,19 +137,19 @@ def PlayVideo(params):
     tvid = info['tvid']
     urls = []
     data = info['data']
-    name = data['tvName'].encode('utf-8')
-    size = sum(data['clipsBytes'])
+    title = data['tvName'].encode('utf-8')
+    # size = sum(data['clipsBytes'])
     assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
     for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
         clipURL = urlparse.urlparse(clip).path
-        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(hqvid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
+        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(hqvid)+'&rb=1'
         videourl = simplejson.loads(getHttpData(url))['url'].encode('utf-8')
         videourl = '%s|Range=' % (videourl)
         urls.append(videourl)
 
     stackurl = 'stack://' + ' , '.join(urls)
-    listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-    listitem.setInfo(type="Video", infoLabels={"Title": name})
+    listitem = xbmcgui.ListItem(title, thumbnailImage=thumb)
+    listitem.setInfo(type="Video", infoLabels={"Title": title})
     xbmc.Player().play(stackurl, listitem)
 
 
@@ -257,31 +272,47 @@ def listSubMenu(params):
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    hover = tree.find_all('div', {'class': 'list-hover'})
-    thumb = tree.find_all('div', {'class': 'st-pic'})
-    if len(thumb) == 0:
-        thumb = tree.find_all('div', {'class': 'ret_pic'})
-
-    for i in range(0, len(thumb)):
-        href = thumb[i].a.get('href')
+    items = tree.find_all('ul', {'class': 'st-list'})
+    items = items[0].find_all('li')
+    for item in items:
+        pic = item.find('div', {'class': 'st-pic'})
+        href = pic.a.get('href')
         href = httphead(href)
-        img = thumb[i].img.get('src')
+        img = pic.img.get('src')
         img = httphead(img)
         try:
-            title = hover[i].a.text
+            hover = item.find('div', {'class': 'list-hover'})
+            title = hover.a.text
         except:
-            title = thumb[i].img.get('alt')
+            title = pic.img.get('alt')
         if len(title) == 0:
-            title = thumb[i].a.get('title', '')
+            title = pic.a.get('title', '')
+
         try:
-            info = hover[i].find('p', {'class': 'lh-info'}).text
+            info = item.find('p', {'class': 'lh-info'}).text
         except:
             info = ''
-        li = xbmcgui.ListItem(title,
+
+        try:
+            mask = item.find('span', {'class': 'maskTx'}).text
+        except:
+            mask = ''
+        extra = '[COLOR FF8080FF]'
+        auth = item.find('span', {'class': 'rl-hyuan'})
+        if auth:
+            extra += u'会员 '
+        auth = item.find('span', {'class': 'rl-dbo'})
+        if auth:
+            extra += u'独播'
+        extra += '[/COLOR]'
+
+        li = xbmcgui.ListItem(title + ' ' + mask + ' ' + extra,
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
-        if name in ('电视剧', '动漫', '综艺', '纪录片', '教育'):
-            mode = 'episodelist'
+        if name in ('电视剧', '动漫', '综艺', '娱乐', '纪录片', '明星', '体育'):
+            mode = 'episodelist1'
+        elif name in ('搞笑', '游戏', '新闻', '做饭', '科技', '学习考试', '自媒体'):
+            mode = 'episodelist2'
         else:
             mode = 'playvideo'
         u = sys.argv[0] + '?url=' + href
@@ -350,30 +381,201 @@ def normalSelect(params):
     listSubMenu(params)
 
 
-def episodesList(params):
+def episodesList1(params):
+    name = params['name']
+    title0 = params.get('title', '')
     url = params['url']
-    html = getHttpData(url)
-    tree = BeautifulSoup(html, 'html.parser')
+    link = getHttpData(url)
+    tree = BeautifulSoup(link, 'html.parser')
 
-    title = params.get('title', '')
-    img = params.get('thumb', '')
-    u = sys.argv[0]
-    li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
+    if url.find('.html') > 0:
+        match0 = re.compile('var playlistId\s*=\s*"(.+?)";', re.DOTALL).findall(link)
 
-    soup = tree.find_all('ul', {'class': 'list listA cfix'})
-    for part in soup:
-        drama = part.find_all('li')
-        for item in drama:
-            img = httphead(item.img['src'])
-            title = item.a['title']
-            href = httphead(item.a['href'])
-            li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-            li.setInfo(type='Video', infoLabels={'Title': title})
-            u = sys.argv[0] + '?url=' + href
-            u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        link = getHttpData(listapi + 'playlist_id=' + match0[0])
+        match = re.compile('"videoImage":"(.+?)",.+?"videoUrl":"(.+?)".+?"videoId":(.+?),.+?"videoOrder":"(.+?)",', re.DOTALL).findall(link)
+        totalItems = len(match)
 
+        for p_thumb, p_url, p_vid, p_order in match:
+            p_name = '%s第%s集' % (title0, p_order)
+            li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+            li.setInfo(type="Video",
+                       infoLabels={"Title": p_name, "episode": int(p_order)})
+            u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url) + '&mode=playvideo'
+            u += '&name=' + name + '&title=' + urllib.quote_plus(p_name)
+            u += '&thumb=' + urllib.quote_plus(p_thumb)
+            u += '&vid=' + p_vid
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
+    else:
+        match0 = re.compile('var pid\s*=\s*(.+?);', re.DOTALL).findall(link)
+        if len(match0) > 0:
+            # print 'pid=' + match0[0]
+            pid = match0[0].replace('"', '')
+            match0 = re.compile('var vid\s*=\s*(.+?);', re.DOTALL).findall(link)
+            vid = match0[0].replace('"', '')
+            if vid == '0':
+                dialog = xbmcgui.Dialog()
+                ok = dialog.ok(__addonname__, '当前节目暂不能播放')
+
+            obtype = '2'
+            s_api = 'http://search.vrs.sohu.com/v?id=%s&pid=%s&pageNum=1&pageSize='
+            s_api = 'http://search.vrs.sohu.com/avs_i%s_pr%s_o2_n_p1000_chltv.sohu.com.json'
+            link = getHttpData(s_api % (vid, pid))
+            link = link[link.find('=')+1:]
+            data = link.decode('raw_unicode_escape')
+            match = simplejson.loads(data)['videos']
+            totalItems = len(match)
+            for item in match:
+                p_name = item['videoName'].encode('utf-8')
+                p_url = item['videoUrl'].encode('utf-8')
+                p_thumb = item['videoBigPic'].encode('utf-8')
+                p_plot = item['videoDesc'].encode('utf-8')
+                p_rating = item['videoScore']
+                p_votes = int(item['videoVoters'])
+                p_vid = item['vid']
+                p_order = int(item['playOrder'])
+                try:
+                    p_time = item['videoPublishTime']
+                    p_date = datetime.date.fromtimestamp(float(p_time)/1000).strftime('%d.%m.%Y')
+                except:
+                    p_date = ''
+                li = xbmcgui.ListItem(p_name,
+                                      iconImage='', thumbnailImage=p_thumb)
+                li.setInfo(type="Video",
+                           infoLabels={"Title": p_name,
+                                       "date": p_date,
+                                       "episode": p_order,
+                                       "plot": p_plot,
+                                       "rating": p_rating,
+                                       "votes": p_votes})
+                u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url)
+                u += '&mode=playvideo&name=' + name
+                u += '&title=' + p_name
+                u += '&thumb=' + p_thumb + '&vid=%d' % p_vid
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
+        else:
+            match = re.compile('<a([^>]*)><IMG([^>]*)></a>', re.I).findall(link)
+            thumbDict = {}
+            for i in range(0, len(match)):
+                p_url = re.compile('href="(.+?)"').findall(match[i][0])
+                if len(p_url) > 0:
+                    p_url = p_url[0]
+                else:
+                    p_url = match[i][0]
+                p_thumb = re.compile('src="(.+?)"').findall(match[i][1])
+                if len(p_thumb) > 0:
+                    p_thumb = p_thumb[0]
+                else:
+                    p_thumb = match[i][1]
+                thumbDict[p_url] = p_thumb
+            #for img in thumbDict.items():
+            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.decode('utf-8').encode('gbk'))
+            html = getHttpData(url)
+            match = re.compile('class="serie-list(.+?)</div>').findall(html)
+            if match:
+                items = re.compile('<a([^>]*)>(.+?)</a>', re.I).findall(match[0])
+                totalItems = len(items)
+                for item in items:
+                    if item[1] == '展开>>':
+                        continue
+                    href = re.compile('href="(.+?)"').findall(item[0])
+                    if len(href) > 0:
+                        p_url = href[0]
+                        urlKey = re.compile('u=(http.+?.shtml)').search(p_url)
+                        if urlKey:
+                            urlKey = urllib.unquote(urlKey.group(1))
+                        else:
+                            urlKey = p_url
+                        # print urlKey
+                        p_thumb = thumbDict.get(urlKey, thumb)
+                        #title = re.compile('title="(.+?)"').findall(item)
+                        #if len(title)>0:
+                            #p_name = title[0]
+                        p_name = title0 + '第' + item[1].strip() + '集'
+                        li = xbmcgui.ListItem(p_name,
+                                              iconImage=p_thumb, thumbnailImage=p_thumb)
+                        u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url)
+                        u += '&mode=playvideo&name=' + name
+                        u += '&title=' + urllib.quote_plus(p_name)
+                        u += '&thumb=' + urllib.quote_plus(p_thumb)
+                        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup1 = tree.find_all('ul', {'class': 'list listA cfix'})
+    soup2 = tree.find_all('ul', {'class': 'list list-120 cfix'})
+
+    if len(soup1) > 1:
+        for part in soup1[1:]:
+            drama = part.find_all('li')
+            for item in drama:
+                img = httphead(item.img['src'])
+                try:
+                    title = item.strong.a['title']
+                except:
+                    title = item.a.text
+                href = httphead(item.a['href'])
+                li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+                li.setInfo(type='Video', infoLabels={'Title': title})
+                u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+                u += '&name=' + urllib.quote_plus(name) + '&thumb=' + img
+                u += '&title=' + title
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    if len(soup2) > 0:
+        for part in soup2:
+            drama = part.find_all('li')
+
+            for item in drama:
+                img = httphead(item.img['src'])
+                try:
+                    title = item.strong.a['title']
+                except:
+                    title = item.a.text
+                href = httphead(item.a['href'])
+                li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+                li.setInfo(type='Video', infoLabels={'Title': title})
+                u = sys.argv[0] + '?url=' + href + '&mode=episodelist1'
+                u += '&name=' + urllib.quote_plus(name) + '&thumb=' + img
+                u += '&title=' + title
+                xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    #xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_EPISODE)
+    #xbmcplugin.addSortMethod(int(sys.argv[1]), xbmcplugin.SORT_METHOD_DATE)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def episodesList2(params):
+    name = params['name']
+    title0 = params.get('title', '')
+    url = params['url']
+    link = getHttpData(url)
+    tree = BeautifulSoup(link, 'html.parser')
+
+    listapi = 'http://my.tv.sohu.com/play/getvideolist.do?playlistid=%s&pagesize=30&order=1'
+
+    match0 = re.compile("playlistId\s*=\s*'(.+?)';", re.DOTALL).findall(link)
+
+    link = getHttpData(listapi % match0[0])
+    jsdata = simplejson.loads(link)['videos']
+
+    for item in jsdata:
+        p_name = item['subName'].encode('utf-8')
+        p_thumb = item['largePicUrl'].encode('utf-8')
+        p_url = item['pageUrl'].encode('utf-8')
+        length = item['playLength']
+        p_date = item['publishTime'].encode('utf-8')
+        p_order = int(item['order'])
+        vid = item['vid']
+        li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+        u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url)
+        u += '&mode=playvideo&name=' + name
+        u += '&title=' + urllib.quote_plus(p_name)
+        u += '&thumb=' + urllib.quote_plus(p_thumb)
+        u += '&vid=%d' % vid
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -420,7 +622,7 @@ def LiveChannel(params):
         li.setInfo(type='Video', infoLabels={'Title': disp_title, 'Plot': schedule})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.setContent(int(sys.argv[1]), 'video')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -449,12 +651,12 @@ def searchSohu(params):
     keyboard = Apps('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-        p_url = 'http://so.tv.sohu.com/mts?chl=&tvType=-2&wd='
-        url = p_url + urllib.quote_plus(keyword.decode('utf-8').encode('gbk'))
-    else:
+    if not keyboard.isConfirmed():
         return
+
+    keyword = keyboard.getText()
+    p_url = 'http://so.tv.sohu.com/mts?chl=&tvType=-2&wd='
+    url = p_url + urllib.quote_plus(keyword)
 
     # construct url based on user selected item
     page = 1
@@ -502,7 +704,6 @@ def searchSohu(params):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-
 # main programs goes here #########################################
 params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
@@ -514,7 +715,8 @@ runlist = {
     'livechannel': 'LiveChannel(params)',
     'liveplay': 'LivePlay(params)',
     'videolist': 'listSubMenu(params)',
-    'episodelist': 'episodesList(params)',
+    'episodelist1': 'episodesList1(params)',
+    'episodelist2': 'episodesList2(params)',
     'playvideo': 'PlayVideo(params)',
     'search': 'searchSohu(params)',
     'select': 'normalSelect(params)'

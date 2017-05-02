@@ -854,15 +854,15 @@ def searchLeTV(params):
     # keyboard.setHiddenInput(hidden)
     xbmc.sleep(1000)
     keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-        params['page'] = '1'
-    else:
+    if not keyboard.isConfirmed():
         return
+
+    keyword = keyboard.getText()
+    params['page'] = '1'
 
     page = params['page']
     p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
-    p_url = p_url + keyword.decode('utf-8').encode('utf-8')
+    p_url = p_url + urllib.quote_plus(keyword)
     link = getHttpData(p_url)
 
     li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')

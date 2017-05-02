@@ -73,12 +73,11 @@ def httpBegin0(url):
 # - translate to utf8
 ############################################################################
 def getHttpData(url):
-    print 'UUUUUUUUUUUUUUUUUUUU', url
     charset = ''
     req = urllib2.Request(url)
     req.add_header('User-Agent', UserAgent)
     try:
-        response = urllib2.urlopen(req)
+        response = urllib2.urlopen(req, timeout=2.0)
         httpdata = response.read()
         if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
             httpdata = httpdata[:-1]
@@ -103,6 +102,7 @@ def getHttpData(url):
         charset = charset.lower()
         if (charset != 'utf-8') and (charset != 'utf8'):
             httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
+
     return httpdata
 
 
@@ -147,7 +147,7 @@ def getVMS(tvid, vid):
     key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
     sc = hashlib.md5(str(t) + key + vid).hexdigest()
     vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
-    print 'VVVVVVVVV', vmsreq
+
     return simplejson.loads(getHttpData(vmsreq))
 
 
@@ -494,15 +494,15 @@ def searchiQiyi(params):
     keyboard = Apps('', '请输入搜索内容')
     xbmc.sleep(1000)
     keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-        key = urllib.quote_plus(keyword)
-        url = 'http://so.iqiyi.com/so/q_' + key + '?source=hot'
-    else:
+    if not keyboard.isConfirmed():
         return
 
+    keyword = keyboard.getText()
+    key = urllib.quote_plus(keyword)
+    url = 'http://so.iqiyi.com/so/q_' + key + '?source=hot'
+
     link = getHttpData(url)
-    print link
+
     if link is None:
         li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + '   [/COLOR]的相关视频')
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)

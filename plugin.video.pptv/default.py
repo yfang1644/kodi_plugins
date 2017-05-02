@@ -854,7 +854,7 @@ def listFilter(name, url):
 
 
 def searchPPTV():
-    keyboard = ChineseKeyboard.Keyboard('', PPTV_SEARCH_DESC)
+    keyboard = xbmc.Keyboard('', PPTV_SEARCH_DESC)
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         key = keyboard.getText()

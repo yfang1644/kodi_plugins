@@ -16,9 +16,9 @@
         <description lang="en">Watch online videos in www.pptv.com site. Your XBMC system need m3u and m3u8 support for playing live stream and iPad stream</description>
         <description lang="zh">观看 www.pptv.com 上的精彩在线直播和点播视频. 直播及iPad视频需XBMC系统可正常播放m3u m3u8类型网络媒体</description>
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<forum>http://bbs.htpc1.com/thread-259452-1-1.html</forum>
-		<website>https://zohead.com/</website>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.pptv</source>
+		<forum></forum>
+		<website></website>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.pptv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

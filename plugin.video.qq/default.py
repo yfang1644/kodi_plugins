@@ -547,10 +547,11 @@ def videoparseX(vid):
     info_api += '&defnpayver=1&appVer=3.0.52'
     info_api += '&defaultfmt=auto&defn=%s'
     info_api += '&otype=json&show1080p=1&isHLS=0&charge=0'
+    info_api += '&sdtfrom=v1001&host=v.qq.com'
     if __addon__.getSetting('version') == '0':
         platform = '&platform=11'
     else:
-        platform = '&platform=10901'
+        platform = '&platform=11'
     RESOLUTION = ['sd', 'hd', 'shd', 'fhd']
     sel = int(__addon__.getSetting('resolution'))
     if sel == 4:
@@ -598,7 +599,7 @@ def videoparseX(vid):
     #     server = videoparse(0)
     server = preurl[0]['url']
     urllist = []
-    root = 'http://h5vv.video.qq.com/getkey?otype=json&vid=' + vid + platform
+    root = 'http://h5vv.video.qq.com/getkey?otype=json&sdtfrom=v1001&host=v.qq.com&vid=' + vid + platform
     lenfc = fc + 1
     if fc == 0:
         lenfc = 2
@@ -613,7 +614,7 @@ def videoparseX(vid):
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
         jspage = json.loads(jspage)
         key = jspage.get('key', oldkey)
-        app = '?vkey=%s&type=mp4' % key
+        app = '?vkey=%s&type=mp4' % fvkey
         urllist.append(server + file + app)
         oldkey = key
 
@@ -653,12 +654,12 @@ def searchTencent(params):
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-        url = HOST_URL + '/x/search/?q=' + urllib.quote_plus(keyword)
-        url += '&stag=0'
-    else:
+    if not keyboard.isConfirmed():
         return
+
+    keyword = keyboard.getText()
+    url = HOST_URL + '/x/search/?q=' + urllib.quote_plus(keyword)
+    url += '&stag=0'
 
     link = GetHttpData(url)
     if link is None:

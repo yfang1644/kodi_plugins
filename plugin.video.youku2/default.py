@@ -30,11 +30,6 @@ __addonname__ = __addon__.getAddonInfo('name')
 __addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 
-if (__addon__.getSetting('keyboard')=='0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
-
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 #UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
@@ -293,32 +288,36 @@ def episodesList(params):
     html = getHttpData(url, headers={'User-Agent': UserAgent})
     tree = BeautifulSoup(html, 'html.parser')
 
-    title = params['title']
-    thumb = params['thumb']
-    u = sys.argv[0] + '?url=' + url
-    u += '&mode=playvideo'
-    u += '&title=' + urllib.quote_plus(title)
-    u += '&thumb=' + thumb
-    li = xbmcgui.ListItem(title,
-                          iconImage=thumb, thumbnailImage=thumb)
-    li.setInfo(type='Video', infoLabels={'Title': title})
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
     # 主题视频
+    #soup = tree.find_all('div', {'class': 'lists'})
     items = tree.find_all('div', {'class': 'program'})
-    for item in items:
-        title = item['title']
-        href = httphead(item.a['href'])
-        img = item.img['src']
-        t = item.find('span', {'class': 'c-time'})
-        time = t.text
-        u = sys.argv[0] + '?url=' + href
+    if len(items) < 1:
+        title = params['title']
+        thumb = params['thumb']
+        u = sys.argv[0] + '?url=' + url
         u += '&mode=playvideo'
-        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
-        u += '&thumb=' + img
-        li = xbmcgui.ListItem(title + '(' + time + ')',
-                              iconImage=img, thumbnailImage=img)
+        u += '&title=' + urllib.quote_plus(title)
+        u += '&thumb=' + thumb
+        li = xbmcgui.ListItem(title,
+                              iconImage=thumb, thumbnailImage=thumb)
+        li.setInfo(type='Video', infoLabels={'Title': title})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    else:
+        for item in items:
+            title = item['title']
+            href = httphead(item.a['href'])
+            img = item.img['src']
+            t = item.find('span', {'class': 'c-time'})
+            time = t.text
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playvideo'
+            u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+            u += '&thumb=' + img
+            li = xbmcgui.ListItem(title + '(' + time + ')',
+                                  iconImage=img, thumbnailImage=img)
+            li.setInfo(type='Video', infoLabels={'Title': title})
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
 
     items = tree.find_all('div', {'class': 'item '})
     for item in items:
@@ -347,6 +346,7 @@ def episodesList(params):
             u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
             li = xbmcgui.ListItem(title)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     except:
         pass
 
@@ -379,15 +379,45 @@ def episodesList(params):
 
 
 def searchInYouku(params):
-    if (__addon__.getSetting('keyboard') == '0'):
-        keyboard = xbmc.Keyboard('', '请输入搜索内容')
-    else:
-        keyboard = ChineseKeyboard.Keyboard('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
-    if (keyboard.isConfirmed()):
-        keyword = keyboard.getText()
-    return
+    if not keyboard.isConfirmed():
+        return
+    keyword = keyboard.getText()
+    key = urllib.quote_plus(keyword)
+    p_url = 'http://www.soku.com/search_video/q_'
+
+    link = getHttpData(p_url + key)
+
+    if link is None:
+        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + ' [/COL  OR]的相关视频')
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
+
+    # fetch and build the video series episode list
+    content = BeautifulSoup(link, 'html.parser')
+    soup1 = content.find_all('div', {'class': 's_movie clearfix'})
+    soup2 = content.find_all('div', {'class': 's_tv clearfix'})
+
+    for item in soup1 + soup2:
+        img = item.img['src']
+        detail = item.find('div', {'class': 's_detail'})
+        href = detail.a['href']
+        title = detail.a.text
+        info = item.find('div', {'class': 'info_cont'})
+        info = info.span.text
+
+        li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
+        u += '&thumb=' + img
+        u += '&title=' + title
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 # main programs goes here #########################################
