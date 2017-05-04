@@ -12,7 +12,7 @@
         <summary lang="zh">亚洲电视(Asia TVs)</summary>
         <description>亚洲电视</description>
         <description lang="zh">亚洲电视(Asia TVs)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.asia-tv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.asia-tv</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

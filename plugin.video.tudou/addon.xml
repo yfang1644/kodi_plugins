@@ -17,7 +17,7 @@
         <summary lang="zh">土豆在线视频</summary>
         <description lang="en">Online videos from www.tudou.com</description>
         <description lang="zh">每个人都是生活的导演</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.tudou</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tudou</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

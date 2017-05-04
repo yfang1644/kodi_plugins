@@ -18,7 +18,7 @@
         <summary lang="zh">百度云</summary>
         <description lang="en">Baidu Cloud</description>
         <description lang="zh">在线播放百度云盘中的视频</description>    
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.baiduyun</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.baiduyun</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

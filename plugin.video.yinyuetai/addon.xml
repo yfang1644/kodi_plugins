@@ -16,7 +16,7 @@
         <summary lang="zh">音悦台视频插件</summary>
         <description lang="en">Online MV from yinyuetai.com[CR][CR]To Enable Video Auto Playback Option:[CR]---------------------------------[CR]- Navigate to Add-on settings[CR]- Video Continuous Playback: Enable/Disable</description>
         <description lang="zh">观看音悦台在线MV[CR][CR]视频自动播放说明：[CR]--------------------------------[CR]- 找到 Add-on settings 文件列表[CR]- 选择视频连续播放": 是/否</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.yinyuetai</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yinyuetai</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

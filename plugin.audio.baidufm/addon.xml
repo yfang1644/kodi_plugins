@@ -11,7 +11,7 @@
         <summary lang="zh">百度随心听插件</summary>
         <description>Baidu fm audio plugin</description>
         <description lang="zh">百度随心听插件</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.baidufm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.baidufm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

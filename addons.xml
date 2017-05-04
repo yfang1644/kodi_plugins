@@ -18,7 +18,7 @@
         <summary lang="zh">乐视网插件</summary>
         <description lang="en">Letv video plugin[CR][CR]LeTV.com (Chinese: 乐视网), operated by Beijing LeTV Mobile Media and Technology Co. Ltd, is an online video portal in Beijing. It offers online video programs and movie viewing through legal channels.</description>
         <description lang="zh">Letv video plugin[CR][CR]乐视网(LeTV.com)是以正版,高清影视剧为主的视频门户网站,为用户提供正版高清电影,电视剧,动漫,综艺,娱乐等视频在线观看,视频分享,视频搜索等服务</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.letv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.letv</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -41,7 +41,7 @@
         <summary lang="zh">优酷视频插件(平铺版)</summary>
         <description lang="en">YouKu is china's largest video sharing site.</description>
         <description lang="zh">优酷视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.youku2</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku2</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
@@ -64,7 +64,7 @@
         <summary lang="zh">音悦台视频插件</summary>
         <description lang="en">Online MV from yinyuetai.com[CR][CR]To Enable Video Auto Playback Option:[CR]---------------------------------[CR]- Navigate to Add-on settings[CR]- Video Continuous Playback: Enable/Disable</description>
         <description lang="zh">观看音悦台在线MV[CR][CR]视频自动播放说明：[CR]--------------------------------[CR]- 找到 Add-on settings 文件列表[CR]- 选择视频连续播放": 是/否</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.yinyuetai</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yinyuetai</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -89,7 +89,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
 		<forum>http://bbs.htpc1.com/thread-259452-1-1.html</forum>
 		<website>https://zohead.com/</website>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.pptv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.pptv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -107,7 +107,7 @@
         <summary lang="zh">百度随心听插件</summary>
         <description>Baidu fm audio plugin</description>
         <description lang="zh">百度随心听插件</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.baidufm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.baidufm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -160,7 +160,7 @@
         <summary lang="zh">搜狐视频插件</summary>
         <description lang="en">Online videos from tv.sohu.com</description>
         <description lang="zh">搜狐视频网站(tv.sohu.com)提供正版在线观看高清电影、高清电视剧、高清纪录片，包括正在影院热映，电视热播的最新大片，多年来最受网友喜欢的经典影视作品，国内外品质优秀的历史，地理，探索等纪录片。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.sohuvideo</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.sohuvideo</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -177,7 +177,7 @@
         <summary lang="en">Radio.cn audio plugin</summary>
         <summary lang="zh">央广娱乐音频</summary>
         <description>中国广播Radio.cn是中央人民广播电台、央广新媒体文化传媒（北京）有限公司建设；中国广播依托全国广播、电视、媒体、版权公司等优势资源；中国广播借助中国广播联盟、全球华语广播联盟、高校广播联盟等协会组织的支持；面向行业单位、广播听众、互联网用户、以及手机车载社交等新兴媒体用户提供的娱乐和运营综合集成服务平台。中国广播集成平台具备全媒体音视频各项牌照，提供中国广播Radio.cn网站、中国广播客户端、集成平台管理系统、广播音频节目发布及制播系统等多项业务和服务</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.radiocn</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.radiocn</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -202,7 +202,7 @@
         <summary lang="zh">百度云</summary>
         <description lang="en">Baidu Cloud</description>
         <description lang="zh">在线播放百度云盘中的视频</description>    
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.baiduyun</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.baiduyun</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
@@ -241,7 +241,7 @@
         <summary lang="zh">酷狗电台插件</summary>
         <description>kugou fm audio plugin</description>
         <description lang="zh">酷狗电台频道,数十个音乐电台为你精心打造,带你邂逅喜爱的音乐,享受随意听音乐的精彩。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.kugoufm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.kugoufm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -259,7 +259,7 @@
         <summary lang="zh">我爱VDO</summary>
         <description lang="en">online video from 5ivdo.com</description>
         <description lang="zh">在线视频聚合，主站[http://www.5ivdo.com]。基于XBMC运行，能够支持主要视频网站和网络电视台内容的在线播放，更多站点支持敬请期待。本站作为资源导航，只为个人服务，商业用途勿扰。你所体验的所有视频内容，版权归属相应网站，应对他们的工作心存感激。有任何意见或建议请加入QQ群[197687378]，或者关注官方微博[http://weibo.com/5ivdo]。让我们为创造更好的XBMC体验而努力！</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.5ivdo</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.5ivdo</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -281,7 +281,7 @@
         <summary lang="en">kuwo audio plugin</summary>
         <summary lang="zh">酷我音乐</summary>
         <description>（www.kuwo.cn）</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.kuwo</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.kuwo</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -302,7 +302,7 @@
         <summary lang="en">1ting audio plugin</summary>
         <summary lang="zh">一听音乐插件</summary>
         <description>一听音乐网（www.1ting.com）是中国最大的在线音乐网站，集正版音乐、原创歌曲平台、网络电台为一体，拥有丰富的正版音乐库、原创歌曲展示平台（可乐频道）和精彩纷呈的电台节目（一听音乐台）。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.1ting</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.1ting</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -324,7 +324,7 @@
         <summary lang="zh">MGTV 视频插件</summary>
         <description lang="en">Online videos from tv.sohu.com</description>
         <description lang="zh">本插件视频解析自芒果TV网站(www.mgtv.com)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.mgtv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.mgtv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -347,7 +347,7 @@
         <license></license>
         <forum></forum>
         <website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.my-addon</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.my-addon</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
         <news>XXXXX XXXXX</news>
@@ -372,7 +372,7 @@
         <summary lang="en">DoubanFM plugin</summary>
         <summary lang="zh">豆瓣FM插件</summary>
         <description lang="zh">豆瓣FM是一款你专属的个性化收听工具。你只需要非常简单的操作就能听到为你量身推荐的歌曲。它还拥有不同音乐爱好者创建的主题兆赫，让你在享受自我口味歌曲的同时，也能发现更多样的未知音乐。 </description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.doubanfm</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.doubanfm</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -391,7 +391,7 @@
         <language></language>
         <summary>优酷TV</summary>
         <description>优酷视频是中国最大的视频分享网站</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.vide.youkutv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.vide.youkutv</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
@@ -413,7 +413,7 @@
         <summary lang="zh">奇艺视频插件</summary>
         <description lang="en">QIYI (QIYI.COM) was founded by Baidu- world's the largest Chinese search engine, invested by Providence Equity Partners-U.S. private equity, QIYI is the first professional website dedicated to providing free, high-definition network video services.</description>
         <description lang="zh">奇艺（QIYI.COM）是由百度创立的大型专业网站，专注于提供免费、高清网络视频服务。奇艺的优质版权视频丰富多元，涵盖了电影、电视剧、综艺、纪录片、动漫、旅游等众多内容形态。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.qiyi</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.qiyi</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -444,7 +444,7 @@
         </description>    
 		<license>GNU General Public License, v3</license>
 		<language></language>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.bdyun</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.bdyun</source>
         <email>yfang1644@gmail.com</email>
 		<platform>all</platform>
 	</extension>
@@ -472,7 +472,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
 		<forum></forum>
 		<website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.tvonline</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tvonline</source>
         <email>yfang1644@gmail.com</email>
 		<platform>all</platform>
 	</extension>
@@ -480,7 +480,7 @@
 
 <addon id="plugin.video.funshion"
     name="风行视频(Funshion)"
-    version="1.1.1"
+    version="1.1.2"
     provider-name="taxigps,yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
@@ -493,7 +493,7 @@
         <summary lang="zh">风行网视频插件</summary>
         <description lang="en">Online videos from www.funshion.com</description>
         <description lang="zh">来自风行网（www.funshion.com）的网络视频内容。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.funshion</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.funshion</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -516,7 +516,7 @@
         <summary lang="zh">QQ视频插件</summary>
         <description lang="en">Online videos from tv.sohu.com</description>
         <description lang="zh">本插件视频解析自腾讯视频网站(v.qq.com)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.qq</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.qq</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -538,7 +538,7 @@
         <description>由人人影视转型后专门为美剧迷们打造的高质量讨论交流社区</description>
         <website><![CDATA[https://github.com/jindaxia/plugin.video.rrmj]]></website>
         <forum></forum>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.rrmj</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.rrmj</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
@@ -556,7 +556,7 @@
         <summary lang="zh">酷6云中剧场视频插件</summary>
         <description lang="en">online video from www.juchang.com/n</description>
         <description lang="zh">观看酷6云中剧场</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.ku6</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.ku6</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -578,7 +578,7 @@
         <summary lang="zh">酷我音乐盒音乐插件</summary>
         <description>KuwoBox audio plugin</description>
         <description lang="zh">酷我音乐盒在线音乐</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.kuwobox</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.kuwobox</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -598,7 +598,7 @@
         <summary lang="zh">优酷网视频插件</summary>
         <description lang="en">online video from youku.com</description>
         <description lang="zh">优酷(www.youku.com)在线网络视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.youku</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -622,7 +622,7 @@
         <summary lang="zh">土豆在线视频</summary>
         <description lang="en">Online videos from www.tudou.com</description>
         <description lang="zh">每个人都是生活的导演</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.tudou</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tudou</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -640,7 +640,7 @@
         <summary lang="zh">百度电台联盟音频插件</summary>
         <description>BaiduRadio audio plugin</description>
         <description lang="zh">百度电台联盟音频插件，在线收听功能受电台播出时间和网络条件限制，个别台可能无法收听。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.baiduradio</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.baiduradio</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -659,7 +659,7 @@
         <summary lang="zh">亚洲电视(Asia TVs)</summary>
         <description>亚洲电视</description>
         <description lang="zh">亚洲电视(Asia TVs)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.asia-tv</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.asia-tv</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

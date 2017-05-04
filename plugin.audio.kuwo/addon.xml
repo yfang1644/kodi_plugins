@@ -15,7 +15,7 @@
         <summary lang="en">kuwo audio plugin</summary>
         <summary lang="zh">酷我音乐</summary>
         <description>（www.kuwo.cn）</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.audio.kuwo</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.kuwo</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

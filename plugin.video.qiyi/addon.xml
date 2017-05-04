@@ -15,7 +15,7 @@
         <summary lang="zh">奇艺视频插件</summary>
         <description lang="en">QIYI (QIYI.COM) was founded by Baidu- world's the largest Chinese search engine, invested by Providence Equity Partners-U.S. private equity, QIYI is the first professional website dedicated to providing free, high-definition network video services.</description>
         <description lang="zh">奇艺（QIYI.COM）是由百度创立的大型专业网站，专注于提供免费、高清网络视频服务。奇艺的优质版权视频丰富多元，涵盖了电影、电视剧、综艺、纪录片、动漫、旅游等众多内容形态。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.qiyi</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.qiyi</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

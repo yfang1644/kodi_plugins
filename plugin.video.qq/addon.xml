@@ -16,7 +16,7 @@
         <summary lang="zh">QQ视频插件</summary>
         <description lang="en">Online videos from tv.sohu.com</description>
         <description lang="zh">本插件视频解析自腾讯视频网站(v.qq.com)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.qq</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.qq</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

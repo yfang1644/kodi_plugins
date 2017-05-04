@@ -21,7 +21,7 @@
 		<license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
 		<forum></forum>
 		<website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.tvonline</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tvonline</source>
         <email>yfang1644@gmail.com</email>
 		<platform>all</platform>
 	</extension>

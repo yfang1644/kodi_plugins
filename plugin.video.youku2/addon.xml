@@ -16,7 +16,7 @@
         <summary lang="zh">优酷视频插件(平铺版)</summary>
         <description lang="en">YouKu is china's largest video sharing site.</description>
         <description lang="zh">优酷视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.youku2</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku2</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>

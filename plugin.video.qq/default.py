@@ -128,7 +128,7 @@ def mainMenu():
         else:
             mode = 'mainlist'
         u = sys.argv[0] + '?mode=%s&name=%s' % (mode, name)
-        u += '&url=' + HOST_URL + CHANNEL_LIST[name]
+        u += '&url=' + httphead(CHANNEL_LIST[name])
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
@@ -225,7 +225,7 @@ def listSubMenu(params):
             continue
         href = site['href']
         if href[0] == '?':
-            href = href[1:]
+            href = href[1:]         #  href looks like '?&offset=30'
 
         li = xbmcgui.ListItem(title)
         u = sys.argv[0] + '?url=' + url + strparam + href
@@ -238,8 +238,6 @@ def listSubMenu(params):
 
 def seriesList(params):
     url = params['url']
-    del(params['url'])
-    strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('span', {'class': 'item'})
@@ -261,8 +259,7 @@ def seriesList(params):
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video',
                    infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + HOST_URL + href
-        u += strparam + '&mode=playvideo'
+        u = sys.argv[0] + '?url=' + httphead(href) + '&mode=playvideo'
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
@@ -271,12 +268,8 @@ def seriesList(params):
 
 def episodesList(params):
     url = params['url']
-    del(params['url'])
-    thumb = params.get('thumb')
-    del(params['thumb'])
-    title = params.get('title')
-    del(params['title'])
-    strparam = buildParams(params)
+    thumb = params['thumb']
+    title = params['title']
 
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
@@ -303,7 +296,7 @@ def episodesList(params):
             img = thumb
         img = httphead(img)
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        u = sys.argv[0] + '?mode=playvideo&vid=' + vid + strparam
+        u = sys.argv[0] + '?mode=playvideo&vid=' + vid
         u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
         u += '&thumb=' + img
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
@@ -347,8 +340,6 @@ def episodesList(params):
 
 def tedAlbum(params):
     url = params['url']
-    del(params['url'])
-    strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'mod_video_list_content ui_scroll_content'})
@@ -370,8 +361,6 @@ def tedAlbum(params):
 
 def tedFolders(params):
     url = params['url']
-    del(params['url'])
-    strparam = buildParams(params)
     html = GetHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'site_container'})
@@ -675,37 +664,30 @@ def searchTencent(params):
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
     soup = content.find_all('div', {'class': 'result_item'})
-
     for items in soup:
         href = httphead(items.a['href'])
         print '=============', href
         img = httphead(items.img['src'])
         title = items.img['alt']
-        '''
+
         info = items.find('span', {'class': 'desc_text'})
         try:
             info = info.text
         except:
             info = ''
-        '''
-        info = ''
+
         u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
         u += '&title=' + title + '&thumb=' + img
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-        xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
         list = items.find_all('div', {'class': 'item'})
-        list = None
-        if list is None:
-            continue
         for series in list:
-            title = series.a.text
+            subtitle = series.a.text
             href = httphead(series.a['href'])
-            li = xbmcgui.ListItem(title)
-            u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
-            u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+            li = xbmcgui.ListItem(subtitle)
+            u = sys.argv[0] + '?url=' + href + '&mode=playvideo&title=' + subtitle
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'videos')
@@ -731,6 +713,6 @@ runlist = {
     'search': 'searchTencent(params)',
     'select': 'changeList(params)',
     'playvideo': 'playVideo(params)'
-    }
+}
 
 eval(runlist[mode])

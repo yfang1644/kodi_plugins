@@ -11,7 +11,7 @@
         <summary lang="zh">酷6云中剧场视频插件</summary>
         <description lang="en">online video from www.juchang.com/n</description>
         <description lang="zh">观看酷6云中剧场</description>
-        <source>https://github.com/yfang1644/kodi_plugins/blob/master/plugin.video.ku6</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.ku6</source>
         <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
