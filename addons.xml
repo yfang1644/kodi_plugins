@@ -664,4 +664,27 @@
         <platform>all</platform>
   </extension>
 </addon>
+
+<addon id="plugin.video.cntv-video"
+    name="CNTV 视频"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">CNTV video plugin</summary>
+        <summary lang="zh">CNTV 视频插件</summary>
+        <description lang="en">Online videos from tv.cntv.cn</description>
+        <description lang="zh">本插件视频解析CNTV网站(tv.cntv.cn)</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.cntv-video</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
 </addons>

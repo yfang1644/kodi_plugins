@@ -14,6 +14,7 @@ import StringIO
 import os.path
 import time
 import random
+import hashlib
 import socket
 import cookielib
 import base64
@@ -311,7 +312,8 @@ class LetvPlayer(xbmc.Player):
 ##################################################################################
 def calcTimeKey(t):
     ror = lambda val, r_bits, : ((val & (2 ** 32 - 1)) >> r_bits % 32) | (val << (32 - (r_bits % 32)) & (2 ** 32 - 1))
-    return ror(ror(t, 773625421 % 13) ^ 773625421, 773625421 % 17)
+    magic = 185025305
+    return ror(t, magic % 17) ^ magic
 
 
 # # --- decrypt m3u8 data --------- ##
@@ -341,22 +343,23 @@ def decrypt_url(url, mCheck=True):
     serverIndex = int(__addon__.getSetting('video_server')) - 1
     vparamap = {0: '1300', 1: '720p', 2: '1080p'}
 
-    t_url = 'http://api.letv.com/mms/out/video/playJson?id={}&platid=1&splatid=101&format=1&tkey={}&domain=www.letv.com'
-    t_url2 = '&ctv=pc&m3v=1&termid=1&format=1&hwtype=un&ostype=Linux&tag=letv&sign=letv&expect=3&tn={}&pay=0&iscpn=f9051&rateid={}'
+    t_url = 'http://player-pc.le.com/mms/out/video/playJson?id={}&platid=1&splatid=101&format=1&tkey={}&domain=www.le.com&region=cn&source=1000&accesyx=1'
+
+    t_url2 = '&m3v=1&termid=1&format=1&hwtype=un&ostype=MacOS10.12.4&p1=1&p2=10&p3=-&expect=3&tn={}&vid={}&uuid={}&sign=letv'
 
     try:
         vid = re.compile('/vplay/(\d+).html').findall(url)[0]
         j_url = t_url.format(vid, calcTimeKey(int(time.time())))
         link = getHttpData(j_url)
         info = simplejson.loads(link)
-        playurl = info['playurl']
+        playurl = info['msgs']['playurl']
     except:
         return ''
 
     if (mCheck):
         pDialog.update(30)
     stream_id = None
-    support_stream_id = info["playurl"]["dispatch"].keys()
+    support_stream_id = playurl["dispatch"].keys()
 #     print("Current Video Supports:")
 #     for i in support_stream_id:
 #         print("\t--format",i,"<URL>")
@@ -393,18 +396,21 @@ def decrypt_url(url, mCheck=True):
             return ''
 
     url = domain + vod
-    url += t_url2.format(random.random(), vRes)
+    uuid = hashlib.sha1(url.encode('utf8')).hexdigest() + '_0'
+    url = url.replace('tss=0', 'tss=ios')
+    url += t_url2.format(random.random(), vid, uuid)
     ext = vodRes[stream_id][1].split('.')[-1]
 
-    r2 = getHttpData(url)
+    r2 = getHttpData(url.encode('utf-8'))
     if (mCheck):
         pDialog.update(60, line2="### 服务器  [ %i ]" % (index + 1))
 
     # try:
     info2 = simplejson.loads(r2)
+    suffix = '&r=' + str(int(time.time() * 1000)) + '&appid=500'
 
     # need to decrypt m3u8 (encoded) - may hang here
-    m3u8 = getHttpData(info2["location"], False, True)
+    m3u8 = getHttpData(info2['location'] + suffix, False, True)
     if (m3u8 is None):
         return None
 
@@ -777,7 +783,7 @@ def episodesList(params):
                    infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
         u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     try:
         album = jsdata['data']['otherlist']['videolist']
@@ -794,7 +800,7 @@ def episodesList(params):
                        infoLabels={'Title': title, 'Plot': info})
             u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
             u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     try:
         album = jsdata['data']['periodpoint']
@@ -811,7 +817,7 @@ def episodesList(params):
                        infoLabels={'Title': title, 'Plot': info})
             u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
             u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     '''
     match = re.compile("pageid: 'www_play'").search(html)
