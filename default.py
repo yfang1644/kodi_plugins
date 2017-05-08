@@ -71,7 +71,7 @@ VIDEO_SRV = ('http://182.254.72.11',
 
 def GetHttpData(url):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent_IPAD)
+    req.add_header('User_Agent', UserAgent_IPAD)
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()

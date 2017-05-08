@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import urllib2
@@ -16,7 +17,6 @@ try:
 except ImportError:
     import json as simplejson
 
-    
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
 RUNFLAG = 0
@@ -29,9 +29,9 @@ def GetHttpData(url):
         opener.addheaders = [('Cookie', '__ysuid={0}'.format(time.time()))]
         urllib2.install_opener(opener)
         RUNFLAG = RUNFLAG + 1
-	
+
     req = urllib2.Request(url)
-    req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
+    req.add_header('User_Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
                        format('AppleWebKit/537.36 (KHTML, like Gecko) ',
                               'Chrome/28.0.1500.71 Safari/537.36'))
     if (url.find('play.youku.com') != -1):

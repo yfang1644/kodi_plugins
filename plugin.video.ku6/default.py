@@ -1,3 +1,4 @@
+﻿#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -187,7 +188,7 @@ ZM_LIST = (['全部', '0'],    # alphabet list
 
 def GetHttpData(url):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     if response.headers.get('content-encoding', None) == 'gzip':

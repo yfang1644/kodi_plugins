@@ -1,8 +1,14 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # v1.0.0 2009/11/08 by robinttt, initial release
 # v1.1.0 2011/12/04 by d744000, full web scraping, added search.
 
+import xbmc
+import xbmcplugin
+import xbmcgui
+import xbmcaddon
+import urllib
 import urllib2
 import re
 import sys
@@ -11,10 +17,6 @@ import StringIO
 import hashlib
 import time
 from bs4 import BeautifulSoup
-import xbmc
-import xbmcplugin
-import xbmcgui
-import xbmcaddon
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -34,7 +36,7 @@ BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 #
 def getUrlTree(url):
     req = urllib2.Request(url.replace(' ', '%20'))  # some names have ' '
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()
@@ -56,8 +58,8 @@ def get_content_by_tag(tree, tag):
         return ''
 
 
-def PlayMusic(url):
-    mids = url
+def PlayMusic(params):
+    mids = params.get('url')
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     mids = mids.split('/')
@@ -94,21 +96,26 @@ def PlayMusic(url):
     xbmc.Player().play(playlist)
 
 
-def PlayMV(name, url, image):
-    print '------------------------------------'
-    print image
+def PlayMV(params):
+    name = params.get('name')
+    url = params.get('url')
+    thumb = params.get('thumb')
+
     html = getUrlTree(url)
     mp4 = re.compile('var mp4url.+(http:.+?mp4)').findall(html)
     mp4 = mp4[0]
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    listitem = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+    listitem = xbmcgui.ListItem(name, iconImage=thumb, thumbnailImage=thumb)
     listitem.setInfo(type="Video", infoLabels={"Title": name})
     playlist.add(mp4, listitem)
     xbmc.Player().play(playlist)
 
 
 def musiclist(name, url):
+    name = params.get('name')
+    url = params.get('url')
+
     html = getUrlTree(url)
     l = re.findall('"musiclist":(\[.+\]),"rids"', html)
     if not l:
@@ -130,7 +137,10 @@ def musiclist(name, url):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def albumlist(name, url, tree=None):
+def albumlist(params, tree=None):
+    name = params.get('name')
+    url = params.get('url')
+
     if tree is None:
         html = getUrlTree(url)
         tree = BeautifulSoup(html, "html.parser")
@@ -159,7 +169,7 @@ def category():
 
     for hotlist in soup:
         item = xbmcgui.ListItem(BANNER_FMT % hotlist.h1.text.encode('utf-8'))
-        u = sys.argv[0] + '?mode=title'
+        u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
         x = hotlist.find_all('ul', {'class': 'clearfix'})
@@ -173,19 +183,26 @@ def category():
             liz = xbmcgui.ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
-    albumlist('Main Menu', url, tree)
+    pdict = {'name': 'Main Menu', 'url': url}
+    albumlist(pdict, tree)
 
 
-def singeralbum(name, url, page, artistid):
+def singeralbum(params):
+    name = params.get('name')
+    url = params.get('url')
+    page = int(params.get('page', 0))
+    artistid = params.get('artistId')
+
+    item = xbmcgui.ListItem(BANNER_FMT % '专辑')
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
+
     html = getUrlTree(url)
     tree = BeautifulSoup(html, "html.parser")
 
     # ALBUM #######################################
     soup = tree.find_all('div', {'id': 'album'})
     li = soup[0].find_all('li')
-    item = xbmcgui.ListItem(BANNER_FMT % '专辑')
-    u = sys.argv[0] + '?mode=title'
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
     for album in li:
         image = album.find('div', {'class': 'cover'})
         image = image.img['src']
@@ -209,7 +226,7 @@ def singeralbum(name, url, page, artistid):
         aurl = name.a['href'].encode('utf-8')
         name = name.text.strip('\n').encode('utf-8')
         u = sys.argv[0] + '?url=' + aurl + '&mode=playmv&name=' + name
-        u += "&image=%s" % image.encode('utf-8')
+        u += "&thumb=%s" % image.encode('utf-8')
         liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
@@ -256,7 +273,12 @@ def singeralbum(name, url, page, artistid):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def singergroup(name, url, page, prefix):
+def singergroup(params):
+    name = params.get('name')
+    url = params.get('url')
+    prefix = params.get('prefix', '')
+    page = int(params.get('page', 0))
+
     html = getUrlTree(url + '&prefix=%s&pn=%d' % (prefix, page))
     # pn=page number, prefix=alphabet, initial singer name
     tree = BeautifulSoup(html, "html.parser")
@@ -306,7 +328,7 @@ def singerlist():
 
     for singer in soup:
         item = xbmcgui.ListItem(BANNER_FMT % singer.span.text.encode('utf-8'))
-        u = sys.argv[0] + '?mode=title'
+        u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
         li = singer.find_all('dd')
@@ -321,7 +343,10 @@ def singerlist():
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def single_album(name, url):
+def single_album(params):
+    name = params.get('name')
+    url = params.get('url')
+
     html = getUrlTree(url)
     tree = BeautifulSoup(html, "html.parser")
     soup = tree.find_all('li', {'class': 'clearfix'})
@@ -344,7 +369,10 @@ def single_album(name, url):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def sortitem(name, url):
+def sortitem(params):
+    name = params.get('name')
+    url = params.get('url')
+
     html = getUrlTree(url)
     tree = BeautifulSoup(html, "html.parser")
     soup = tree.find_all('div', {'class': 'music clearfix'})
@@ -375,7 +403,7 @@ def sortlist():
 
     for sdlist in soup:
         item = xbmcgui.ListItem(BANNER_FMT % sdlist.h1.text.encode('utf-8'))
-        u = sys.argv[0] + '?mode=title'
+        u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
         li = sdlist.find_all('li')
@@ -407,40 +435,21 @@ params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
 mode = params.get('mode')
-name = params.get('name')
-url = params.get('url')
-page = params.get('page', '0')
-page = int(page)
 
-if mode is None:
-    listRoot()
-elif mode == 'category':
-    category()
+runlist = {
+    None: 'listRoot()',
+    'category': 'category()',
+    'singer': 'singerlist()',
+    'sort': 'sortlist()',
+    'singerarea': 'singerarea()',
+    'singers': 'singergroup(params)',
+    'singeralbum': 'singeralbum(params)',
+    'sortitem': 'sortitem(params)',
+    'album1': 'single_album(params)',
+    'album': 'albumlist(params)',
+    'list': 'musiclist(params)',
+    'play': 'PlayMusic(params)',
+    'playmv': 'PlayMV(params)'
+}
 
-elif mode == 'singer':
-    singerlist()
-
-elif mode == 'sort':
-    sortlist()
-
-elif mode == 'singerarea':
-    singerarea()
-elif mode == 'singers':
-    prefix = params.get('prefix', '')
-    singergroup(name, url, page, prefix)
-elif mode == 'singeralbum':
-    artistid = params.get('artistId')
-    singeralbum(name, url, page, artistid)
-elif mode == 'sortitem':
-    sortitem(name, url)
-elif mode == 'album1':
-    single_album(name, url)
-elif mode == 'album':
-    albumlist(name, url)
-elif mode == 'list':
-    musiclist(name, url)
-elif mode == 'play':
-    PlayMusic(url)
-elif mode == 'playmv':
-    image = params.get('image')
-    PlayMV(name, url, image)
+eval(runlist[mode])

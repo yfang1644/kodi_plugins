@@ -57,16 +57,17 @@ INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 def get_vid_from_url(url):
     link = getHttpData(url)
 
-    match1 = re.compile("var vid\s*=\s*'(.+?)';").search(link)
+    match1 = re.compile('var vid\s*=\s*["|\'](.+?)["|\'];').search(link)
     if not match1:
         match1 = re.compile('<a href="(http://[^/]+/[0-9]+/[^\.]+.shtml)" target="?_blank"?><img').search(link)
         if match1:
             params['url'] = match1.group(1)
-            PlayVideo(params)
-        return
+            return get_vid_from_url(params['url'])
+        else:
+            return None
     p_vid = match1.group(1)
     if p_vid == '0':
-        match1 = re.compile('data-vid="([^"]+)"').search(link)
+        match1 = re.compile('data-vid\s*=\s*["|\']([^"]+)["|\'"]').search(link)
         if not match1:
             return None
         p_vid = match1.group(1)
@@ -137,20 +138,26 @@ def PlayVideo(params):
     tvid = info['tvid']
     urls = []
     data = info['data']
-    title = data['tvName'].encode('utf-8')
+    name = data['tvName'].encode('utf-8')
     # size = sum(data['clipsBytes'])
     assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
+
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    ulen = len(data['ck'])
+    i = 1
     for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
         clipURL = urlparse.urlparse(clip).path
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(hqvid)+'&rb=1'
         videourl = simplejson.loads(getHttpData(url))['url'].encode('utf-8')
-        videourl = '%s|Range=' % (videourl)
-        urls.append(videourl)
+        videourl += '|Range='
+        title = name + '(%d/%d)'% (i, ulen)
+        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        li.setInfo(type="Video", infoLabels={"Title": title})
+        playlist.add(videourl, li)
+        i += 1
 
-    stackurl = 'stack://' + ' , '.join(urls)
-    listitem = xbmcgui.ListItem(title, thumbnailImage=thumb)
-    listitem.setInfo(type="Video", infoLabels={"Title": title})
-    xbmc.Player().play(stackurl, listitem)
+    xbmc.Player().play(playlist)
 
 
 def httphead(url):
@@ -199,7 +206,7 @@ def getHttpData(url):
     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
     charset = ''
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     try:
         response = opener.open(req)
     except urllib2.HTTPError, e:
@@ -390,7 +397,7 @@ def episodesList1(params):
 
     listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
     if url.find('.html') > 0:
-        match0 = re.compile('var playlistId\s*=\s*"(.+?)";', re.DOTALL).findall(link)
+        match0 = re.compile('var playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
 
         link = getHttpData(listapi + 'playlist_id=' + match0[0])
         match = re.compile('"videoImage":"(.+?)",.+?"videoUrl":"(.+?)".+?"videoId":(.+?),.+?"videoOrder":"(.+?)",', re.DOTALL).findall(link)
@@ -554,7 +561,7 @@ def episodesList2(params):
 
     listapi = 'http://my.tv.sohu.com/play/getvideolist.do?playlistid=%s&pagesize=30&order=1'
 
-    match0 = re.compile("playlistId\s*=\s*'(.+?)';", re.DOTALL).findall(link)
+    match0 = re.compile('playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
 
     link = getHttpData(listapi % match0[0])
     jsdata = simplejson.loads(link)['videos']

@@ -11,7 +11,6 @@ import gzip
 import datetime
 import StringIO
 import urlparse
-import ChineseKeyboard
 try:
     import json
 except:
@@ -37,22 +36,6 @@ PPTV_SEARCH_URL = 'http://search.pptv.com/s_video?kw='
 PPTV_TV_AREA_URL = 'http://live.pptv.com/api/tv_list?area_id='
 PPTV_SUBJECT_LIST = 'http://live.pptv.com/api/subject_list?'
 
-PPTV_CURRENT = '当前'
-PPTV_SORT = '排序：'
-PPTV_TTH = '第'
-PPTV_FIELD = '节'
-PPTV_PAGE = '页'
-PPTV_SELECT = '按此选择'
-PPTV_FIRST_PAGE = '第一页'
-PPTV_LAST_PAGE = '最后一页'
-PPTV_PREV_PAGE = '上一页'
-PPTV_NEXT_PAGE = '下一页'
-PPTV_MSG_GET_URL_FAILED = '无法获取视频地址!'
-PPTV_MSG_INVALID_URL = '无效的视频地址, 可能不是PPTV视频!'
-PPTV_MSG_NO_VIP = '暂时无法观看PPTV VIP视频!'
-PPTV_SEARCH = '按此进行搜索...'
-PPTV_SEARCH_DESC = '请输入搜索内容'
-PPTV_SEARCH_RES = '搜索结果'
 
 # PPTV video qualities
 PPTV_VIDEO_NORMAL = 0
@@ -84,7 +67,7 @@ def log(description, level=0):
 
 def GetHttpData(url, agent=UserAgent_IPAD, referer=''):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', agent)
+    req.add_header('User_Agent', agent)
     if len(referer) > 0:
         req.add_header('Referer', referer)
     try:
@@ -315,7 +298,7 @@ def GetPPTVVideoList(url, only_filter=False):
     # get special video filters like: update time
     tmp = parseDOM(unicode(data, 'utf-8', 'ignore'), 'div', attrs={'class': 'sort-result-container'})
     if len(tmp) > 0:
-        s_dict = {'label': PPTV_SORT, 'selected_name': '', 'options': []}
+        s_dict = {'label': '排序', 'selected_name': '', 'options': []}
         filters = parseDOM(tmp[0], 'li')
         sclass = parseDOM(tmp[0], 'li', ret='class')
         for i, j in zip(filters, sclass):
@@ -370,6 +353,7 @@ def GetPPTVVideoList(url, only_filter=False):
                 continue
             channel = parseDOM(pptmp['html'], 'td', attrs={'class': 'show_channel'})
             playing = parseDOM(pptmp['html'], 'td', attrs={'class': 'show_playing'})
+
             for i, j in zip(channel, playing):
                 name = CheckValidList([t for t in parseDOM(i, 'a') if t.find('<img') < 0]).encode('utf-8')
                 image = CheckValidList(parseDOM(i, 'img', ret='src')).encode('utf-8')
@@ -438,7 +422,7 @@ def GetPPTVVideoList(url, only_filter=False):
 def GetPPTVEpisodesList(name, url, thumb):
     # check whether is VIP video
     if re.match('^http://.*vip\.pptv\.com/.*$', url):
-        xbmcgui.Dialog().ok(__addonname__, PPTV_MSG_NO_VIP)
+        xbmcgui.Dialog().ok(__addonname__, '暂时无法观看PPTV VIP视频!')
         return (None, [], None)
 
     data = GetHttpData(url)
@@ -609,7 +593,7 @@ def GetPPTVVideoURL(url, quality):
     # check whether is PPTV video
     domain = CheckValidList(re.compile('^http://(.*\.pptv\.com)/.*$').findall(url))
     if len(domain) <= 0:
-        xbmcgui.Dialog().ok(__addonname__, PPTV_MSG_INVALID_URL)
+        xbmcgui.Dialog().ok(__addonname__, '视频地址无效, 可能不是PPTV视频!')
         return []
 
     data = GetHttpData(url)
@@ -736,7 +720,7 @@ def GetPPTVSearchList(url, matchnameonly=None):
 def showSearchEntry(total_items):
     # show search entry
     u = sys.argv[0] + '?mode=search'
-    liz = xbmcgui.ListItem('[COLOR FF00FFFF]<' + PPTV_SEARCH + '>[/COLOR]')
+    liz = xbmcgui.ListItem('[COLOR FF00FFFF]<按此进行搜索...>[/COLOR]')
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False, total_items)
 
 
@@ -759,27 +743,27 @@ def listVideo(name, url, list_ret):
     total_items = len(video_list) + 2
 
     # show name and page index
-    title = '[COLOR FFFF0000]' + PPTV_CURRENT + ':[/COLOR] ' + name + ' (' + PPTV_TTH
+    title = '[COLOR FFFF0000]当前:[/COLOR] ' + name + ' (第'
     if pages_attr:
         title += str(pages_attr['selected_page']) + '/' + str(pages_attr['last_page'])
         # contribute first/previous/next/last page link and name
         page_links = [pages_attr['first_page_link'], pages_attr['prev_page_link'], pages_attr['next_page_link'], pages_attr['last_page_link']]
         page_strs = [
-            '[COLOR FFFF0000]' + PPTV_FIRST_PAGE + '[/COLOR] - ' + PPTV_TTH + ' 1 ' + PPTV_PAGE,
-            '[COLOR FFFF0000]' + PPTV_PREV_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['selected_page'] - 1) + ' ' + PPTV_PAGE,
-            '[COLOR FFFF0000]' + PPTV_NEXT_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['selected_page'] + 1) + ' ' + PPTV_PAGE,
-            '[COLOR FFFF0000]' + PPTV_LAST_PAGE + '[/COLOR] - ' + PPTV_TTH + ' ' + str(pages_attr['last_page']) + ' ' + PPTV_PAGE
+            '[COLOR FFFF0000]第一页[/COLOR] - 第 1 页',
+            '[COLOR FFFF0000]上一页[/COLOR] - 第 ' + str(pages_attr['selected_page'] - 1) + ' 页',
+            '[COLOR FFFF0000]下一页[/COLOR] - 第 ' + str(pages_attr['selected_page'] + 1) + ' 页',
+            '[COLOR FFFF0000]最后一页[/COLOR] - 第 ' + str(pages_attr['last_page']) + ' 页'
             ]
         # increate extra page items length
         total_items += len([i for i in page_links if len(i) > 0])
     else:
         title += '1/1'
-    title += PPTV_PAGE + ')'
+    title += '页)'
 
     # show filter conditions if needed
     if filter_list and len(filter_list) > 0:
         tmp = ['[COLOR FF00FF00]' + i['label'] + '[/COLOR]' + i['selected_name'] for i in filter_list]
-        title += ' [' + '/'.join(tmp) + '] (' + PPTV_SELECT + ')'
+        title += ' [' + '/'.join(tmp) + '] (按此选择)'
         u = sys.argv[0] + '?url=' + urllib.quote_plus(url) + '&mode=filterlist&name=' + urllib.quote_plus(name)
     # add first item
     liz = xbmcgui.ListItem(title)
@@ -826,13 +810,13 @@ def playVideo(name, url, thumb):
         playlist = xbmc.PlayList(1)
         playlist.clear()
         for i in range(0, len(ppurls)):
-            title = name + ' ' + PPTV_TTH + ' ' + str(i + 1) + '/' + str(len(ppurls)) + ' ' + PPTV_FIELD
+            title = name + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
             liz = xbmcgui.ListItem(title, thumbnailImage=thumb)
             liz.setInfo(type="Video", infoLabels={"Title": title})
             playlist.add(ppurls[i], liz)
         xbmc.Player().play(playlist)
     else:
-        xbmcgui.Dialog().ok(__addonname__, PPTV_MSG_GET_URL_FAILED)
+        xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
 
 
 def listFilter(name, url):
@@ -854,7 +838,7 @@ def listFilter(name, url):
 
 
 def searchPPTV():
-    keyboard = xbmc.Keyboard('', PPTV_SEARCH_DESC)
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         key = keyboard.getText()
@@ -890,4 +874,4 @@ elif mode == 'filterlist':
 elif mode == 'search':
     searchPPTV()
 elif mode == 'searchlist':
-    listVideo(PPTV_SEARCH_RES + ' - ' + key, None, GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(key)))
+    listVideo('搜索结果 - ' + key, None, GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(key)))

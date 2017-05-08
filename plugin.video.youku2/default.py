@@ -99,7 +99,7 @@ def mainMenu():
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = getHttpData(LIST_URL, headers={'User-Agent': UserAgent})
+    html = getHttpData(LIST_URL)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'yk-filter'})
 
@@ -131,7 +131,7 @@ def listSubMenu(params):
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = getHttpData(url, headers={'User-Agent': UserAgent})
+    html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     # 分页
     soup = tree.find_all('ul', {'class': 'yk-pages'})
@@ -285,7 +285,7 @@ def normalSelect(params):
 
 def episodesList(params):
     url = params['url']
-    html = getHttpData(url, headers={'User-Agent': UserAgent})
+    html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
 
     # 主题视频
@@ -359,9 +359,7 @@ def episodesList(params):
 
     api_rel += '?vid=%s&sid=%s&cate=%s' % (vid, sid, cid)
     api_rel += '&picSize=&apptype=1&pg=%s&module=9&pl=30' % (pg)
-    html = getHttpData(api_rel,
-                       headers={'User-Agent': UserAgent},
-                       decoded=True)
+    html = getHttpData(api_rel)
     jsdata = simplejson.loads(html.encode('utf-8'))
     jsdata = jsdata['data']
     for item in jsdata:

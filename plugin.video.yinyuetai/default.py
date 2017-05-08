@@ -1,13 +1,14 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib
-import urllib2
-import re
-import os
 import xbmcplugin
 import xbmcgui
 import xbmc
 import xbmcaddon
+import urllib
+import urllib2
+import re
+import os
 import datetime
 import gzip, StringIO
 import cookielib
@@ -81,7 +82,7 @@ def getHttpData(url):
     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
     charset = ''
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
 
     try:
         response = opener.open(req)

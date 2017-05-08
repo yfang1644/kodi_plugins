@@ -33,7 +33,7 @@ def getUrlTree(url, data=None):
     if data and not isinstance(data, str):
         # 2-item tuple or param dict, assume utf-8
         data = urllib.urlencode(data)
-    req = urllib2.Request(url, data, {'User-Agent': UserAgent})
+    req = urllib2.Request(url, data, {'User_Agent': UserAgent})
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()

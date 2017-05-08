@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -75,7 +76,7 @@ def httpBegin0(url):
 def getHttpData(url):
     charset = ''
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     try:
         response = urllib2.urlopen(req, timeout=2.0)
         httpdata = response.read()
@@ -566,7 +567,7 @@ params = sys.argv[2][1:]
 params = dict(urllib2.urlparse.parse_qsl(params))
 
 mode = params.get('mode')
-socket.setdefaulttimeout(10)
+#socket.setdefaulttimeout(10)
 
 runlist = {
     None: 'mainMenu()',

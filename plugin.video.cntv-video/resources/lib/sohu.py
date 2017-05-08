@@ -63,6 +63,7 @@ class Sohu():
             # if extractor_proxy:
             #     set_proxy(tuple(extractor_proxy.split(":")))
             info = simplejson.loads(get_html(self.v_api1 % vid))
+
             vidlist = ['oriVid',
                        'superVid',
                        'highVid',

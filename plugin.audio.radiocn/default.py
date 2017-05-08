@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import music
@@ -40,6 +41,7 @@ def play(params):
         url = music.getStreamUrl(channelId)
         xbmc.Player().play(url, li)
 
+
 def get_params():         # get part of the url, help to judge the param of the url, direcdory
     param = {}
     params = sys.argv[2]
@@ -52,6 +54,7 @@ def get_params():         # get part of the url, help to judge the param of the 
         param = dict(urllib2.urlparse.parse_qsl(cleanedparams))
     print(param)
     return param
+
 
 params = get_params()
 mode = params.get("mode", music.MODE_MENU)

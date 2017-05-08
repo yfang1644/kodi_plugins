@@ -26,34 +26,33 @@ __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decod
 
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
+sitelist = {
+    'le.com': 'letv',
+    'letv.com': 'letv',
+    'youku.com': 'youku',
+    'qiyi.com': 'iqiyi',
+    'sohu.com': 'sohu',
+    'pptv.com': 'pptv',
+    'qq.com': 'qq',
+    'fun.tv': 'funshion',
+    'tudou.com': 'tudou',
+    'cctv.com': 'cntv',
+    'cntv.cn': 'cntv',
+    'mgtv.com': 'mgtv'
+}
+
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 BANNER_FMT2 = '[COLOR FFDE0087]%s[/COLOR]'
 INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 
-LIST_URL = 'http://list.mgtv.com'
-HOST_URL = 'http://tv.cntv.cn'
-
-RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
-
-
-def httphead(url):
-    if len(url) < 2:
-        return url
-    if url[:2] == '/b':
-        url = HOST_URL + url
-    elif url[0] == '/':
-        url = LIST_URL + url
-
-    return url
-
 
 def mainMenu():
     MAINLIST = [
-        ('电视剧', 'http://dianshiju.cctv.com/list/all/index.shtml', 'dramalist'),
-        ('电影', 'http://dianyingku.cctv.com/list/index.shtml', 'movielist'),
-        ('动画片', 'http://donghua.cctv.com/list/all/', 'dramalist'),
-        ('纪录片', 'http://jishi.cntv.cn/doc/list/zm/index.shtml', 'dramalist')
+        (u'电视剧', 'http://dianshiju.cctv.com/list/all/index.shtml', 'dramalist'),
+        (u'电影', 'http://dianyingku.cctv.com/list/index.shtml', 'movielist'),
+        (u'动画片', 'http://donghua.cctv.com/list/all/', 'dramalist'),
+        (u'纪录片', 'http://jishi.cntv.cn/doc/list/zm/index.shtml', 'dramalist')
     ]
     for channel in range(0, 4):
         title = MAINLIST[channel][0]
@@ -128,9 +127,9 @@ def dramaList(params):
     total_page = total_soup // 8
 
     page = int(page)
-    items = soup[page]
+    items = soup[8*page]
     for i in range(1, 8):
-        items.append(soup[page + i])
+        items.append(soup[8*page + i])
 
     items = items.find_all('li')
     for item in items:
@@ -155,7 +154,7 @@ def dramaList(params):
     if page > 0:
         li = xbmcgui.ListItem(BANNER_FMT % '上一页')
         u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
-        u += '&mode=mainlist'
+        u += '&mode=dramalist'
         u += '&name=' + urllib.quote_plus(name)
         u += '&page=%d' % (page - 1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -163,7 +162,7 @@ def dramaList(params):
     if page < total_page:
         li = xbmcgui.ListItem(BANNER_FMT % '下一页')
         u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
-        u += '&mode=mainlist'
+        u += '&mode=dramalist'
         u += '&name=' + urllib.quote_plus(name)
         u += '&page=%d' % (page + 1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -202,13 +201,13 @@ def movieList(params):
     items = jsdata['data']
     for item in items:
         title = item['name'].encode('utf-8')
-        thumb = item['localimgurl']
-        mid = item['mid']
+        p_thumb = item['localimgurl'].encode('utf-8')
+        mid = item['mid'].encode('utf-8')
 
-        li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
+        li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=playmid' + '&url=' + url
-        u += '&name=' + name + '&mid=' + mid
-        u += '&thumb=' + thumb + '&title=' + title
+        u += '&name=' + urllib.quote_plus(name) + '&mid=' + mid
+        u += '&thumb=' + p_thumb + '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     totalnum = int(jsdata['totalnum'])
@@ -264,6 +263,9 @@ def list_by_sid(params):
 
 def list_by_jsondata(data):
     jsdata = eval(data[0])
+    print jsdata
+    if isinstance(jsdata, dict):
+        jsdata = [jsdata]
     lj = len(jsdata)
     for i in range(lj):
         title = jsdata[i]['title']
@@ -313,30 +315,34 @@ def playVideo_local(params):
 
 def playVideo_by_mid(params):
     mid = params['mid']
-    title = params['title']
-    thumb = params['thumb']
+    print '--------------------------',mid
     url = params['url']
     api = 'http://api.cntv.cn/dianyingku/movies/getMovieById?mid='
     html = get_html(api + mid)
     jsdata = simplejson.loads(html)
-    playurl = jsdata['play'][0]['playurl']
-    PlayVideo(playurl, title, thumb)
+
+    play = jsdata['play']
+    jl = len(play)
+    siteFound = False
+
+    for site in sitelist:
+        for i in range(jl):
+            playurl = play[i]['playurl']
+            if site in playurl:
+                siteFound = True
+                break
+        if siteFound:
+            break
+    if siteFound:
+        title = params['title']
+        thumb = params['thumb']
+        PlayVideo(playurl, title, thumb)
+    else:
+        xbmcgui.Dialog().ok(__addonname__, '视频地址未解析')
 
 
 def PlayVideo(playurl, title, thumb):
     videoRes = int(__addon__.getSetting('resolution'))
-
-    sitelist = {'le.com': 'letv',
-                'sohu.com': 'sohu',
-                'pptv.com': 'pptv',
-                'qq.com': 'qq',
-                'fun.tv': 'funshion',
-                'qiyi.com': 'iqiyi',
-                'tudou.com': 'tudou',
-                'cctv.com': 'cntv',
-                'cntv.cn': 'cntv',
-                'mgtv.com': 'mgtv',
-                'youku.com': 'youku'}
 
     if ('le.com' in playurl) or ('letv.com' in playurl):
         import resources.lib.letv as letv
@@ -344,7 +350,9 @@ def PlayVideo(playurl, title, thumb):
         videourl = video.video_from_url(playurl,
                                         level=videoRes,
                                         m3u8=__m3u8__)
-        xbmc.Player().play(__m3u8__)
+        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        li.setInfo(type="Video", infoLabels={"Title": title})
+        xbmc.Player().play(__m3u8__, li)
         return
 
     if 'sohu.com' in playurl:
@@ -361,7 +369,10 @@ def PlayVideo(playurl, title, thumb):
         import resources.lib.iqiyi as iqiyi
         video = iqiyi.IQiyi()
         videourl = video.video_from_url(playurl, level=videoRes)
-        xbmc.Player().play(videourl)
+
+        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        li.setInfo(type="Video", infoLabels={"Title": title})
+        xbmc.Player().play(videourl, li)
         return
 
     if 'fun.tv' in playurl:
@@ -380,13 +391,13 @@ def PlayVideo(playurl, title, thumb):
         videourl = video.video_from_url(playurl, level=videoRes)
 
     ulen = len(videourl)
-    print '---------------------', ulen
+
     if ulen > 0:
         playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
         playlist.clear()
         for i in range(0, ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
-            li = xbmcgui.ListItem(name, thumbnailImage='')
+            li = xbmcgui.ListItem(name, thumbnailImage=thumb)
             li.setInfo(type="Video", infoLabels={"Title": name})
             playlist.add(videourl[i], li)
 

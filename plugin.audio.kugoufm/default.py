@@ -1,13 +1,14 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import sys
-import urllib2
-import urllib
-import time
 import xbmc
 import xbmcplugin
 import xbmcgui
 import kugou
+import sys
+import urllib2
+import urllib
+import time
 
 
 # 显示 酷狗FM 的相应的专辑

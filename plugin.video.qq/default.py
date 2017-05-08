@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -81,7 +82,7 @@ def httphead(url):
 
 def GetHttpData(url):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent_IPAD)
+    req.add_header('User_Agent', UserAgent_IPAD)
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()
@@ -232,7 +233,7 @@ def listSubMenu(params):
         u += '&mode=mainlist&name=' + urllib.quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
+    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -603,7 +604,7 @@ def videoparseX(vid):
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
         jspage = json.loads(jspage)
         key = jspage.get('key', oldkey)
-        app = '?vkey=%s&type=mp4' % fvkey
+        app = '?vkey=%s&type=mp4' % key
         urllist.append(server + file + app)
         oldkey = key
 
@@ -666,7 +667,6 @@ def searchTencent(params):
     soup = content.find_all('div', {'class': 'result_item'})
     for items in soup:
         href = httphead(items.a['href'])
-        print '=============', href
         img = httphead(items.img['src'])
         title = items.img['alt']
 

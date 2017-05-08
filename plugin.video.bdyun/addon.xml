@@ -12,6 +12,7 @@
 		<provides>audio video</provides>
 	</extension>
 	<extension point="xbmc.addon.metadata">
+		<platform>all</platform>
         <language></language>
         <summary lang="en">Baidu Yun (Personal Cloud Storage)</summary>
         <summary lang="zh">百度云</summary>

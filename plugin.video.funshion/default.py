@@ -89,7 +89,7 @@ def httphead(url):
 ########################################################################
 def getHttpData(url):
     log("%s::url - %s" % (sys._getframe().f_code.co_name, url))
-    headers = {'User-Agent': UserAgent}
+    headers = {'User_Agent': UserAgent}
 
     req = urllib2.Request(url, headers=headers)
     try:
@@ -185,57 +185,71 @@ def updateListSEL(params):
     surl[-2] = '.'.join(purl)
     params['url'] = '/'.join(surl)
     params['filtrs'] = filter
-    print '-----------------------', params['url']
+
     mainList(params)
 
 
-##################################################################################
-def singleVideo(params):
+def playList(params):
     url = params['url']
-    sid = params['vid']
-    title = params['title']
-    thumb = params.get('thumb')
     name = params['name']
-
-    u = sys.argv[0] + '?mode=playvideo&title=' + urllib.quote_plus(title)
-    u += '&thumb=' + urllib.quote_plus(thumb)
-    u += '&vid=' + urllib.quote_plus(sid)
-
-    li = xbmcgui.ListItem(BANNER_FMT % title, iconImage='', thumbnailImage=thumb)
-    xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
-
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
 
-    # playlist
     lists = tree.find_all('a', {'class': 'vd-list-item'})
-    print '-------------------', url, html
+
+    if len(lists) < 1:
+        return
+
+    u = sys.argv[0] + '?mode=albumlist&url=' + url
+    li = xbmcgui.ListItem(BANNER_FMT % '播放列表')
+    xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+
     for item in lists:
         href = httphead(item['href'])
         p_name = item['title']
-        p_thumb = item.img['_lazysrc']
+        p_thumb = item.img.get('src')
+        if p_thumb is None:
+            p_thumb = item.img.get('_lazysrc')
+        if p_thumb is None:
+            p_thumb = ''
         t = item.find('i', {'class': 'vtime'})
         time = t.text
+        vid = item['data-vid']
         li = xbmcgui.ListItem(p_name + '(' + time + ')',
-                              iconImage='', thumbnailImage=thumb)
-        u = sys.argv[0] + '?mode=playvideo'
+                              iconImage='', thumbnailImage=p_thumb)
+        u = sys.argv[0] + '?mode=movielist'
         u += '&name=' + urllib.quote_plus(name)
         u += '&title=' + p_name
         u += '&thumb=' + p_thumb
-        u += '&url=' + href
+        u += '&url=' + href + '&vid=' + vid
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
-    # related
+
+def relatedList(params):
+    vid = params['vid']
+    name = params['name']
+    url = params['url']
+    # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/media?isajax=1'
     rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
-    link = getHttpData(rel_api % sid)
+    link = getHttpData(rel_api % vid)
     tree = BeautifulSoup(link, 'html.parser')
 
     items = tree.find_all('div', {'class': 'mod-vd-i'})
+    if len(items) < 1:
+        return
+
+    u = sys.argv[0] + '?mode=albumlist&url=' + url
+    li = xbmcgui.ListItem(BANNER_FMT % '相关推荐')
+    xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
     for item in items:
         pic = item.find('div', {'class': 'pic'})
         inf = item.find('div', {'class': 'info'})
-        href = httphead(inf.a['href'])
+        try:
+            href = inf.a['href']
+        except:
+            continue
+        href = httphead(href)
         p_id = pic.a['data-cid']
         p_thumb = httphead(pic.img['_lazysrc'])
         p_name = pic.img['alt']
@@ -268,8 +282,31 @@ def singleVideo(params):
         u += '&name=' + urllib.quote_plus(name)
         u += '&title=' + p_name
         u += '&thumb=' + p_thumb
-        u += '&url=' + href
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+        u += '&url=' + href + '&vid=' + p_id
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
+
+
+##################################################################################
+def singleVideo(params):
+    url = params['url']
+    sid = params['vid']
+    title = params['title']
+    thumb = params['thumb']
+    name = params['name']
+
+    u = sys.argv[0] + '?mode=movielist&title=' + urllib.quote_plus(title)
+    u += '&name=' + urllib.quote_plus(name)
+    u += '&thumb=' + urllib.quote_plus(thumb)
+    u += '&vid=' + urllib.quote_plus(sid)
+
+    li = xbmcgui.ListItem(BANNER_FMT % title, iconImage='', thumbnailImage=thumb)
+    xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+
+    # playlist
+    playList(params)
+
+    # related
+    relatedList(params)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -323,6 +360,12 @@ def seriesList(params):
                               iconImage='', thumbnailImage=p_thumb)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
+    # playlist
+    playList(params)
+
+    # related
+    relatedList(params)
+
     xbmcplugin.setContent(pluginhandle, 'episodes')
     xbmcplugin.endOfDirectory(pluginhandle)
 
@@ -355,6 +398,7 @@ def PlayVideo_test(thumb):
 
         hashid = json_response['mp4'][resolution]['infohash']
         filename = json_response['mp4'][resolution]['filename']
+        # besides mp4, there maybe h265 available
 
     url = 'http://jobsfe.funshion.com/query/v1/mp4/%s.json' % (hashid)
 
@@ -494,8 +538,9 @@ def mainList(params):
     soup = tree.find_all('div', {'class': 'mod-videos'})
 
     items = soup[0].find_all('div', {'class': 'mod-vd-i'})
+    items = tree.find_all('div', {'class': 'mod-vd-i'})
 
-    li = xbmcgui.ListItem(name + '【按此选择】' + filtrs)
+    li = xbmcgui.ListItem(name + '【选择过滤】' + filtrs)
     u = sys.argv[0] + '?mode=filter&name=' + urllib.quote_plus(name)
     u += '&url=' + url
     u += '&filtrs=' + urllib.quote_plus(filtrs)
@@ -572,8 +617,7 @@ def rootList():
     for item in items:
         name = item.a.text.encode('utf-8')
         url = httphead(item.a['href'])
-        ilist = "[COLOR FF00FFFF]%s[/COLOR]" % name
-        li = xbmcgui.ListItem(ilist)
+        li = xbmcgui.ListItem(name)
         u = sys.argv[0] + '?mode=mainlist'
         u += '&name=' + urllib.quote_plus(name)
         u += '&url=' + urllib.quote_plus(url)

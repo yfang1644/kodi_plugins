@@ -4,7 +4,7 @@
     version="1.2.11"
     provider-name="Uranus Zhou,yfang1644">
     <requires>
-        <import addon="xbmc.python" version="2.1.0"/>
+        <import addon="script.module.simplejson" version="3.3.0"/>
         <import addon="script.module.keyboard.chinese" version="1.0.0"/>
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">

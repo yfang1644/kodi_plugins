@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -29,7 +30,7 @@ DP = xbmcgui.DialogProgress()
 
 def Get5ivdoData(url):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()

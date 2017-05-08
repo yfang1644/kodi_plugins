@@ -387,7 +387,7 @@ class video_concatenate:
         s.send('GET %s HTTP/1.1\r\n'
                'Range: bytes=%d-\r\n'
                'Host: %s\r\n'
-               'User-Agent: %s\r\n'
+               'User_Agent: %s\r\n'
                'Accept: */*\r\n\r\n' % (path, starting_bytes, host, self.config['ua']))
 
     def _find_starting(self, data):

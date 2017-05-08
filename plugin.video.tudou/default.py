@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -31,7 +32,7 @@ __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
 cookieFile = __profile__ + 'cookies.tudou'
 
-if (__addon__.getSetting('keyboard')=='0'):
+if (__addon__.getSetting('keyboard') =='0'):
     from xbmc import Keyboard as Apps
 else:
     from ChineseKeyboard import Keyboard as Apps
@@ -112,18 +113,10 @@ class LetvPlayer(xbmc.Player):
                     pDialog.close()
 
                 v_url = self.v_urls[i]
-                bfile = getHttpData(v_url,
-                                    headers={'User-Agent': UserAgent},
-                                    decoded=True,
-                                    binary=True
-                                   )
+                bfile = getHttpData(v_url, binary=True)
                 # give another trial if playback is active and bfile is invalid
                 if ((len(bfile) < 30) and self.isPlayingVideo()):
-                    bfile = getHttpData(v_url,
-                                        headers={'User-Agent': UserAgent},
-                                        decoded=True,
-                                        binary=True
-                                       )
+                    bfile = getHttpData(v_url, binary=True)
                 fs.write(bfile)
 
                 # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
@@ -331,7 +324,8 @@ def PlayVideo(params):
                 playlist.add(urls[i], listitem)
 
             xbmc.Player().play(playlist)
-        pass
+
+        '''
         pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
         urls = tudou_download_by_iid(iid)
         pDialog.close()
@@ -341,6 +335,7 @@ def PlayVideo(params):
             # need xmbc.sleep to make xbmc callback working properly
             while xplayer.is_active:
                 xbmc.sleep(100)
+        '''
     else:
         xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
         return
@@ -359,17 +354,19 @@ def httphead(url):
 
 def tudou_download_by_iid(iid):
     url = 'http://www.tudou.com/outplay/goto/getItemSegs.action?iid=%s'
-    html = getHttpData(url % iid, headers={'User-Agent': UserAgent})
+    html = getHttpData(url % iid)
     data = simplejson.loads(html)
 
-    key = data.keys()
-    temp = data[key[0]]
+    keys = data.keys()
 
-    vids = [t['k'] for t in temp]
+    for key in keys:
+        if data[key][0].get('size'):
+            vids = [t['k'] for t in data[key]]
+            break
+
     urls = []
     for vid in vids:
-        html = getHttpData('http://cnc.v2.tudou.com/f?id=%d&jp=1' % vid,
-                           headers={'User-Agent': UserAgent})
+        html = getHttpData('http://cnc.v2.tudou.com/f?id=%d&jp=1' % vid)
         y = re.compile('<f.+?>(http.+?)<\/f>').findall(html)
         if len(y) < 1:
             break
@@ -385,8 +382,7 @@ def r1(pattern, text):
 
 
 def tudou_download_by_id(id):
-    html = getHttpData('http://www.tudou.com/programs/view/%s/' % id,
-                       headers={'User-Agent': UserAgent})
+    html = getHttpData('http://www.tudou.com/programs/view/%s/' % id)
 
     iid = r1(r'iid\s*[:=]\s*(\S+)', html)
     tudou_download_by_iid(iid)
@@ -406,7 +402,7 @@ def mainMenu():
 
     url = HOST_URL + '/list/index_list.html'
 
-    html = getHttpData(url, headers={'User-Agent': UserAgent})
+    html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'menu'})
 
@@ -454,7 +450,7 @@ def listSubMenu1(params):
     name = params['name']
     url = params['url']
     filter = params.get('filter', '')
-    urlpage = getHttpData(url, headers={'User-Agent': UserAgent})
+    urlpage = getHttpData(url)
     page = params.get('pageNo', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
@@ -482,7 +478,7 @@ def listSubMenu1(params):
     strparam = '?' + strparam[1:] + mergeTags(tags)
 
     list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
-    html = getHttpData(list_api + strparam, headers={'User-Agent': UserAgent})
+    html = getHttpData(list_api + strparam)
     jsdata = simplejson.loads(html)
     items = jsdata['items']
     total = jsdata['total']
@@ -564,7 +560,7 @@ def listSubMenu2(params):
     name = params['name']
     url = params['url']
     filter = params.get('filter', '')
-    urlpage = getHttpData(url, headers={'User-Agent': UserAgent})
+    urlpage = getHttpData(url)
     page = params.get('page', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
@@ -591,7 +587,7 @@ def listSubMenu2(params):
     strparam = '?' + strparam[1:] + mergeTags(tags)
 
     list_api = 'http://www.tudou.com/list/itemData.action'
-    html = getHttpData(list_api + strparam, headers={'User-Agent': UserAgent})
+    html = getHttpData(list_api + strparam)
 
     li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
@@ -717,7 +713,7 @@ def relatedAlbumList(params):
     img = params.get('thumb', '')
     url = params.get('url')
     if url:
-        html = getHttpData(url, headers={'User-Agent': UserAgent})
+        html = getHttpData(url)
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
         u = sys.argv[0] + '?mode=playvideo&iid=%s&vcode=%s' % (iid[0], vcode[0])
@@ -733,9 +729,7 @@ def relatedAlbumList(params):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
-    jspage = getHttpData(album_api % aid,
-                         headers={'User-Agent': UserAgent},
-                         decoded=True)
+    jspage = getHttpData(album_api % aid, decoded=True)
 
     jsdata = simplejson.loads(jspage.encode('utf-8'))
     jsdata = jsdata['items']
@@ -758,14 +752,14 @@ def relatedAlbumList(params):
         u += '&title=' + title
         u += '&thumb=' + img
         u += '&vcode=%s&iid=%d' % (vcode, iid)
-        li = xbmcgui.ListItem(title + time,
+        li = xbmcgui.ListItem(title + '(' + time + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     rel_list = 'http://www.tudou.com/crp/getRelativeContent.action?a=%s'
 
-    jspage = getHttpData(rel_list % aid, headers={'User-Agent': UserAgent})
+    jspage = getHttpData(rel_list % aid)
     jsdata = simplejson.loads(jspage)
     headings = jsdata['data']['catList']
     heading = [x['name'] for x in headings]
@@ -800,7 +794,7 @@ def relatedPlayList(params):
     img = params.get('thumb')
     iid = [params.get('iid')]
     if url:
-        html = getHttpData(url, headers={'User-Agent': UserAgent})
+        html = getHttpData(url)
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
 
@@ -815,7 +809,7 @@ def relatedPlayList(params):
 
     rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
 
-    jspage = getHttpData(rel_list % iid[0], headers={'User-Agent': UserAgent})
+    jspage = getHttpData(rel_list % iid[0])
     jsdata = simplejson.loads(jspage)
     items = jsdata['data']['pList']
 
@@ -839,7 +833,7 @@ def relatedPlayList(params):
 
     rel_list = 'http://www.tudou.com/crp/plist.action?lcode=%s'
 
-    jspage = getHttpData(rel_list % code, headers={'User-Agent': UserAgent})
+    jspage = getHttpData(rel_list % code)
     jsdata = simplejson.loads(jspage)
     items = jsdata['items']
 

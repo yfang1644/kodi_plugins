@@ -399,7 +399,7 @@ def decrypt_url(url, mCheck=True):
     uuid = hashlib.sha1(url.encode('utf8')).hexdigest() + '_0'
     url = url.replace('tss=0', 'tss=ios')
     url += t_url2.format(random.random(), vid, uuid)
-    ext = vodRes[stream_id][1].split('.')[-1]
+    # ext = vodRes[stream_id][1].split('.')[-1]
 
     r2 = getHttpData(url.encode('utf-8'))
     if (mCheck):
@@ -410,7 +410,7 @@ def decrypt_url(url, mCheck=True):
     suffix = '&r=' + str(int(time.time() * 1000)) + '&appid=500'
 
     # need to decrypt m3u8 (encoded) - may hang here
-    m3u8 = getHttpData(info2['location'] + suffix, False, True)
+    m3u8 = getHttpData(info2['location'] + suffix)
     if (m3u8 is None):
         return None
 
@@ -524,7 +524,7 @@ def getHttpData(url, binary=False, mCheck=False):
     # create opener for both proxy and cookie
     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     # req.add_header('cookie', 'PHPSESSID=ruebtvftj69ervhpt24n1b86i3')
 
     for k in range(3):  # give 3 trails to fetch url data
@@ -883,7 +883,7 @@ def searchLeTV(params):
 
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
-    print link
+
     soup = content.find_all('li', {'class': 'list_item'})
     soup1 = content.find_all('div', {'class': 'So-detail Movie-so'})
     soup2 = content.find_all('div', {'class': 'So-detail Tv-so'})
@@ -903,7 +903,7 @@ def searchLeTV(params):
             info = info.text
         except:
             info = ''
-        print '==========================', href
+
         li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
         li.setInfo(type='Video',
                    infoLabels={'Title': title, 'Plot': info})

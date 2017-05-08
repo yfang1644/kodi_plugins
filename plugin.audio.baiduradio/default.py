@@ -1,13 +1,14 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import xbmcplugin
+import xbmcgui
+import xbmc
 import urllib
 import urllib2
 import re
 import os
 import sys
-import xbmcplugin
-import xbmcgui
-import xbmc
 
 #BaiduRadio - by Robinttt 2009.
 
@@ -18,7 +19,7 @@ BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 
 def request(url):
     req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
+    req.add_header('User_Agent', UserAgent)
     response = urllib2.urlopen(req)
     link = response.read()
     response.close()

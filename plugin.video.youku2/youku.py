@@ -12,6 +12,7 @@ import re
 
 ####################
 cookies = None
+UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 def match1(text, *patterns):
     """Scans through a string for substrings matched some patterns (first-subgroups only).
@@ -49,7 +50,10 @@ def urlopen_with_retry(*args, **kwargs):
             print('request attempt %s timeout' % str(i + 1))
 
 
-def get_content(url, headers={}, decoded=True, binary=False):
+def get_content(url,
+                headers={'User_Agent': UserAgent},
+                decoded=True,
+                binary=False):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:
