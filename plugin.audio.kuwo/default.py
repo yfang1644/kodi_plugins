@@ -112,7 +112,7 @@ def PlayMV(params):
     xbmc.Player().play(playlist)
 
 
-def musiclist(name, url):
+def musiclist(params):
     name = params.get('name')
     url = params.get('url')
 

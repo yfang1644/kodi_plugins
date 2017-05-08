@@ -4,7 +4,6 @@
 import urllib2
 import urllib
 import re
-import sys
 import gzip
 import StringIO
 import urlparse

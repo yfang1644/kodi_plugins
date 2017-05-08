@@ -8,7 +8,6 @@ import xbmcaddon
 import urllib2
 import urllib
 import re
-import string
 import sys
 import gzip
 import StringIO
