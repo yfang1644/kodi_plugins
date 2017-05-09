@@ -89,7 +89,7 @@ def httphead(url):
 ########################################################################
 def getHttpData(url):
     log("%s::url - %s" % (sys._getframe().f_code.co_name, url))
-    headers = {'User_Agent': UserAgent}
+    headers = {'User-Agent': UserAgent}
 
     req = urllib2.Request(url, headers=headers)
     try:

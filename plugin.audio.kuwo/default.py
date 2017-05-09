@@ -36,7 +36,7 @@ BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 #
 def getUrlTree(url):
     req = urllib2.Request(url.replace(' ', '%20'))  # some names have ' '
-    req.add_header('User_Agent', UserAgent)
+    req.add_header('User-Agent', UserAgent)
     response = urllib2.urlopen(req)
     httpdata = response.read()
     response.close()

@@ -67,7 +67,7 @@ def log(description, level=0):
 
 def GetHttpData(url, agent=UserAgent_IPAD, referer=''):
     req = urllib2.Request(url)
-    req.add_header('User_Agent', agent)
+    req.add_header('User-Agent', agent)
     if len(referer) > 0:
         req.add_header('Referer', referer)
     try:

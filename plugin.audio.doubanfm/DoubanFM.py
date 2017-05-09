@@ -11,7 +11,7 @@ PlayListUrlPre = 'http://douban.fm/j/mine/playlist?type=n&from=mainsite&channel=
 
 def GetInfo(url, key):
     req = urllib2.Request(url)
-    req.add_header('User_Agent', __UserAgent)
+    req.add_header('User-Agent', __UserAgent)
     response = urllib2.urlopen(req)
     info = json.load(response)
     return info[key]

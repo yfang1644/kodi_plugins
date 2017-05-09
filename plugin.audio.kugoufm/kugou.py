@@ -9,7 +9,7 @@ import time
 
 userAgent = 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10'
 homepage = 'http://m.kugou.com'
-headers = {'User_Agent': userAgent, 'Referer': homepage}
+headers = {'User-Agent': userAgent, 'Referer': homepage}
 
 
 def getHttpData(u, query):

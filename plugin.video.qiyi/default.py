@@ -76,7 +76,7 @@ def httpBegin0(url):
 def getHttpData(url):
     charset = ''
     req = urllib2.Request(url)
-    req.add_header('User_Agent', UserAgent)
+    req.add_header('User-Agent', UserAgent)
     try:
         response = urllib2.urlopen(req, timeout=2.0)
         httpdata = response.read()

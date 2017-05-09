@@ -98,7 +98,7 @@ ACTION_CONTEXT_MENU   = 117
 def GetHttpData(url):
     try:
         req = urllib2.Request(url)
-        req.add_header('User_Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
+        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
                        format('AppleWebKit/537.36 (KHTML, like Gecko) ',
                               'Chrome/28.0.1500.71 Safari/537.36'))
         req.add_header('Accept-encoding', 'gzip')

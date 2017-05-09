@@ -89,7 +89,7 @@ CHANNELS_SZ = {
 
 def getHttpData(url):
     req = urllib2.Request(url)
-    req.add_header('User_Agent', UserAgent)
+    req.add_header('User-Agent', UserAgent)
     try:
         response = urllib2.urlopen(req)
         httpdata = response.read()
@@ -313,9 +313,9 @@ def listPPTV(title):
 
 def mainMenu():
     listPPTV('PPTV')
-    #listNJTV('南京电视台')
-    #listLETV('乐视直播')
-    #listSZTV('苏州')
+    listNJTV('南京电视台')
+    listLETV('乐视直播')
+    listSZTV('苏州')
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 

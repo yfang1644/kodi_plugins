@@ -50,7 +50,7 @@ def urlopen_with_retry(*args, **kwargs):
             print('request attempt %s timeout' % str(i + 1))
 
 
-def get_content(url, headers={'User_Agent': UserAgent}, decoded=True, binary=False):
+def get_content(url, headers={'User-Agent': UserAgent}, decoded=True, binary=False):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:

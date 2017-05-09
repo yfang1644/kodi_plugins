@@ -13,7 +13,7 @@ playinfoHtml = baseHtml + "/getChannelPlayInfoJson.jspa"
 
 UserAgent = "Mozilla/5.0 (X11; Linux i686; rv:35.0) Gecko/20100101 Firefox/35.0"
 headers = {"Host": "bk2.radio.cn",
-           "User_Agent": UserAgent,
+           "User-Agent": UserAgent,
            "Referer": "http://www.radio.cn/index.php?option=default,radio"}
 
 MODE_NONE = "none"

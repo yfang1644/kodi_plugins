@@ -51,7 +51,7 @@ def urlopen_with_retry(*args, **kwargs):
 
 
 def get_content(url,
-                headers={'User_Agent': UserAgent},
+                headers={'User-Agent': UserAgent},
                 decoded=True,
                 binary=False):
     """Gets the content of a URL via sending a HTTP GET request.

@@ -524,7 +524,7 @@ def getHttpData(url, binary=False, mCheck=False):
     # create opener for both proxy and cookie
     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
     req = urllib2.Request(url)
-    req.add_header('User_Agent', UserAgent)
+    req.add_header('User-Agent', UserAgent)
     # req.add_header('cookie', 'PHPSESSID=ruebtvftj69ervhpt24n1b86i3')
 
     for k in range(3):  # give 3 trails to fetch url data

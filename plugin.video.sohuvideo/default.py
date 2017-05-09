@@ -206,7 +206,7 @@ def getHttpData(url):
     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
     charset = ''
     req = urllib2.Request(url)
-    req.add_header('User_Agent', UserAgent)
+    req.add_header('User-Agent', UserAgent)
     try:
         response = opener.open(req)
     except urllib2.HTTPError, e:

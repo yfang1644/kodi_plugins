@@ -30,7 +30,7 @@ def GetHttpData(url):
         RUNFLAG = RUNFLAG + 1
 
     req = urllib2.Request(url)
-    req.add_header('User_Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
+    req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
                        format('AppleWebKit/537.36 (KHTML, like Gecko) ',
                               'Chrome/28.0.1500.71 Safari/537.36'))
     if (url.find('play.youku.com') != -1):

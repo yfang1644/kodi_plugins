@@ -15,7 +15,7 @@ fake_headers = {
     'Accept-Charset': 'UTF-8,*;q=0.5',
     'Accept-Encoding': 'gzip,deflate,sdch',
     'Accept-Language': 'en-US,en;q=0.8',
-    'User_Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:51.0) Gecko/20100101 Firefox/51.0'
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:51.0) Gecko/20100101 Firefox/51.0'
 }
 
 
@@ -62,7 +62,7 @@ def get_html(url, headers={}, decoded=True):
         The content as a string.
     """
 
-    headers = {'User_Agent': UserAgent}
+    headers = {'User-Agent': UserAgent}
     req = urllib2.Request(url, headers=headers)
     if cookies:
         cookies.add_cookie_header(req)
