@@ -147,8 +147,11 @@ def getVMS(tvid, vid):
     src = '76f90cbd92f94a2e925d83e8ccd22cb7'
     key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
     sc = hashlib.md5(str(t) + key + vid).hexdigest()
-    vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
+    vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid, vid, t, sc, src)
 
+    # http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7c&tvId=302121800&vid=515dfa8f86e37847efca76db2190e428&vinfo=1&tm=1334&qyid=129c0cfcab9616c3bd31a9a45372a3e6&puid=&authKey=8292b749116ee64131373b58ad9881c4&um=0&pf=b6c13e26323c537d&thdk=&thdt=&rs=1&k_tag=1&qdx=n&qdv=3&ppt=0&vf=d4c0d347e5a419853f27c2e2732d326b
+
+    # http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7c&tvId=119658800&vid=50305cfb66b84cbd96722d3dd2a8c509&vinfo=1&tm=585&qyid=129c0cfcab9616c3bd31a9a45372a3e6&puid=&authKey=4c91d29a865c2fe9d752a7c43d88370e&um=0&pf=b6c13e26323c537d&thdk=&thdt=&rs=1&k_tag=1&qdx=n&qdv=3&ppt=0&vf=fbc64a97cb4260e13a4045a4192d8234
     return simplejson.loads(getHttpData(vmsreq))
 
 

@@ -178,9 +178,9 @@ def PlayVideoPPTV(params):
     import resources.lib.pptv as pptv
     if quality > 0:
         quality = -1           # point to last item
-    urls = pptv.GetPPTVVideoURL(url, quality)
+    urls = pptv.GetPPTVVideoURL(url, quality, __m3u8__)
     li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
-    xbmc.Player().play(urls[0], li)
+    xbmc.Player().play(__m3u8__, li)
 
 
 def getProgramList(channelId):
