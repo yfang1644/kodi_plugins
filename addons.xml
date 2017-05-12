@@ -682,8 +682,8 @@
         <language></language>
         <summary lang="en">Ximalaya Audio plugin</summary>
         <summary lang="zh">喜马拉雅FM 音频插件</summary>
-        <description lang="en">.</description>
-        <description lang="zh">.</description>
+        <description lang="en">ximalaya audio plugin</description>
+        <description lang="zh">ximalaya audio plugin</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.ximalaya</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
