@@ -1,5 +1,5 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-# default.py
 
 import xbmcgui
 import xbmcaddon
@@ -19,9 +19,9 @@ import base64
 import cookielib
 from video_concatenate import video_concatenate
 try:
-   import StorageServer
+    import StorageServer
 except:
-   import storageserverdummy as StorageServer
+    import storageserverdummy as StorageServer
 
 __addon__    = xbmcaddon.Addon()
 __addonid__  = __addon__.getAddonInfo('id')

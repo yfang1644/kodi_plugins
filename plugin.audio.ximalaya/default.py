@@ -32,7 +32,7 @@ stream_types = [
     {'itag': '3', 'container': 'm4a', 'bitrate': '64'}
 ]
 
-LIST_URL = 'http://www.ximalaya.com'
+HOST_URL = 'http://www.ximalaya.com'
 
 BANNER_FMT = '[COLOR FFDEB887][%s][/COLOR]'
 TIMER_FMT = '[COLOR FF8040C0](%s)[/COLOR]'
@@ -57,8 +57,8 @@ def match1(text, *patterns):
         return ret
 
 
-def ximalaya_download_by_id(id, stream_id):
-    api = 'http://www.ximalaya.com/tracks/%s.json' % id
+def url_from_id(id, stream_id=2):
+    api = HOST_URL + '/tracks/%s.json' % id
     json_data = simplejson.loads(getHttpData(api))
     if 'res' in json_data:
         if json_data['res'] is False:
@@ -69,41 +69,43 @@ def ximalaya_download_by_id(id, stream_id):
     if 'title' in json_data:
         title = json_data['title']
 
-    size = 0
-    url = json_data['play_path_64']
-    if stream_id:
-        if stream_id == 1:
-            url = json_data['play_path_32']
-        elif stream_id == 0:
-            url = json_data['play_path']
+    if stream_id == 2:
+        url = json_data['play_path_64']
+    elif stream_id == 1:
+        url = json_data['play_path_32']
+    elif stream_id == 0:
+        url = json_data['play_path']
 
-    ext = 'm4a'
-    return [url]
+    return url
 
 
-def ximalaya_download(url):
-    if re.match(r'http://www\.ximalaya\.com/(\d+)/sound/(\d+)', url):
-        id = match1(url, r'http://www\.ximalaya\.com/\d+/sound/(\d+)')
+def audio_from_url(url, stream_id=2):
+    match = re.search(r'http://www\.ximalaya\.com/\d+/sound/(\d+)', url)
+    if match:
+        id = match.group(1)
+        return url_from_id(id, stream_id=stream_id)
     else:
         return []
-    return ximalaya_download_by_id(id, stream_id=1)
 
 
-def ximalaya_download_page(playlist_url, stream_id=1):
+def audios_from_url(playlist_url, stream_id=2):
     if re.match(r'http://www\.ximalaya\.com/(\d+)/album/(\d+)', playlist_url):
-        page_content = get_content(playlist_url)
+        page_content = getHttpData(playlist_url)
         pattern = re.compile(r'<li sound_id="(\d+)"')
         ids = pattern.findall(page_content)
+        urls = []
         for id in ids:
             try:
-                ximalaya_download_by_id(id, stream_id=1)
+                url = url_from_id(id, stream_id=stream_id)
+                urls += url
             except(ValueError):
                 return None
+        return urls
     else:
         return None
 
 
-def ximalaya_download_playlist(url, stream_id=1):
+def ximalaya_download_playlist(url, stream_id=2):
     match_result = re.match(r'http://www\.ximalaya\.com/(\d+)/album/(\d+)', url)
     if not match_result:
         return None
@@ -117,28 +119,48 @@ def ximalaya_download_playlist(url, stream_id=1):
         html_str = '<a href=(\'|")\/' + match_result.group(1) + '\/album\/' + match_result.group(2) + '\?page='
         count = len(re.findall(html_str, page_content))
         for page_num in range(count):
-            pages.append(base_url + '?page=' +str(page_num+1))
+            pages.append(base_url + '?page=' + str(page_num+1))
             print(pages[-1])
     for page in pages:
-        ximalaya_download_page(page, stream_id=1)
+        ximalaya_download_page(page, stream_id=stream_id)
 
 
 ############################################################################
 def PlayAudio(params):
-    url = params['url']
+    sound_id = params['sound_id']
     title = params['title']
 
-    urls = ximalaya_download(url)
+    url = url_from_id(sound_id)
 
-    ulen = len(urls)
-    if ulen > 0:
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
-        playlist.clear()
-        for i in range(ulen):
-            listitem = xbmcgui.ListItem(title)
-            playlist.add(urls[i], listitem)
+    if url:
+        li = xbmcgui.ListItem(title)
+        li.setInfo(type='Music', infoLabels={'Title': title})
+        xbmc.Player().play(url, li)
 
-        xbmc.Player().play(playlist)
+
+def PlayAlbum(params):
+    url = params['url']
+    html = getHttpData(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'album_soundlist'})
+    songs = soup[0].find_all('li')
+
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
+    playlist.clear()
+    firstId_in_url = songs[0]
+    begin_id = params.get('begin', '0')
+
+    begin_id = int(begin_id)
+    for song in songs[begin_id:]:
+        sound_id = song['sound_id']
+        info = song.find('a', {'class': 'title'})
+        title = info.text.strip()
+        p_url = url_from_id(sound_id)
+        li = xbmcgui.ListItem(title)
+        li.setInfo(type='Music', infoLabels={'Title': title})
+        playlist.add(p_url, li)
+
+    xbmc.Player().play(playlist, windowed=True)
 
 
 def httphead(url):
@@ -147,7 +169,7 @@ def httphead(url):
     if url[0:2] == '//':
         url = 'http:' + url
     elif url[0] == '/':
-        url = LIST_URL + url
+        url = HOST_URL + url
 
     return url
 
@@ -178,7 +200,7 @@ def getHttpData(url):
 
 
 def mainMenu():
-    html = getHttpData('http://www.ximalaya.com/dq/all/')
+    html = getHttpData(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'sort_list'})
 
@@ -205,7 +227,12 @@ def listSubMenu(params):
     url = params['url']
     cid = params['cid']
 
-    html = getHttpData('http://www.ximalaya.com/dq/all/')
+    name = re.sub('\t|\n|\r', '', name)
+    li = xbmcgui.ListItem(BANNER_FMT % name)
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    html = getHttpData(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
 
     soup = tree.find_all('div', {'data-cache': cid})
@@ -217,7 +244,7 @@ def listSubMenu(params):
         li = xbmcgui.ListItem(title)
         u = sys.argv[0] + '?url=' + href
         u += '&mode=albumlist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'songs')
@@ -226,6 +253,11 @@ def listSubMenu(params):
 
 def albumList(params):
     url = params['url']
+    title = params['title']
+    li = xbmcgui.ListItem(BANNER_FMT % title)
+    u = sys.argv[0]
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'discoverAlbum_wrapper'})
@@ -244,17 +276,19 @@ def albumList(params):
     soup = tree.find_all('div', {'class': 'pagingBar_wrapper'})
     pages = soup[0].find_all('a')
 
+    u = sys.argv[0]
+    li = xbmcgui.ListItem(BANNER_FMT % '分页')
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     for page in pages:
         href = page['href']
-        try:
-            title = page['data-page']
-        except:
+        if href == 'javascript:;':
             continue
-        if title not in href:
-            continue
+        page_num = page['data-page']
+        title = page.text
         href = httphead(href)
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=albumlist' + '&title=' + title
+        u += '&mode=albumlist' + '&title=Page. ' + page_num
         li = xbmcgui.ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -266,18 +300,30 @@ def playList(params):
     url = params['url']
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'album_soundlist'})
 
+    title = params['title']
+    info = tree.find_all('div', {'class': 'rich_intro'})
+    info = info[0].article.text
+    u = sys.argv[0] + '?url=' + url + '&mode=playalbum&begin=0'
+    li = xbmcgui.ListItem(BANNER_FMT % (title + '(播放全部专辑)'))
+    li.setInfo(type='Music', infoLabels={'Title': title, 'Plot': info})
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
 
+    number = 0
     for song in songs:
+        sound_id = song['sound_id']
         info = song.find('a', {'class': 'title'})
         href = httphead(info['href'])
-        title = info.text
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=playaudio' + '&title=' + title
+        title = info.text.strip()
+        u = sys.argv[0] + '?url=' + url
+        u += '&mode=playalbum&begin=' + str(number)
+        u += '&title=' + title + '&sound_id=' + sound_id
         li = xbmcgui.ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        number += 1
 
     xbmcplugin.setContent(int(sys.argv[1]), 'songs')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -294,7 +340,8 @@ runlist = {
     'sublist': 'listSubMenu(params)',
     'albumlist': 'albumList(params)',
     'playlist': 'playList(params)',
-    'playaudio': 'PlayAudio(params)'
+    'playaudio': 'PlayAudio(params)',
+    'playalbum': 'PlayAlbum(params)'
 }
 
 exec(runlist[mode])
