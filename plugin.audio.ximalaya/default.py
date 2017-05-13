@@ -151,6 +151,7 @@ def PlayAlbum(params):
     begin_id = params.get('begin', '0')
 
     begin_id = int(begin_id)
+    print '---------------------'
     for song in songs[begin_id:]:
         sound_id = song['sound_id']
         info = song.find('a', {'class': 'title'})
@@ -158,7 +159,8 @@ def PlayAlbum(params):
         p_url = url_from_id(sound_id)
         li = xbmcgui.ListItem(title)
         li.setInfo(type='Music', infoLabels={'Title': title})
-        playlist.add(p_url, li)
+        x = playlist.add(p_url, li)
+        print x
 
     xbmc.Player().play(playlist, windowed=True)
 
@@ -274,7 +276,12 @@ def albumList(params):
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     soup = tree.find_all('div', {'class': 'pagingBar_wrapper'})
-    pages = soup[0].find_all('a')
+    try:
+        pages = soup[0].find_all('a')
+    except:
+        xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+        xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        return
 
     u = sys.argv[0]
     li = xbmcgui.ListItem(BANNER_FMT % '分页')
