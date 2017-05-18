@@ -27,7 +27,6 @@ from youku import get_content as getHttpData
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
-__addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
@@ -85,13 +84,6 @@ def httphead(url):
         url = LIST_URL + url
 
     return url
-
-
-def buildParams(params):
-    str = ''
-    for item in params:
-        str += '&%s=' % item + urllib.quote_plus(params[item])
-    return str
 
 
 def mainMenu():
@@ -285,6 +277,7 @@ def normalSelect(params):
 
 def episodesList(params):
     url = params['url']
+    thumb = params['thumb']
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
 
@@ -292,15 +285,17 @@ def episodesList(params):
     #soup = tree.find_all('div', {'class': 'lists'})
     items = tree.find_all('div', {'class': 'program'})
     if len(items) < 1:
+        desc = tree.find_all('meta', {'name': 'description'})
+        info = desc[0]['content']
         title = params['title']
-        thumb = params['thumb']
+        p_thumb = params['thumb']
         u = sys.argv[0] + '?url=' + url
         u += '&mode=playvideo'
         u += '&title=' + urllib.quote_plus(title)
-        u += '&thumb=' + thumb
+        u += '&thumb=' + p_thumb
         li = xbmcgui.ListItem(title,
-                              iconImage=thumb, thumbnailImage=thumb)
-        li.setInfo(type='Video', infoLabels={'Title': title})
+                              iconImage=p_thumb, thumbnailImage=p_thumb)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
     else:
         for item in items:
@@ -318,15 +313,16 @@ def episodesList(params):
             li.setInfo(type='Video', infoLabels={'Title': title})
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-
     items = tree.find_all('div', {'class': 'item '})
+
     for item in items:
         title = item['title']
         href = httphead(item.a['href'])
         u = sys.argv[0] + '?url=' + href
         u += '&mode=playvideo'
+        u += '&thumb=' + thumb
         u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
-        li = xbmcgui.ListItem(title)
+        li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
@@ -433,4 +429,4 @@ runlist = {
     'select': 'normalSelect(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

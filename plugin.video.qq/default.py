@@ -12,10 +12,7 @@ import gzip
 from random import randrange
 import StringIO
 from bs4 import BeautifulSoup
-try:
-    import json
-except:
-    import simplejson as json
+import simplejson
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -24,10 +21,6 @@ __addonname__ = __addon__.getAddonInfo('name')
 __cwd__       = __addon__.getAddonInfo('path')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cacheFile = __profile__ + 'cache.qq'
-if (__addon__.getSetting('keyboard') != '0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
 
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
@@ -188,7 +181,7 @@ def listSubMenu(params):
         page = int(params['offset']) // 30 + 1
     else:
         page = 1
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'【第%d页】(分类过滤)' % page))
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%d页 分类过滤)' % page))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
     u += '&mode=select' + strparam
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -205,7 +198,7 @@ def listSubMenu(params):
         href = mainpage.strong.a['href']
         mark = mainpage.find('i', {'class': 'mark_v'})
         if mark:
-            info += '(' + mark.img['alt'] + ')'
+            info += '[COLOR FFD00080](' + mark.img['alt'] + ')[/COLOR]'
 
         li = xbmcgui.ListItem(title + info, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
@@ -277,7 +270,7 @@ def episodesList(params):
     info = tree.find('meta', {'name': 'description'})['content']
 
     match = re.compile('var LIST_INFO = ({.+?}});{0,}\n').search(html)
-    js = json.loads(match.group(1))
+    js = simplejson.loads(match.group(1))
     li = xbmcgui.ListItem(BANNER_FMT % title,
                           iconImage=thumb, thumbnailImage=thumb)
     li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
@@ -472,7 +465,7 @@ def qq_by_vid(vid):
     info_api = 'http://vv.video.qq.com/getinfo?otype=json&appver=3%2E2%2E19%2E333&platform=11&defnpayver=1&vid=' + vid
     jspage = GetHttpData(info_api)
     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
-    video_json = json.loads(jspage)
+    video_json = simplejson.loads(jspage)
 
     parts_vid = video_json['vl']['vi'][0]['vid']
     parts_ti = video_json['vl']['vi'][0]['ti']
@@ -509,7 +502,7 @@ def qq_by_vid(vid):
                     #print(key_api)
                     jspage = GetHttpData(key_api)
                     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
-                    key_json = json.loads(jspage)
+                    key_json = simplejson.loads(jspage)
                     #print(key_json)
                     vkey = key_json['key']
                     url = '%s/%s?vkey=%s' % (parts_prefix, filename, vkey)
@@ -552,13 +545,13 @@ def videoparseX(vid):
 
     jspage = GetHttpData(info_api % (vid, RESOLUTION[sel]) + platform)
     jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
-    jsdata = json.loads(jspage)
+    jsdata = simplejson.loads(jspage)
 
     if jsdata['exem'] < 0:   # try again
         platform = '&platform=10901'
         jspage = GetHttpData(info_api % (vid, RESOLUTION[sel]) + platform)
         jspage = jspage[jspage.find('=')+1:-1]   # remove heading and tail
-        jsdata = json.loads(jspage)
+        jsdata = simplejson.loads(jspage)
 
     types = jsdata['fl']['fi']
     sel = min(sel, len(types) - 1)
@@ -602,7 +595,7 @@ def videoparseX(vid):
         url = root + '&format=%d&filename=%s' % (typeid, file)
         html = GetHttpData(url)
         jspage = html[html.find('=')+1:-1]   # remove heading and tail
-        jspage = json.loads(jspage)
+        jspage = simplejson.loads(jspage)
         key = jspage.get('key', oldkey)
         app = '?vkey=%s&type=mp4' % key
         urllist.append(server + file + app)
@@ -715,4 +708,4 @@ runlist = {
     'playvideo': 'playVideo(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

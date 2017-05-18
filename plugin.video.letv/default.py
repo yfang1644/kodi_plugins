@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -11,13 +12,11 @@ import sys
 import os
 import gzip
 import StringIO
-import os.path
 import time
 import random
 import hashlib
 import socket
 import cookielib
-import base64
 import simplejson
 from bs4 import BeautifulSoup
 
@@ -37,15 +36,9 @@ from bs4 import BeautifulSoup
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
-__addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
 cookieFile = __profile__ + 'cookies.letv'
-
-if (__addon__.getSetting('keyboard') == '0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
 
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
@@ -239,7 +232,7 @@ class LetvPlayer(xbmc.Player):
                 self.playrun()
 
         # close dialog on all mode when fetching end
-        pDialog.close()
+        # pDialog.close()
 
     def playrun(self):
         if (self.videourl and not self.isPlayingVideo()):
@@ -426,12 +419,14 @@ def decrypt_url(url, mCheck=True):
     return urls
 
 
-############################################################################
-def playVideoLetv(params):
-    videom3u8 = __addon__.getSetting('video_m3u8')
+##################################################################################
+# Continuous Player start playback from user selected video
+# User backspace to previous menu will not work - playlist = last selected
+##################################################################################
+def playVideoUgc(params):
     pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
     pDialog.update(0)
-
+    videom3u8 = __addon__.getSetting('video_m3u8')
     vid = params.get('vid')
     if vid:    # pack vid address (cheating)
         url = 'http://www.google.com/vplay/%s.html' % vid
@@ -453,40 +448,9 @@ def playVideoLetv(params):
             # need xmbc.sleep to make xbmc callback working properly
             while xplayer.is_active:
                 xbmc.sleep(100)
-            pDialog.close()
     else:
         # if '解析失败' in link: (license constraint etc)
         xbmcgui.Dialog().ok(__addonname__, '未匹配到视频文件')
-
-
-##################################################################################
-# Continuous Player start playback from user selected video
-# User backspace to previous menu will not work - playlist = last selected
-##################################################################################
-def playVideoUgc(params):
-    videom3u8 = __addon__.getSetting('video_m3u8')
-    vid = params.get('vid')
-    if vid:    # pack vid address (cheating)
-        url = 'http://www.google.com/vplay/%s.html' % vid
-    else:
-        url = params['url']
-    name = params['name']
-    thumb = params['thumb']
-    if videom3u8 == 'true':
-        pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
-        pDialog.update(0)
-        v_urls = decrypt_url(url)
-        pDialog.close()
-        listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-        listitem.setInfo(type="Video", infoLabels={"Title": name})
-        xbmc.Player().play(__m3u8__, listitem)
-    else:
-        xplayer.play(name, thumb)
-
-        # need xmbc.sleep(100) to make xbmc callback working properly
-        while xplayer.is_active:
-            xbmc.sleep(100)
-        pDialog.close()
 
 
 ##################################################################################
@@ -560,14 +524,6 @@ def getHttpData(url, binary=False, mCheck=False):
     return httpdata
 
 
-def buildParams(params):
-    str = ''
-    for item in params:
-            str += '&%s=' % item + urllib.quote_plus(params[item])
-    return str
-
-
-
 def mainMenu():
     li = xbmcgui.ListItem('[COLOR FF00FF00] 【乐视网 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
@@ -637,9 +593,9 @@ def listSubMenu(params):
         img = prog.img['src']
         href = prog.a['href']
         title = prog.a['title']
-        special = prog.i.text + '|' + prog.span.text
+        info = '[COLOR FFD00080]%s[/COLOR] %s' % (prog.i.text, prog.span.text)
 
-        li = xbmcgui.ListItem(title + '(' + special + ')',
+        li = xbmcgui.ListItem(title + '(' + info + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?url=' + href
@@ -756,24 +712,19 @@ def episodesList(params):
 
     if name in ['动漫', '综艺']:
         html = getHttpData(url)
-        tree = BeautifulSoup(html, 'html.parser')
-
-        match = re.compile("video: {0,}{.+?vid': {0,}'(\d+)'").findall(html)
-        if len(match) < 1:
-            match = re.compile('video: {0,}{.+?vid: {0,}"(\d+)"').findall(html)
-        if len(match) < 1:
-            match = re.compile('video: {0,}{.+?vid: {0,}(\d+)').findall(html)
-            match[0] = str(match[0])
-        vid = match[0]
+        html = re.sub('\'', '', html)
+        match = re.compile('video:\s*{.+?vid:\s*(\d+)').findall(html)
     else:
-        aurl = url.split('/')[-1]
-        vid = aurl[:-5]
+        match = re.compile('http.+?(\d+).html').findall(url)
+    vid = match[0]
 
     html = getHttpData(ALBULM_URL % (vid))
     jsdata = simplejson.loads(html)
 
     album = jsdata['data']['episode']['videolist']
+    number = 0
     for series in album:
+        number += 1
         title = series['title']
         pic = series['pic']
         info = series['subTitle']
@@ -782,42 +733,44 @@ def episodesList(params):
         li.setInfo(type='Video',
                    infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-        u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
+        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     try:
         album = jsdata['data']['otherlist']['videolist']
     except:
         album = []
-    if len(album) > 0:
-        for series in album:
-            title = series['title']
-            pic = series['pic']
-            info = series['subTitle']
-            vid = series['vid']
-            li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-            li.setInfo(type='Video',
-                       infoLabels={'Title': title, 'Plot': info})
-            u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-            u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    number = 0
+    for series in album:
+        number += 1
+        title = series['title']
+        pic = series['pic']
+        info = series['subTitle']
+        vid = series['vid']
+        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
+        li.setInfo(type='Video',
+                   infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
+        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     try:
         album = jsdata['data']['periodpoint']
     except:
         album = []
-    if len(album) > 0:
-        for series in album:
-            title = series['title']
-            pic = series['pic']
-            info = series['subTitle']
-            vid = series['vid']
-            li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-            li.setInfo(type='Video',
-                       infoLabels={'Title': title, 'Plot': info})
-            u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-            u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    number = 0
+    for series in album:
+        number += 1
+        title = series['title']
+        pic = series['pic']
+        info = series['subTitle']
+        vid = series['vid']
+        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
+        li.setInfo(type='Video',
+                   infoLabels={'Title': title, 'Plot': info})
+        u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
+        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     '''
     match = re.compile("pageid: 'www_play'").search(html)
@@ -856,7 +809,7 @@ def episodesList(params):
 # Routine to search LeTV site based on user given keyword for:
 ##################################################################################
 def searchLeTV(params):
-    keyboard = Apps('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     # keyboard.setHiddenInput(hidden)
     xbmc.sleep(1000)
     keyboard.doModal()
@@ -935,4 +888,4 @@ runlist = {
     'filter': 'changeList(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

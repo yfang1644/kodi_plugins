@@ -1,5 +1,5 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
+# default.py
 
 import xbmcgui
 import xbmcaddon
@@ -19,9 +19,9 @@ import base64
 import cookielib
 from video_concatenate import video_concatenate
 try:
-    import StorageServer
+   import StorageServer
 except:
-    import storageserverdummy as StorageServer
+   import storageserverdummy as StorageServer
 
 __addon__    = xbmcaddon.Addon()
 __addonid__  = __addon__.getAddonInfo('id')
@@ -1043,10 +1043,10 @@ class OtherWindow(BaseWindow):
                 return
 
             for item in data['results']:
-                if 'show_thumburl_hd' in item:
-                    listitem = xbmcgui.ListItem(label=item['showname'], label2=item['duration'], thumbnailImage=item['show_thumburl_hd'])
-                else:
-                    listitem = xbmcgui.ListItem(label=item['showname'], label2=item['duration'], thumbnailImage=item['show_thumburl'])
+                thumbid = 'show_thumburl_hd' if 'show_thumburl_hd' in item else 'show_thumburl'
+                listitem = xbmcgui.ListItem(label=item['showname'],
+                                            label2=item['duration'],
+                                            thumbnailImage=item[thumbid])
                 setProperties(listitem, item)
                 self.getControl(920).addItem(listitem)
         except:
@@ -2066,7 +2066,7 @@ def play(vid, playContinue=False):
         for no in range(len(segs)):
             k = segs[no]['key']
             if k == -1:
-                limit = '[限播]'
+                limit = '[限播]'.decode('utf-8')
                 break
             fileid = segs[no]['fileid']
             ep = youkuDecoder().generate_ep(fileid, sid, token)

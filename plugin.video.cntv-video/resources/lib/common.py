@@ -50,7 +50,7 @@ def urlopen_with_retry(*args, **kwargs):
             pass
 
 
-def get_html(url, headers={}, decoded=True):
+def get_html(url, headers={'User-Agent': UserAgent}, decoded=True):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:
@@ -62,7 +62,6 @@ def get_html(url, headers={}, decoded=True):
         The content as a string.
     """
 
-    headers = {'User-Agent': UserAgent}
     req = urllib2.Request(url, headers=headers)
     if cookies:
         cookies.add_cookie_header(req)
@@ -74,7 +73,7 @@ def get_html(url, headers={}, decoded=True):
     # Handle HTTP compression for gzip and deflate (zlib)
     content_encoding = response.headers.get('Content-Encoding')
     if content_encoding == 'gzip':
-        httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
+        data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
 
     # Decode the response body
     if decoded:

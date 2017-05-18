@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import sys
@@ -11,10 +12,7 @@ import traceback
 import urllib
 import urllib2
 import urlparse
-try:
-    import simplejson as jsonimpl
-except ImportError:
-    import json as jsonimpl
+import simplejson
 
 mainList = {
     'yangshi': '央视频道',
@@ -225,7 +223,7 @@ def getHttp(url):
     host = re.compile('(http.+//.+?)/').findall(url)
 
     try:
-        data = host[0] + branch[0]
+        data = host[0] + branch[-1]
     except:
         return url
     if data.find('m3u8') >= 0:
@@ -238,40 +236,32 @@ def showNotification(stringID):
     xbmc.executebuiltin("Notification({0},{1})".format(addon_name, addon.getLocalizedString(stringID)))
 
 
-def getQualityRange(quality):
-    if quality == "100-300": #Hooray for efficiency!
-        return "100-300"
-    return "300-500"
-
-
 def fixURL(tmpurl):
 #    tmpurl = tmpurl.replace("vtime.cntv.cloudcdn.net:8000", "vtime.cntv.cloudcdn.net") #Global (HDS/FLV) - wrong port
 #    tmpurl = tmpurl.replace("tv.fw.live.cntv.cn", "tvhd.fw.live.cntv.cn") #China - 403 Forbidden
     return tmpurl
 
 
-def tryStream(jsondata, subkey, type):
+def tryStream(jsondata, subkey):
     print("Trying stream {0}".format(subkey))
 
-    if subkey in jsondata[type] and jsondata[type][subkey] != "":
-        try:
-            tmpurl = jsondata[type][subkey]
-            tmpurl = fixURL(tmpurl)
+    type = subkey[:-1] + '_url'
+    try:
+        url = jsondata[type][subkey]
+        url = fixURL(url)
 
-            if tmpurl[:7] != 'http://':
-                tmpurl = 'http://' + tmpurl
-            tmpurl = tmpurl.replace(' ', '')
+        if url[:7] != 'http://':
+            url = 'http://' + url
+        url = url.replace(' ', '')
 
-            req = urllib2.Request(tmpurl)
-            conn = urllib2.urlopen(req, timeout=TIMEOUT_S)
-            conn.read(8) #Try reading a few bytes
+        req = urllib2.Request(url)
+        conn = urllib2.urlopen(req, timeout=TIMEOUT_S)
+        conn.read(8) #Try reading a few bytes
 
-            return tmpurl
-        except Exception:
-            print("{0} failed.".format(subkey))
-            print(traceback.format_exc())
-
-    return None
+        return url
+    except Exception:
+        print("{0} failed.".format(subkey))
+        print(traceback.format_exc())
 
 
 def tryHDSStream(jsondata, streamName):
@@ -287,7 +277,8 @@ def programList(city):
     resp = urllib2.urlopen(prog_api % (city, city))
     data = resp.read()
     data = data.decode('utf-8').encode('utf-8', 'ignore')
-    jsdata = jsonimpl.loads(data[data.find('=(')+2:-2])
+    data = re.compile('\((.+)\)').findall(data)
+    jsdata = simplejson.loads(data[0])
     info = ''
     try:
         jsprog = jsdata['programs']
@@ -319,6 +310,13 @@ def addCity(cityID, cityName):
     thumb = addon_path + '/resources/media/%s.jpg' % cityID
     li = xbmcgui.ListItem(cityName, iconImage=thumb)
     u = sys.argv[0] + '?city=' + cityID + '&thumb=' + thumb
+    u += '&title=' + cityName
+    xbmcplugin.addDirectoryItem(addon_handle, u, li, isFolder=True)
+
+
+def addCategory(categoryID, categoryName):
+    li = xbmcgui.ListItem(categoryName)
+    u = sys.argv[0] + '?category=' + categoryID
     xbmcplugin.addDirectoryItem(addon_handle, u, li, isFolder=True)
 
 
@@ -411,6 +409,8 @@ def main():
     replay = params.get('replay')
 
     if cntv:
+        title = params['title']
+        thumb = params['thumb']
         pDialog = xbmcgui.DialogProgress()
         pDialog.create(addon.getLocalizedString(30009), addon.getLocalizedString(30010))
         pDialog.update(0)
@@ -424,7 +424,7 @@ def main():
                 return
 
             url = None
-            jsondata = jsonimpl.loads(data.encode('utf-8'))
+            jsondata = simplejson.loads(data.encode('utf-8'))
             urlsTried = 0
             urlsToTry = 5
 
@@ -433,15 +433,21 @@ def main():
                     urlsTried += 1
                     pDialog.update(urlsTried * 500 / urlsToTry,
                                    "{0} {1} (HLS)".format(addon.getLocalizedString(30011), "hls%d" % i))
-                    url = tryStream(jsondata, "hls%d" % i, 'hls_url')
+                    url = tryStream(jsondata, "hls%d" % i)
                     if url is not None:
                         break
                     if pDialog.iscanceled():
                         return
 
             if url is None and 'flv_url' in jsondata:
-                for i in range(1, 7):
-                    url = tryStream(jsondata, "flv%d" % i, 'flv_url')
+                for i in range(1, 5):
+                    url = tryStream(jsondata, "flv%d" % i)
+                    if url is not None:
+                        break
+
+            if url is None and 'hds_url' in jsondata:
+                for i in range(1, 5):
+                    url = tryHDSStream(jsondata, "fds%d" % i)
                     if url is not None:
                         break
 
@@ -451,12 +457,14 @@ def main():
                 return
 
             auth = urlparse.parse_qs(urlparse.urlparse(url)[4])["AUTH"][0]
-            url = url + "|" + urllib.urlencode({"Cookie": "AUTH=" + auth})
-            print url
+            url += "|" + urllib.urlencode({"Cookie": "AUTH=" + auth})
+            #print url
             url = getHttp(url)
 
             pDialog.close()
-            xbmc.Player().play(url)
+            li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+            li.setInfo(type='Video', infoLabels={'Title': title})
+            xbmc.Player().play(url, li)
 
         except Exception:
             showNotification(30000)
@@ -507,10 +515,6 @@ def main():
         cntvReplay(replay, title, thumb)
 
     else:
-        def addCategory(categoryID, categoryName):
-            li = xbmcgui.ListItem(categoryName)
-            xbmcplugin.addDirectoryItem(handle=addon_handle, url=sys.argv[0] + "?category=" + categoryID, listitem=li, isFolder=True)
-
         for title in mainList:
             addCategory(title, mainList[title])
 

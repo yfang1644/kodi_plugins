@@ -6,7 +6,6 @@
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"

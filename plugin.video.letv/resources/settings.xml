@@ -7,5 +7,4 @@
 	<setting id="video_vplaycont" type="bool" label="30201" default="true"/>
 	<setting id="video_m3u8" type="bool" label="30206" default="true"/>
 	<setting id="http_proxy" type="text" label="30202" values="" default=""/>
-	<setting id="keyboard" type="enum" label="30207" lvalues="30208|30209" default="0"/>
 </settings>

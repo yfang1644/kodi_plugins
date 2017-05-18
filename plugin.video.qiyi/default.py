@@ -10,10 +10,8 @@ import urllib
 import urlparse
 import re
 import sys
-import os
 import gzip
 import StringIO
-import cookielib
 import socket
 import hashlib
 import time
@@ -32,13 +30,16 @@ __addonname__ = __addon__.getAddonInfo('name')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cookieFile = __profile__ + 'cookies.iqiyi'
 
-if (__addon__.getSetting('keyboard') != '0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
-
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
+
+fake_headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8  ',
+    'Accept-Charset': 'UTF-8,*;q=0.5',
+    'Accept-Encoding': 'gzip,deflate,sdch',
+    'Accept-Language': 'en-US,en;q=0.8',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:51.0) Gecko/20100101 Firefox/51.0'
+}
 
 LIST_URL = 'http://list.iqiyi.com'
 
@@ -57,15 +58,6 @@ def httphead(url):
     return url
 
 
-def httpBegin0(url):
-    surl = url.split('/')
-    hurl = surl[-1].split('-')
-    hurl[10] = '0'
-    hurl = '-'.join(hurl)
-    url = '/'.join(surl)
-    return url
-
-
 ############################################################################
 # Routine to fetech url site data using Mozilla browser
 # - deletc '\r|\n|\t' for easy re.compile
@@ -73,38 +65,45 @@ def httpBegin0(url):
 # - unicode with 'replace' option to avoid exception on some url
 # - translate to utf8
 ############################################################################
-def getHttpData(url):
-    charset = ''
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    try:
-        response = urllib2.urlopen(req, timeout=2.0)
-        httpdata = response.read()
-        if httpdata[-1] == '\n':    # some windows zip files have extra '0a'
-            httpdata = httpdata[:-1]
-        if response.headers.get('Content-Encoding') == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        charset = response.headers.getparam('charset')
-        response.close()
-    except:
-        xbmc.log("%s: %s (%d) [%s]" % (
-            __addonname__,
-            sys.exc_info()[2].tb_frame.f_code.co_name,
-            sys.exc_info()[2].tb_lineno,
-            sys.exc_info()[1]
-            ), level=xbmc.LOGERROR)
-        return ''
-    httpdata = re.sub('\r|\n|\t', ' ', httpdata)
+def urlopen_with_retry(*args, **kwargs):
+    for i in range(10):
+        try:
+            return urllib2.urlopen(*args, **kwargs)
+        except socket.timeout:
+            pass
 
-    match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
-    if len(match) > 0:
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
 
-    return httpdata
+def getHttpData(url, headers=fake_headers, decoded=True):
+    """Gets the content of a URL via sending a HTTP GET request.
+    Args:
+        url: A URL.
+        headers: Request headers used by the client.
+        decoded: Whether decode the response body using UTF-8 or the charset specified in Content-Type.
+
+    Returns:
+        The content as a string.
+    """
+
+    req = urllib2.Request(url, headers=headers)
+    response = urlopen_with_retry(req)
+    data = response.read()
+
+    # Handle HTTP compression for gzip and deflate (zlib)
+    content_encoding = response.headers.get('Content-Encoding')
+    if content_encoding == 'gzip':
+        data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
+
+    data = re.sub('\r|\n|\t', ' ', data)
+    # Decode the response body
+    if decoded:
+        match = re.search('charset=([\w-]+)', response.headers.get('Content-Type'))
+        if match:
+            charset = match.group(1)
+            data = data.decode(charset)
+        else:
+            data = data.decode('utf-8', 'ignore')
+
+    return data
 
 
 def selResolution(items):
@@ -149,9 +148,6 @@ def getVMS(tvid, vid):
     sc = hashlib.md5(str(t) + key + vid).hexdigest()
     vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid, vid, t, sc, src)
 
-    # http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7c&tvId=302121800&vid=515dfa8f86e37847efca76db2190e428&vinfo=1&tm=1334&qyid=129c0cfcab9616c3bd31a9a45372a3e6&puid=&authKey=8292b749116ee64131373b58ad9881c4&um=0&pf=b6c13e26323c537d&thdk=&thdt=&rs=1&k_tag=1&qdx=n&qdv=3&ppt=0&vf=d4c0d347e5a419853f27c2e2732d326b
-
-    # http://cache.video.qiyi.com/vms?key=fvip&src=1702633101b340d8917a69cf8a4b8c7c&tvId=119658800&vid=50305cfb66b84cbd96722d3dd2a8c509&vinfo=1&tm=585&qyid=129c0cfcab9616c3bd31a9a45372a3e6&puid=&authKey=4c91d29a865c2fe9d752a7c43d88370e&um=0&pf=b6c13e26323c537d&thdk=&thdt=&rs=1&k_tag=1&qdx=n&qdv=3&ppt=0&vf=fbc64a97cb4260e13a4045a4192d8234
     return simplejson.loads(getHttpData(vmsreq))
 
 
@@ -184,7 +180,7 @@ def mainMenu():
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    url = LIST_URL + '/www/1/----------------iqiyi--.html'
+    url = LIST_URL + '/www/2/----------------iqiyi--.html'
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'mod_category_item'})
@@ -250,13 +246,19 @@ def listSubMenu(params):
         info = info.strip(' ')
         try:
             vip = item.find('span', {'class': 'icon-vip-zx'}).text
+            vip = '|[COLOR FF809000]' + vip + '[/COLOR]'
         except:
             vip = ''
+        try:
+            pay = item.find('span', {'class': 'icon-vip-quan'}).text
+            pay = '|[COLOR FF809000]' + pay + '[/COLOR]'
+        except:
+            pay = ''
         albumId = item.a.get('data-qidanadd-albumid', 'X')
         tvId = item.a.get('data-qidanadd-tvid', 'X')
         if albumId == 'X':
             albumId = tvId
-        li = xbmcgui.ListItem(title + '(' + info + '|' + vip + ')',
+        li = xbmcgui.ListItem(title + '(' + info + vip + pay + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + href
@@ -344,7 +346,7 @@ def listType1(albumType, albumId):
         u += '&tvId=%d&vid=%s' % (tvId, videoId.encode('utf-8'))
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-    
+
     return True
 
 
@@ -412,8 +414,6 @@ def episodesList(params):
     params['tvId'] = str(tvId)
     params['vid'] = videoId
 
-    print '=============albumId %d, albumType %d tvId %d======' % (albumId, albumType, tvId)
-
     li = xbmcgui.ListItem(BANNER_FMT % title, iconImage=thumb, thumbnailImage=thumb)
     li.setInfo(type="Video", infoLabels={"Title": title, 'Plot': info})
     u = sys.argv[0] + '?mode=playvideo&title=' + title
@@ -432,14 +432,26 @@ def episodesList(params):
     referenceList(params)
 
 
+def r1(pattern, text):
+    m = re.search(pattern, text)
+    if m:
+        return m.group(1)
+
+
 def findToPlay(params):
     url = params.get('url')
     link = getHttpData(url)
-    tvId = re.compile('data-player-tvid="(.+?)"', re.DOTALL).findall(link)
-    videoId = re.compile('data-player-videoid="(.+?)"', re.DOTALL).findall(link)
-    if len(tvId) > 0 and len(videoId) > 0:
-        params['tvId'] = tvId[0]
-        params['vid'] = videoId[0]
+
+    tvId = r1(r'#curid=(.+)_', self.url) or \
+            r1(r'tvid=([^&]+)', self.url) or \
+            r1(r'data-player-tvid="([^"]+)"', link)
+    videoId = r1(r'#curid=.+_(.*)$', self.url) or \
+            r1(r'vid=([^&]+)', self.url) or \
+            r1(r'data-player-videoid="([^"]+)"', link)
+
+    if tvId is not None and videoId is not None:
+        params['tvId'] = tvId
+        params['vid'] = videoId
         PlayVideo(params)
     else:
         albumId = re.compile('albumid="(.+?)"', re.DOTALL).findall(link)
@@ -495,7 +507,7 @@ def changeList(params):
 # search in http://so.iqiyi.com/so/q_%s?source=hot
 ############################################################################
 def searchiQiyi(params):
-    keyboard = Apps('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1000)
     keyboard.doModal()
     if not keyboard.isConfirmed():
@@ -583,4 +595,4 @@ runlist = {
     'filter': 'changeList(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

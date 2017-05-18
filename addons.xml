@@ -6,7 +6,7 @@
     provider-name="yfang1644">
   	<requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -29,8 +29,8 @@
     provider-name="yfang1644">
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
+        <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -75,8 +75,7 @@
     version="1.2.11"
     provider-name="Uranus Zhou,yfang1644">
     <requires>
-        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.5.3"/>
+        <import addon="script.module.simplejson" version="3.3.0"/>
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -149,7 +148,6 @@
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -190,7 +188,7 @@
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0" optional="false"/>
         <import addon="script.module.chardet" version="2.1.1" optional="false"/>
-       <import addon="script.thunder.player"  version="0.1.10" optional="false"/>
+        <import addon="script.thunder.player"  version="0.1.10" optional="false"/>
         <import addon="script.module.keyboard.chinese"  version="1.2.8" optional="false"/>
         <import addon="script.module.hdpparser"  version="0.1" optional="false"/>
     </requires>
@@ -275,7 +273,6 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.keyboard.chinese" version="1.0.0" optional="true"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource" library="default.py">
@@ -297,7 +294,6 @@
     provider-name="arthurqi,osfans,yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.keyboard.chinese" version="1.0.0" optional="true"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
@@ -407,7 +403,7 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -488,6 +484,7 @@
     provider-name="taxigps,yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -509,7 +506,6 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
@@ -592,7 +588,7 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -689,6 +685,20 @@
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
+</addon>
+
+<addon id="script.common.plugin.cache"
+    name="Common plugin cache" provider-name="TheCollective" version="2.5.8">
+    <requires>
+        <import addon="xbmc.python" version="2.24.0" />
+    </requires>
+    <extension library="default.py" point="xbmc.service" start="startup">
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <platform>all</platform>
+        <summary lang="en">Common caching api for xbmc plugins.</summary>
+    </extension>
+    <extension library="lib" point="xbmc.python.module" />
 </addon>
 
 </addons>

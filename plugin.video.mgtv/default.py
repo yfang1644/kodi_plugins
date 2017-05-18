@@ -160,7 +160,7 @@ def listSubMenu(params):
         # pay info
         pay = item.find('i', {'class': 'v-mark-v5'})
         if pay:
-            pay = '(' + pay.text + ')'
+            pay = BANNER_FMT2 % ('(' + pay.text + ')')
         else:
             pay = ''
 

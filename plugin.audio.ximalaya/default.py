@@ -140,7 +140,8 @@ def PlayAudio(params):
 
 def PlayAlbum(params):
     url = params['url']
-    html = getHttpData(url)
+    order = params.get('order', 'asc')
+    html = getHttpData(url + '?order=' + order)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
@@ -151,7 +152,6 @@ def PlayAlbum(params):
     begin_id = params.get('begin', '0')
 
     begin_id = int(begin_id)
-    print '---------------------'
     for song in songs[begin_id:]:
         sound_id = song['sound_id']
         info = song.find('a', {'class': 'title'})
@@ -160,7 +160,6 @@ def PlayAlbum(params):
         li = xbmcgui.ListItem(title)
         li.setInfo(type='Music', infoLabels={'Title': title})
         x = playlist.add(p_url, li)
-        print x
 
     xbmc.Player().play(playlist, windowed=True)
 
@@ -305,16 +304,20 @@ def albumList(params):
 
 def playList(params):
     url = params['url']
-    html = getHttpData(url)
+    order = params.get('order', 'asc')
+    html = getHttpData(url + '?order=' + order)
     tree = BeautifulSoup(html, 'html.parser')
 
     title = params['title']
     info = tree.find_all('div', {'class': 'rich_intro'})
     info = info[0].article.text
-    u = sys.argv[0] + '?url=' + url + '&mode=playalbum&begin=0'
-    li = xbmcgui.ListItem(BANNER_FMT % (title + '(播放全部专辑)'))
-    li.setInfo(type='Music', infoLabels={'Title': title, 'Plot': info})
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    u = sys.argv[0] + '?url=' + url + '&mode=playlist&title=' + title
+    if order == 'asc':
+        u += '&order=desc'
+    li = xbmcgui.ListItem(BANNER_FMT % (title + '(更改排序)'))
+    li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
@@ -325,7 +328,7 @@ def playList(params):
         info = song.find('a', {'class': 'title'})
         href = httphead(info['href'])
         title = info.text.strip()
-        u = sys.argv[0] + '?url=' + url
+        u = sys.argv[0] + '?url=' + url + '&order=' + order
         u += '&mode=playalbum&begin=' + str(number)
         u += '&title=' + title + '&sound_id=' + sound_id
         li = xbmcgui.ListItem(title)

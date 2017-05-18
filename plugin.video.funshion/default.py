@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -200,7 +201,7 @@ def playList(params):
     if len(lists) < 1:
         return
 
-    u = sys.argv[0] + '?mode=albumlist&url=' + url
+    u = sys.argv[0]
     li = xbmcgui.ListItem(BANNER_FMT % '播放列表')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
@@ -238,7 +239,7 @@ def relatedList(params):
     if len(items) < 1:
         return
 
-    u = sys.argv[0] + '?mode=albumlist&url=' + url
+    u = sys.argv[0]
     li = xbmcgui.ListItem(BANNER_FMT % '相关推荐')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
@@ -422,7 +423,7 @@ def PlayVideo_test(thumb):
 
 ##################################################################################
 def PlayVideo(params):
-    name = params.get('name')
+    name = params.get('title')
 
     videoplaycont = __addon__.getSetting('video_vplaycont')
 
@@ -642,4 +643,4 @@ runlist = {
     'filter': 'updateListSEL(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

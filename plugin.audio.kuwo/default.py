@@ -104,12 +104,9 @@ def PlayMV(params):
     html = getUrlTree(url)
     mp4 = re.compile('var mp4url.+(http:.+?mp4)').findall(html)
     mp4 = mp4[0]
-    playlist = xbmc.PlayList(1)
-    playlist.clear()
-    listitem = xbmcgui.ListItem(name, iconImage=thumb, thumbnailImage=thumb)
+    listitem = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
     listitem.setInfo(type="Video", infoLabels={"Title": name})
-    playlist.add(mp4, listitem)
-    xbmc.Player().play(playlist)
+    xbmc.Player().play(mp4, listitem)
 
 
 def musiclist(params):
@@ -452,4 +449,4 @@ runlist = {
     'playmv': 'PlayMV(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

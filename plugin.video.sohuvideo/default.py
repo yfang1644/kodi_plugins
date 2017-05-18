@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -15,7 +16,6 @@ import StringIO
 from random import random
 import cookielib
 import datetime
-import time
 import simplejson
 from bs4 import BeautifulSoup
 
@@ -29,11 +29,6 @@ __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cookieFile    = __profile__ + 'cookies.sohu'
-
-if (__addon__.getSetting('keyboard') == '0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
 
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
@@ -655,7 +650,7 @@ def LivePlay(params):
 # Get user input for Sohu site search
 ############################################################################
 def searchSohu(params):
-    keyboard = Apps('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
     if not keyboard.isConfirmed():
@@ -729,4 +724,4 @@ runlist = {
     'select': 'normalSelect(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])
