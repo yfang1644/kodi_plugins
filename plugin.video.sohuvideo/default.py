@@ -13,7 +13,6 @@ import sys
 import os
 import gzip
 import StringIO
-from random import random
 import cookielib
 import datetime
 import simplejson
@@ -388,7 +387,6 @@ def episodesList1(params):
     title0 = params.get('title', '')
     url = params['url']
     link = getHttpData(url)
-    tree = BeautifulSoup(link, 'html.parser')
 
     listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
     if url.find('.html') > 0:
@@ -502,6 +500,7 @@ def episodesList1(params):
                         u += '&thumb=' + urllib.quote_plus(p_thumb)
                         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
+    tree = BeautifulSoup(link, 'html.parser')
     soup1 = tree.find_all('ul', {'class': 'list listA cfix'})
     soup2 = tree.find_all('ul', {'class': 'list list-120 cfix'})
 

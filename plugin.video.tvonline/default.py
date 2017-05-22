@@ -23,15 +23,14 @@ import simplejson
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
+__cwd__       = __addon__.getAddonInfo('path')
 __addonname__ = __addon__.getAddonInfo('name')
-__addonicon__ = os.path.join(__addon__.getAddonInfo('path'), 'icon.png')
-__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
+__m3u8__      = __cwd__ + '/temp.m3u8'
 
 
-UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
-UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
+UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
+UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 TIMER_FMT = '[COLOR FF8040C0](%s)[/COLOR]'
@@ -169,6 +168,24 @@ def PlayVideoLeTV(params):
     xbmc.Player().play(playurl, li)
 
 
+def getHttp(url):
+    resp = urllib2.urlopen(url, timeout=2)
+    data = resp.read()
+    data = data.decode('utf-8')
+    resp.close()
+
+    branch = re.compile('(http.+//.+)\n').findall(data)
+
+    try:
+        data = branch[0]
+    except:
+        return url
+    if data.find('m3u8') >= 0:
+        return data
+    else:
+        return url
+
+
 def PlayVideoPPTV(params):
     url = params['url']
     title = params['title']
@@ -178,9 +195,22 @@ def PlayVideoPPTV(params):
     import resources.lib.pptv as pptv
     if quality > 0:
         quality = -1           # point to last item
-    urls = pptv.GetPPTVVideoURL(url, quality, __m3u8__)
+
+    html = getHttpData(url)
+
+    playcfg = re.compile('var webcfg\s*=\s*({.+?);\n').findall(html)
+    if playcfg:
+        jsplay = simplejson.loads(playcfg[0])
+    else:
+        return []
+
+    ipadurl = jsplay['player']['playList'][0]['ipadurl']
+    ctx = jsplay['player']['ctx']
+    ipadurl += '?' + ctx
+
+    #ipadurl = getHttp(ipadurl)
     li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
-    xbmc.Player().play(__m3u8__, li)
+    xbmc.Player().play(ipadurl, li)
 
 
 def getProgramList(channelId):
@@ -281,8 +311,9 @@ def listPPTV(title):
     jsdata = jsdata['videoList'][0]['videos']
 
     vids = [str(x['id']) for x in jsdata]
-    prog_api = 'http://v.pptv.com/api/live/tvProgramList/%s?from=web&version=1.0.0&format=jsonp&cb=pplive_callback_1'
+    prog_api = 'http://v.pptv.com/api/live/tvProgramList/%s?from=web&version=1.0.0&format=jsonp&cb=pplive_callback'
     html = getHttpData(prog_api % (','.join(vids)))
+    print(html)
     match1 = re.compile('\((.+)\)').findall(html)
     prog_info = simplejson.loads(match1[0])
 
@@ -335,4 +366,4 @@ runlist = {
     'playpptv': 'PlayVideoPPTV(params)',
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

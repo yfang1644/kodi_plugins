@@ -1,3 +1,4 @@
+#/usr/bin/python
 # -*- coding: utf-8 -*-
 
 import xbmc
@@ -7,7 +8,6 @@ import xbmcaddon
 import urllib2
 import urllib
 import re
-import os
 import gzip
 from random import randrange
 import StringIO
@@ -20,11 +20,7 @@ __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 __cwd__       = __addon__.getAddonInfo('path')
-__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
-__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode('utf-8')
-
-
-UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
+__m3u8__      = __cwd__ + '/temp.m3u8'
 
 sitelist = {
     'le.com': 'letv',
@@ -32,9 +28,9 @@ sitelist = {
     'youku.com': 'youku',
     'qiyi.com': 'iqiyi',
     'sohu.com': 'sohu',
-    'pptv.com': 'pptv',
     'qq.com': 'qq',
     'fun.tv': 'funshion',
+    'pptv.com': 'pptv',
     'tudou.com': 'tudou',
     'cctv.com': 'cntv',
     'cntv.cn': 'cntv',
@@ -388,6 +384,11 @@ def PlayVideo(playurl, title, thumb):
     if ('cntv.cn' in playurl) or ('cctv.com' in playurl):
         import resources.lib.cntv as cntv
         video = cntv.CNTV()
+        videourl = video.video_from_url(playurl, level=videoRes)
+
+    if 'pptv.com' in playurl:
+        import resources.lib.pptv as pptv
+        video = pptv.PPTV()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     ulen = len(videourl)

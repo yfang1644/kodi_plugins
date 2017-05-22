@@ -6,6 +6,7 @@ import time
 from random import random
 from common import get_html, r1
 
+
 def constructKey(arg):
 
     def str2hex(s):

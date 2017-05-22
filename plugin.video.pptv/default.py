@@ -55,6 +55,8 @@ PPTV_LIVE_TYPES = {'http://live.pptv.com/list/sports_program/': '35',
                    'http://live.pptv.com/list/game_program/': '5',
                    'http://live.pptv.com/list/finance/': '47'}
 
+ppi_cookie = None
+
 ##### Common functions #####
 
 dbg = False
@@ -91,8 +93,11 @@ def get_html(url, headers={'User-Agent': UserAgent_IPAD}, decoded=True):
     Returns:
         The content as a string.
     """
+    global ppi_cookie
 
     req = urllib2.Request(url, headers=headers)
+    if ppi_cookie:
+        req.add_header('Cookie', 'ppi=' + ppi_cookie)
     response = urlopen_with_retry(req)
     data = response.read()
 
@@ -262,7 +267,7 @@ def CheckValidList(val):
 ##### Common functions end #####
 
 
-def GetPPTVVideoList(url, only_filter=False):
+def GetPPTVVideoList(url, thispage, only_filter=False):
     data = get_html(url)
 
     filter_list = []
@@ -354,7 +359,6 @@ def GetPPTVVideoList(url, only_filter=False):
                 name = CheckValidList([t for t in parseDOM(i, 'a') if t.find('<img') < 0]).encode('utf-8')
                 image = CheckValidList(parseDOM(i, 'img', ret='src')).encode('utf-8')
                 link = CheckValidList(parseDOM(j, 'a', ret='href')).encode('utf-8')
-                print '==========================', name, link
                 if len(parseDOM(j, 'span', attrs={'class': 'titme'})) <= 0:
                     spc = ''
                 else:
@@ -392,14 +396,14 @@ def GetPPTVVideoList(url, only_filter=False):
 
     # get page lists
     page = CheckValidList(parseDOM(data, 'p', attrs={'class': 'pageNum'})).encode('utf-8')
+
     pages_attr = {}
     if len(page) > 0:
         pages_attr['last_page'] = int(CheckValidList(re.compile('.*/\s*(\d+)').findall(page)))
         params = urlparse.parse_qs(urlparse.urlparse(url).query)
-        if 'page' in params.keys():
-            pages_attr['selected_page'] = int(params['page'][0])
-        else:
-            pages_attr['selected_page'] = 1
+
+        thispage = params.get('page', [1])
+        pages_attr['selected_page'] = int(thispage[0])
         tmp = re.sub('&page=\d+', '', url)
         if pages_attr['selected_page'] > 1:
             pages_attr['prev_page_link'] = tmp + '&page=' + str(pages_attr['selected_page'] - 1)
@@ -432,6 +436,31 @@ def GetPPTVEpisodesList(params):
     cid = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']id["\']\s*:\s*(\d+)\s*,').findall(data))
     pid = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']pid["\']\s*:\s*["\']?\s*(\d+)["\']?\s*,').findall(data))
     channel_id = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']channel_id["\']\s*:\s*["\']?\s*(\d+)["\']?\s*,').findall(data))
+
+    global ppi_cookie
+    ppi_url = 'http://tools.aplusapi.pptv.com/get_ppi'
+    html = get_html(ppi_url)
+    data = re.compile('\((.+)\)').findall(html)
+    try:
+        jsdata = simplejson.loads(data[0])
+        ppi_cookie = jsdata['ppi']
+        api_url = 'http://apis.web.pptv.com/show/videoList?from=web&version=1.0.0&format=jsonp&cb=videolist_request&pid='
+        html = get_html(api_url + pid)
+        data = re.compile('\((.+)\)').findall(html)
+        jsdata = simplejson.loads(data[0])
+        ppvideos = jsdata['data']['list']
+        video_list = []
+        for video in ppvideos:
+            video_list.append({
+                'link': video['url'].encode('utf-8'),
+                'name': video['title'].encode('utf-8'),
+                'image': video['capture'].encode('utf-8'),
+                'isdir': -1,
+                'spc': ''
+            })
+        return video_list
+    except:
+        pass
 
     if len(cid) > 0 or len(pid) > 0 or len(channel_id) > 0:
         video_list = []
@@ -873,8 +902,8 @@ def listRoot():
     data = get_html(PPTV_LIST)
     chl = CheckValidList(parseDOM(data, 'div', attrs={'class': 'detail_menu'}))
     if len(chl) > 0:
-        links += parseDOM(chl, 'a', ret='href')
-        names += parseDOM(chl, 'a')
+        links = parseDOM(chl, 'a', ret='href')
+        names = parseDOM(chl, 'a')
 
     data = get_html('http://www.pptv.com')
     chl = CheckValidList(parseDOM(data, 'div', attrs={'class': 'morech cf'}))
@@ -909,9 +938,9 @@ def listVideo(params, list_ret):
             pages_attr['last_page_link']]
         page_strs = [
             '[COLOR FFFF0000]第一页[/COLOR] - 第 1 页',
-            '[COLOR FFFF0000]上一页[/COLOR] - 第 %d 页' % (pages_attr['selected_page'] - 1),
-            '[COLOR FFFF0000]下一页[/COLOR] - 第 %d 页' % (pages_attr['selected_page'] + 1),
-            '[COLOR FFFF0000]最后一页[/COLOR] - 第 %d 页' % (pages_attr['last_page'])
+            '[COLOR FFFF0000]上一页[/COLOR] - 第 %s 页' % (pages_attr['selected_page'] - 1),
+            '[COLOR FFFF0000]下一页[/COLOR] - 第 %s 页' % (pages_attr['selected_page'] + 1),
+            '[COLOR FFFF0000]最后一页[/COLOR] - 第 %s 页' % (pages_attr['last_page'])
             ]
         # increate extra page items length
         total_items += len([i for i in page_links if len(i) > 0])
@@ -929,6 +958,10 @@ def listVideo(params, list_ret):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True, total_items)
 
     # show video list
+    playlist = xbmc.PlayList(0)
+    playlist.clear()
+
+    number = 0
     for i in video_list:
         title = i['name']
         if len(i['spc']) > 0:
@@ -939,16 +972,18 @@ def listVideo(params, list_ret):
             is_dir = True
         u = sys.argv[0] + '?url=' + i['link']
         u += '&mode=' + (is_dir and 'episodelist' or 'playvideo')
-        u += '&name=' + urllib.quote_plus(title)
+        u += '&name=%d.' % number + urllib.quote_plus(title)
         u += '&thumb=' + urllib.quote_plus(i['image'])
         liz = xbmcgui.ListItem(title, thumbnailImage=i['image'])
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, is_dir)
+        playlist.add(i['link'], liz)
+        number += 1
 
     # show page switcher list
     if pages_attr:
         for page_link, page_str in zip(page_links, page_strs):
             if len(page_link) > 0:
-                u = sys.argv[0] + '?url=' + page_link
+                u = sys.argv[0] + '?url=' + urllib.quote_plus(page_link)
                 u += '&mode=videolist&name=' + urllib.quote_plus(name)
                 liz = xbmcgui.ListItem(page_str)
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
@@ -967,29 +1002,55 @@ def playVideo(params):
     #if re.match('^http://live\.pptv\.com/list/tv_program/.*$', url):
     #    url = GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(name), name)
 
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
     ppurls = GetPPTVVideoURL(url, quality)
-    if ppurls is None:
-        ppurls = video_from_url(url, quality)
-
     if ppurls and len(ppurls) > 0:
-        playlist = xbmc.PlayList(1)
-        playlist.clear()
         for i in range(0, len(ppurls)):
             title = name + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
             liz = xbmcgui.ListItem(title, thumbnailImage=thumb)
             liz.setInfo(type="Video", infoLabels={"Title": title})
             playlist.add(ppurls[i], liz)
         xbmc.Player().play(playlist)
-    else:
-        xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
+        return
+
+    playlistA = xbmc.PlayList(0)
+    psize = playlistA.size()
+    tmp = name.split('.')
+
+    v_pos = int(tmp[0])
+    name = '.'.join(tmp[1:])
+    k = 0
+    for x in range(v_pos, psize):
+        p_item = playlistA.__getitem__(x)
+        p_url = p_item.getfilename(x)
+        p_list = p_item.getdescription(x)
+        li = p_item
+        li.setInfo(type="Video", infoLabels={"Title": p_list})
+
+        ppurls = video_from_url(p_url, quality)
+        if ppurls and len(ppurls) > 0:
+            for i in range(0, len(ppurls)):
+                title = p_list + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
+                liz = xbmcgui.ListItem(title, thumbnailImage=thumb)
+                liz.setInfo(type='Video', infoLabels={'Title': title})
+                playlist.add(ppurls[i], liz)
+        else:
+            xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
+            return
+
+        if k == 0:
+            xbmc.Player(1).play(playlist)
+        k += 1
 
 
 def listFilter(params):
     url = params['url']
+    page = params.get('page')
     level = 0
     dialog = xbmcgui.Dialog()
     while True:
-        filter_list = GetPPTVVideoList(url, True)
+        filter_list = GetPPTVVideoList(url, page, True)
         # show last filter
         if level >= len(filter_list) - 1:
             level = -1
@@ -999,7 +1060,7 @@ def listFilter(params):
         # reach last filter, just list specified videos
         if level < 0:
             params['url'] = url
-            pret = GetPPTVVideoList(url)
+            pret = GetPPTVVideoList(url, page)
             listVideo(params, pret)
             return
         level += 1
@@ -1017,7 +1078,8 @@ def searchPPTV():
 
 def listSubMenu(params):
     url = params['url']
-    list_ret = GetPPTVVideoList(url)
+    page = params.get('page')
+    list_ret = GetPPTVVideoList(url, page)
     listVideo(params, list_ret)
 
 

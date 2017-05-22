@@ -9,7 +9,6 @@ import urllib2
 import urllib
 import re
 import gzip
-from random import randrange
 import StringIO
 from bs4 import BeautifulSoup
 import simplejson
@@ -370,4 +369,4 @@ runlist = {
     'playvideo': 'playVideo(params)'
     }
 
-eval(runlist[mode])
+exec(runlist[mode])

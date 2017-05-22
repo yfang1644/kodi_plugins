@@ -6,7 +6,7 @@ import hashlib
 import time
 from random import random
 import simplejson
-from common import get_html
+from common import get_html, r1
 
 
 class IQiyi():
@@ -22,17 +22,25 @@ class IQiyi():
 
     def vid_from_url(self, url, **kwargs):
         link = get_html(url)
-        tvId = re.compile('data-player-tvid="(.+?)"', re.DOTALL).findall(link)
-        videoId = re.compile('data-player-videoid="(.+?)"', re.DOTALL).findall(link)
-        if (len(tvId) > 0) and (len(videoId) > 0):
-            return tvId[0], videoId[0]
+        tvId = r1(r'#curid=(.+)_', url) or \
+                r1(r'tvid=([^&]+)', url) or \
+                r1(r'data-player-tvid="([^"]+)"', link)
+        videoId = r1(r'#curid=.+_(.*)$', url) or \
+                r1(r'vid=([^&]+)', url) or \
+                r1(r'data-player-videoid="([^"]+)"', link)
+
+        if tvId is not None and videoId is not None:
+            return tvId, videoId
 
     def video_from_url(self, url, **kwargs):
         tvId, videoId = self.vid_from_url(url)
         info = self.getVMS(tvId, videoId)
+        print '-----------------', tvId, videoId, info
         if info['code'] == 'A00000':
             vs = info['data']['vidl']
             level = kwargs.get('level', 0)
+
+            level = min(level, len(vs) - 1)
 
             video_links = vs[level]['m3u']
             return video_links

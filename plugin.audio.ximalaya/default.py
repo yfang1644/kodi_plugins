@@ -127,15 +127,31 @@ def ximalaya_download_playlist(url, stream_id=2):
 
 ############################################################################
 def PlayAudio(params):
-    sound_id = params['sound_id']
     title = params['title']
 
-    url = url_from_id(sound_id)
+    playlistA = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
 
-    if url:
-        li = xbmcgui.ListItem(title)
-        li.setInfo(type='Music', infoLabels={'Title': title})
-        xbmc.Player().play(url, li)
+    v_pos = int(title.split('.')[0])
+    psize = playlistA.size()
+    ERR_MAX = psize - 1
+    k = 0
+
+    for x in range(psize):
+        if x < v_pos:
+            continue
+        p_item = playlistA.__getitem__(x)
+        sound_id = p_item.getfilename(x)
+        p_list = p_item.getdescription(x)
+        li = p_item
+        li.setInfo(type='Music', infoLabels={'Title': p_list})
+        v_url = url_from_id(sound_id)
+
+        playlist.add(v_url, li, k)
+        if k == 0:
+            xbmc.Player(1).play(playlist)
+        k += 1
 
 
 def PlayAlbum(params):
@@ -322,6 +338,9 @@ def playList(params):
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
 
+    playlist = xbmc.PlayList(0)
+    playlist.clear()
+
     number = 0
     for song in songs:
         sound_id = song['sound_id']
@@ -329,10 +348,12 @@ def playList(params):
         href = httphead(info['href'])
         title = info.text.strip()
         u = sys.argv[0] + '?url=' + url + '&order=' + order
-        u += '&mode=playalbum&begin=' + str(number)
-        u += '&title=' + title + '&sound_id=' + sound_id
+        u += '&mode=playaudio&begin=' + str(number)
+        u += '&title=%d.%s' % (number, title) + '&sound_id=' + sound_id
         li = xbmcgui.ListItem(title)
+        li.setInfo(type='Music', infoLabels={'Title': title})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(sound_id, li)
         number += 1
 
     xbmcplugin.setContent(int(sys.argv[1]), 'songs')

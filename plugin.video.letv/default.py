@@ -445,7 +445,7 @@ def playVideoUgc(params):
         else:
             xplayer.play(name, thumb, v_urls)
 
-            # need xmbc.sleep to make xbmc callback working properly
+            # need xmbc.sleep(100) to make xbmc callback working properly
             while xplayer.is_active:
                 xbmc.sleep(100)
     else:
@@ -530,6 +530,7 @@ def mainMenu():
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     url = LIST_URL + '/listn/c2_t-1_a-1_y-1_s1_md_o51_d1_p.html'
+    #url = 'http://list.le.com/listn/c2_t30024_a-1_y-1_s1_md_o20_d1_p.html'
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'channel_list'})
@@ -701,7 +702,37 @@ def album2series(url):
     html = getHttpData(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'list active'})
-    return soup[0].a['href']
+
+    for soups in soup:
+        items = soups.find_all('dl')
+        number = 0
+        for item in items:
+            try:
+                href = item.a['href']
+                title = item.img['title']
+                pic = item.img['src']
+            except:
+                continue
+            try:
+                extra = item.find('span', {'class': 'time'})
+                time = '[COLOR FF808000](' + extra.text + ')[/COLOR]'
+            except:
+                time= ''
+            try:
+                info = item.find('p', {'class': 'p2'})
+                info = info.text
+            except:
+                info = ''
+            li = xbmcgui.ListItem(title + time, iconImage=pic, thumbnailImage=pic)
+            li.setInfo(type='Video',
+                       infoLabels={'Title': title, 'Plot': info})
+            u = sys.argv[0] + '?url=' + href
+            u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+            number += 1
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def episodesList(params):
@@ -709,6 +740,7 @@ def episodesList(params):
     name = params['name']
     if name in ['电视剧', '自制']:
         url = album2series(url)
+        return
 
     if name in ['动漫', '综艺']:
         html = getHttpData(url)
