@@ -116,16 +116,19 @@ class Funshion():
         """lots of stuff->None
         Main wrapper for single video download.
         """
-        if re.match(r'http://www.fun.tv/vplay/.*v-(\w+)', url):
-            match = re.search(r'http://www.fun.tv/vplay/.*v-(\d+)(.?)', url)
-            vid = match.group(1)
+        if re.match(r'http://www.fun.tv/vplay/v-(\w+)', url):
+            vid = r1(r'http://www.fun.tv/vplay/v-(\d+)(.?)', url)
             return self.video_from_vid(vid, **kwargs)
 
     #----------------------------------------------------------------------
     def videos_from_url(self, url, **kwargs):
         if re.match(r'http://www.fun.tv/vplay/v-(\w+)', url):
-            return self.video_from_url(ur, **kwargsl)      # single video
+            return self.video_from_url(url, **kwargs)      # single video
         elif re.match(r'http://www.fun.tv/vplay/.*g-(\w+)', url):
-            return self.drama_from_url(url)        # whole drama
+            return self.drama_from_url(url, **kwargs)        # whole drama
         else:
             return
+
+site = Funshion()
+video_from_url = site.video_from_url
+videos_from_url = site.videos_from_url

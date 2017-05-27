@@ -13,7 +13,7 @@ from random import randrange
 import StringIO
 from bs4 import BeautifulSoup
 import simplejson
-from resources.lib.common import get_html
+from lib.common import get_html
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -334,14 +334,14 @@ def playVideo_by_mid(params):
         thumb = params['thumb']
         PlayVideo(playurl, title, thumb)
     else:
-        xbmcgui.Dialog().ok(__addonname__, '视频地址未解析')
-
+        xbmcgui.Dialog().ok(__addonname__, mid, '视频地址未解析')
 
 def PlayVideo(playurl, title, thumb):
+    print playurl
     videoRes = int(__addon__.getSetting('resolution'))
 
     if ('le.com' in playurl) or ('letv.com' in playurl):
-        import resources.lib.letv as letv
+        import lib.letv as letv
         video = letv.LeTV()
         videourl = video.video_from_url(playurl,
                                         level=videoRes,
@@ -352,42 +352,37 @@ def PlayVideo(playurl, title, thumb):
         return
 
     if 'sohu.com' in playurl:
-        import resources.lib.sohu as sohu
+        import lib.sohu as sohu
         video = sohu.Sohu()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     if 'qq.com' in playurl:
-        import resources.lib.qq as qq
+        import lib.qq as qq
         video = qq.QQ()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     if 'qiyi.com' in playurl:
-        import resources.lib.iqiyi as iqiyi
+        import lib.iqiyi as iqiyi
         video = iqiyi.IQiyi()
         videourl = video.video_from_url(playurl, level=videoRes)
 
-        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
-        li.setInfo(type="Video", infoLabels={"Title": title})
-        xbmc.Player().play(videourl, li)
-        return
-
     if 'fun.tv' in playurl:
-        import resources.lib.funshion as funshion
+        import lib.funshion as funshion
         video = funshion.Funshion()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     if 'youku.com' in playurl:
-        import resources.lib.youku as youku
+        import lib.youku as youku
         video = youku.Youku()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     if ('cntv.cn' in playurl) or ('cctv.com' in playurl):
-        import resources.lib.cntv as cntv
+        import lib.cntv as cntv
         video = cntv.CNTV()
         videourl = video.video_from_url(playurl, level=videoRes)
 
     if 'pptv.com' in playurl:
-        import resources.lib.pptv as pptv
+        import lib.pptv as pptv
         video = pptv.PPTV()
         videourl = video.video_from_url(playurl, level=videoRes)
 

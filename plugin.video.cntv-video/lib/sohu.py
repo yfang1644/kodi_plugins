@@ -99,3 +99,6 @@ class Sohu():
             # assert data['clipsURL'][0].endswith('.mp4')
 
         return urls
+
+site = Sohu()
+video_from_url = site.video_from_url

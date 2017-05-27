@@ -7,16 +7,14 @@ import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
-import urlparse
 import re
 import sys
 import os
-import gzip
-import StringIO
-import cookielib
 import datetime
 import simplejson
 from bs4 import BeautifulSoup
+from common import get_html
+from sohu import video_from_url
 
 ########################################################################
 # 搜狐视频 tv.sohu.com
@@ -43,113 +41,28 @@ INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 
 
-############################################################################
-# Sohu Video Link Decode Algorithm & Player
-# Extract all the video list and start playing first found valid link
-# User may press <SPACE> bar to select video resolution for playback
-############################################################################
-def get_vid_from_url(url):
-    link = getHttpData(url)
-
-    match1 = re.compile('var vid\s*=\s*["|\'](.+?)["|\'];').search(link)
-    if not match1:
-        match1 = re.compile('<a href="(http://[^/]+/[0-9]+/[^\.]+.shtml)" target="?_blank"?><img').search(link)
-        if match1:
-            params['url'] = match1.group(1)
-            return get_vid_from_url(params['url'])
-        else:
-            return None
-    p_vid = match1.group(1)
-    if p_vid == '0':
-        match1 = re.compile('data-vid\s*=\s*["|\']([^"]+)["|\'"]').search(link)
-        if not match1:
-            return None
-        p_vid = match1.group(1)
-    if p_vid.find(',') > 0:
-        p_vid = p_vid.split(',')[0]
-    return p_vid
-
-
 def PlayVideo(params):
-    p_vid = params.get('vid')
-    if p_vid is None:
-        p_vid = get_vid_from_url(params['url'])
-        if p_vid is None:
-            xbmcgui.Dialog().ok(__addonname__, '节目暂不能播放')
-            return
-
+    url = params['url']
     thumb = params.get('thumb', '')
+    name = params['title']
     level = int(__addon__.getSetting('resolution'))
     site = int(__addon__.getSetting('videosite'))
 
-    v_api1 = 'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s'
-    v_api2 = 'http://my.tv.sohu.com/play/videonew.do?vid=%s&referer=http://my.tv.sohu.com'
-    v_api = v_api1
-    link = getHttpData(v_api % p_vid)
-    match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?),').search(link)
-    if not match:
-        v_api = v_api2
-        link = getHttpData(v_api % p_vid)
-        match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?),').search(link)
-        if not match:
-            xbmcgui.Dialog().ok(__addonname__, '节目没找到')
-            return
+    urls = video_from_url(url, level=level)
 
-    ratelist = []
-    if match.group(4) != '0':
-        ratelist.append(['原画', 4])
-    if match.group(3) != '0':
-        ratelist.append(['超清', 3])
-    if match.group(2) != '0':
-        ratelist.append(['高清', 2])
-    if match.group(1) != '0':
-        ratelist.append(['流畅', 1])
-    if level == 4:
-        dialog = xbmcgui.Dialog()
-        list = [x[0] for x in ratelist]
-        if len(ratelist) == 1:
-            rate = ratelist[0][1]
-        else:
-            sel = dialog.select('视频清晰度（低网速请选择低清晰度-流畅）', list)
-            if sel == -1:
-                return
-            else:
-                rate = ratelist[sel][1]
-    else:
-        rate = ratelist[0][1]
-        if rate > level + 1:
-            rate = level + 1
-
-    hqvid = match.group(rate)
-    if hqvid != str(p_vid) and v_api == v_api1:
-        link = getHttpData(v_api % hqvid)
-    else:
-        hqvid = p_vid
-
-    info = simplejson.loads(link)
-    host = info['allot']
-    prot = info['prot']
-    tvid = info['tvid']
-    urls = []
-    data = info['data']
-    name = data['tvName'].encode('utf-8')
-    # size = sum(data['clipsBytes'])
-    assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
+    ulen = len(urls)
+    if ulen < 1:
+        xbmcgui.Dialog().ok(__addonname__, '节目暂不能播放')
+        return
 
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
-    ulen = len(data['ck'])
-    i = 1
-    for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
-        clipURL = urlparse.urlparse(clip).path
-        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(hqvid)+'&rb=1'
-        videourl = simplejson.loads(getHttpData(url))['url'].encode('utf-8')
-        videourl += '|Range='
-        title = name + '(%d/%d)'% (i, ulen)
+
+    for i in range(0, ulen): 
+        title = name + '(%d/%d)'% (i+1, ulen)
         li = xbmcgui.ListItem(title, thumbnailImage=thumb)
         li.setInfo(type="Video", infoLabels={"Title": title})
-        playlist.add(videourl, li)
-        i += 1
+        playlist.add(urls[i], li)
 
     xbmc.Player().play(playlist)
 
@@ -165,69 +78,6 @@ def httphead(url):
     return url
 
 
-############################################################################
-# Routine to fetech url site data using Mozilla browser
-# - delete '\r|\n|\t' for easy re.compile
-# - do not delete ' ' i.e. <space> as some url include spaces
-# - unicode with 'replace' option to avoid exception on some url
-# - translate to utf8
-############################################################################
-def getHttpData(url):
-    # setup proxy support
-    proxy = __addon__.getSetting('http_proxy')
-    type = 'http'
-    if proxy != '':
-        ptype = re.split(':', proxy)
-        if len(ptype) < 3:
-            # full path requires by Python 2.4
-            proxy = type + '://' + proxy
-        else:
-            type = ptype[0]
-        httpProxy = {type: proxy}
-    else:
-        httpProxy = {}
-    proxy_support = urllib2.ProxyHandler(httpProxy)
-
-    # setup cookie support
-    cj = cookielib.MozillaCookieJar(cookieFile)
-    if os.path.isfile(cookieFile):
-        cj.load(ignore_discard=True, ignore_expires=True)
-    else:
-        if not os.path.isdir(os.path.dirname(cookieFile)):
-            os.makedirs(os.path.dirname(cookieFile))
-
-    # create opener for both proxy and cookie
-    opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
-    charset = ''
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    try:
-        response = opener.open(req)
-    except urllib2.HTTPError, e:
-        httpdata = e.read()
-    except urllib2.URLError, e:
-        httpdata = "IO Timeout Error"
-    else:
-        httpdata = response.read()
-        if response.headers.get('content-encoding') == 'gzip':
-            if httpdata[-1] == '\n':
-                httpdata = httpdata[:-1]
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        charset = response.headers.getparam('charset')
-        cj.save(cookieFile, ignore_discard=True, ignore_expires=True)
-        response.close()
-
-    httpdata = re.sub('\r|\n|\t', ' ', httpdata)
-    match = re.compile('<meta.+?charset=["]*(.+?)"').findall(httpdata)
-    if len(match):
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
-    return httpdata
-
-
 def mainMenu():
     li = xbmcgui.ListItem('[COLOR FF00FF00] 【搜狐视频 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
@@ -241,7 +91,8 @@ def mainMenu():
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     url = '/list_p1_p2_p3_p4_p5_p6_p7_p8_p9_p10_p11_p12_p13.html'
-    html = getHttpData(LIST_URL + url)
+    html = get_html(LIST_URL + url)
+    html = re.sub('\r|\n|\t', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'sort-nav cfix'})
 
@@ -260,7 +111,8 @@ def mainMenu():
 def listSubMenu(params):
     url = params['url']
     name = params.get('name')
-    html = getHttpData(url)
+    html = get_html(url)
+    html = re.sub('\r|\n|\t', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')
 
     surl = url.split('/')
@@ -344,7 +196,7 @@ def listSubMenu(params):
 
 def normalSelect(params):
     url = params.get('url')
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     filter = tree.find_all('dl', {'class': 'cfix'})
 
@@ -386,13 +238,13 @@ def episodesList1(params):
     name = params['name']
     title0 = params.get('title', '')
     url = params['url']
-    link = getHttpData(url)
+    link = get_html(url)
 
     listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
     if url.find('.html') > 0:
         match0 = re.compile('var playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
 
-        link = getHttpData(listapi + 'playlist_id=' + match0[0])
+        link = get_html(listapi + 'playlist_id=' + match0[0])
         match = re.compile('"videoImage":"(.+?)",.+?"videoUrl":"(.+?)".+?"videoId":(.+?),.+?"videoOrder":"(.+?)",', re.DOTALL).findall(link)
         totalItems = len(match)
 
@@ -420,7 +272,7 @@ def episodesList1(params):
             obtype = '2'
             s_api = 'http://search.vrs.sohu.com/v?id=%s&pid=%s&pageNum=1&pageSize='
             s_api = 'http://search.vrs.sohu.com/avs_i%s_pr%s_o2_n_p1000_chltv.sohu.com.json'
-            link = getHttpData(s_api % (vid, pid))
+            link = get_html(s_api % (vid, pid))
             link = link[link.find('=')+1:]
             data = link.decode('raw_unicode_escape')
             match = simplejson.loads(data)['videos']
@@ -470,7 +322,7 @@ def episodesList1(params):
                 thumbDict[p_url] = p_thumb
             #for img in thumbDict.items():
             url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.decode('utf-8').encode('gbk'))
-            html = getHttpData(url)
+            html = get_html(url)
             match = re.compile('class="serie-list(.+?)</div>').findall(html)
             if match:
                 items = re.compile('<a([^>]*)>(.+?)</a>', re.I).findall(match[0])
@@ -550,14 +402,14 @@ def episodesList2(params):
     name = params['name']
     title0 = params.get('title', '')
     url = params['url']
-    link = getHttpData(url)
+    link = get_html(url)
     tree = BeautifulSoup(link, 'html.parser')
 
     listapi = 'http://my.tv.sohu.com/play/getvideolist.do?playlistid=%s&pagesize=30&order=1'
 
     match0 = re.compile('playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
 
-    link = getHttpData(listapi % match0[0])
+    link = get_html(listapi % match0[0])
     jsdata = simplejson.loads(link)['videos']
 
     for item in jsdata:
@@ -586,7 +438,7 @@ def episodesList2(params):
 def LiveChannel(params):
     url = params['url']
     name = params['name']
-    link = getHttpData(url)
+    link = get_html(url)
     link = link[link.find('=')+1: link.find(';channelList')]
 
     jsdata = simplejson.loads(link)
@@ -605,7 +457,7 @@ def LiveChannel(params):
         u += '&name=' + name + '&title=' + title
 
         u += '&thumb=' + urllib.quote_plus(p_thumb)
-        html = getHttpData(PROGRAM_URL % id)
+        html = get_html(PROGRAM_URL % id)
 
         schedule = ''
         try:
@@ -634,11 +486,11 @@ def LivePlay(params):
     id = params['id']
     channel = params['title']
     thumb = params['thumb']
-    link = getHttpData(LIVEID_URL % id)
+    link = get_html(LIVEID_URL % id)
     parsed_json = simplejson.loads(link.decode('utf-8'))
     url = httphead(parsed_json['data']['hls'].encode('utf-8'))
 
-    # link = getHttpData(url)
+    # link = get_html(url)
     # parsed_json = simplejson.loads(link.decode('utf-8'))
     # url = parsed_json['url'].encode('utf-8')
     li = xbmcgui.ListItem(channel, iconImage='', thumbnailImage=thumb)
@@ -662,7 +514,7 @@ def searchSohu(params):
     # construct url based on user selected item
     page = 1
     p_url = url + '&fee=0&whole=1&m=1&box=1&p=%d' % page
-    link = getHttpData(p_url)
+    link = get_html(p_url)
 
     li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索:' + keyword + '[/COLOR]')
     u = sys.argv[0]

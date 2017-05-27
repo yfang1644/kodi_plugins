@@ -43,7 +43,7 @@ class Tudou():
         plist_info = simplejson.loads(get_html('http://www.tudou.com/crp/plist.action?lcode=' + lcode))
         return ([(item['kw'], item['iid']) for item in plist_info['items']])
 
-    def download_playlist(self, url, **kwargs)
+    def download_playlist(self, url, **kwargs):
         videos = parse_plist(url)
         urls = []
         for i, (title, id) in enumerate(videos):
@@ -71,3 +71,6 @@ class Tudou():
         else:
             return self.video_from_iid(iid, **kwargs)
 
+
+site = Tudou()
+video_from_iid = site.video_from_iid

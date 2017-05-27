@@ -7,7 +7,6 @@ import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
-import urlparse
 import re
 import sys
 import gzip
@@ -138,9 +137,7 @@ def PlayAudio(params):
     ERR_MAX = psize - 1
     k = 0
 
-    for x in range(psize):
-        if x < v_pos:
-            continue
+    for x in range(v_pos, psize):
         p_item = playlistA.__getitem__(x)
         sound_id = p_item.getfilename(x)
         p_list = p_item.getdescription(x)

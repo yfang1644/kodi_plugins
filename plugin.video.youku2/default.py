@@ -7,8 +7,6 @@ import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
-import urlparse
-import re
 import sys
 import os
 import gzip
@@ -16,8 +14,8 @@ import StringIO
 import cookielib
 import simplejson
 from bs4 import BeautifulSoup
-from youku import getaddress_by_vid, get_vid_from_url
-from youku import get_content as getHttpData
+from common import get_html, match1
+from youku import video_from_url as video_from_url
 
 ########################################################################
 # 优酷 www.youku.com
@@ -54,22 +52,19 @@ def PlayVideo(params):
         level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
         level = max(0, level)
 
-    vcode = get_vid_from_url(url)
+    urls = video_from_url(url, level=level)
 
-    if vcode:
-        urls = getaddress_by_vid(vcode, stream_id=level)
-        print urls
-        ulen = len(urls)
-        if ulen > 0:
-            playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-            playlist.clear()
-            for i in range(ulen):
-                name = title + '(%d/%d)' % (i + 1, ulen)
-                listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-                listitem.setInfo(type="Video", infoLabels={"Title": name})
-                playlist.add(urls[i], listitem)
+    ulen = len(urls)
+    if ulen > 0:
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        playlist.clear()
+        for i in range(ulen):
+            name = title + '(%d/%d)' % (i + 1, ulen)
+            listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+            listitem.setInfo(type="Video", infoLabels={"Title": name})
+            playlist.add(urls[i], listitem)
 
-            xbmc.Player().play(playlist)
+        xbmc.Player().play(playlist)
     else:
         xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
         return
@@ -91,7 +86,7 @@ def mainMenu():
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = getHttpData(LIST_URL)
+    html = get_html(LIST_URL)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'yk-filter'})
 
@@ -123,7 +118,7 @@ def listSubMenu(params):
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     # 分页
     soup = tree.find_all('ul', {'class': 'yk-pages'})
@@ -192,7 +187,7 @@ def normalSelect(params):
                }
     keyword = keystate.keys()
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     color = '[COLOR FF00FF00]%s[/COLOR]'
 
@@ -278,7 +273,7 @@ def normalSelect(params):
 def episodesList(params):
     url = params['url']
     thumb = params['thumb']
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
     # 主题视频
@@ -346,16 +341,16 @@ def episodesList(params):
     except:
         pass
 
-    cid = re.compile('catId:"(\d+)"').findall(html)[0]
-    vid = re.compile('videoId:"(\d+)"').findall(html)[0]
-    sid = re.compile('showid:"(\d+)"').findall(html)[0]
-    pg = re.compile('playmode:"(\d+)"').findall(html)[0]
+    cid = match1(html, 'catId:"(\d+)"')
+    vid = match1(html, 'videoId:"(\d+)"')
+    sid = match1(html, 'showid:"(\d+)"')
+    pg = match1(html, 'playmode:"(\d+)"')
 
     api_rel = 'http://ykrec.youku.com/show/packed/list.json'
 
     api_rel += '?vid=%s&sid=%s&cate=%s' % (vid, sid, cid)
     api_rel += '&picSize=&apptype=1&pg=%s&module=9&pl=30' % (pg)
-    html = getHttpData(api_rel)
+    html = get_html(api_rel)
     jsdata = simplejson.loads(html.encode('utf-8'))
     jsdata = jsdata['data']
     for item in jsdata:
@@ -382,7 +377,7 @@ def searchInYouku(params):
     key = urllib.quote_plus(keyword)
     p_url = 'http://www.soku.com/search_video/q_'
 
-    link = getHttpData(p_url + key)
+    link = get_html(p_url + key)
 
     if link is None:
         li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + ' [/COL  OR]的相关视频')

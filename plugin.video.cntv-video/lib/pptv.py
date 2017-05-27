@@ -111,7 +111,10 @@ def constructKey(arg):
 class PPTV():
 
     def video_from_id(self, id, **kwargs):
-        xml = get_html('http://web-play.pptv.com/webplay3-0-%s.xml?type=web.fpp' % id)
+        PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
+        api = PPTV_WEBPLAY_XML + 'web-m3u8-%s.m3u8?type=m3u8.web.pad'
+        api = PPTV_WEBPLAY_XML + 'webplay3-0-%s.xml?type=web.fpp'
+        xml = get_html(api % id)
         #vt=3 means vod mode vt=5 means live mode
         host = r1(r'<sh>([^<>]+)</sh>', xml)
         k = r1(r'<key expire=[^<>]+>([^<>]+)</key>', xml)
@@ -136,3 +139,7 @@ class PPTV():
         assert id
 
         return self.video_from_id(id, **kwargs)
+
+
+site = PPTV()
+video_from_url = site.video_from_url

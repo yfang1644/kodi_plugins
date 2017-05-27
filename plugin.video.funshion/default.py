@@ -14,6 +14,8 @@ import StringIO
 from random import randrange
 from bs4 import BeautifulSoup
 import simplejson
+from common import get_html, r1
+from funshion import videos_from_url
 
 UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
@@ -87,51 +89,6 @@ def httphead(url):
     return url
 
 
-########################################################################
-def getHttpData(url):
-    log("%s::url - %s" % (sys._getframe().f_code.co_name, url))
-    headers = {'User-Agent': UserAgent}
-
-    req = urllib2.Request(url, headers=headers)
-    try:
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        if response.headers.get('content-encoding') == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        charset = response.headers.getparam('charset')
-        response.close()
-    except:
-        log("%s (%d) [%s]" % (
-               sys.exc_info()[2].tb_frame.f_code.co_name,
-               sys.exc_info()[2].tb_lineno,
-               sys.exc_info()[1]
-               ))
-        return ''
-
-    httpdata = re.sub('\t|\n|\r', ' ', httpdata)
-    match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
-    if match:
-        charset = match[0]
-    else:
-        match = re.compile('<meta charset="(.+?)"').findall(httpdata)
-        if match:
-            charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf8', 'ignore')
-
-    return httpdata
-
-
-########################################################################
-def searchDict(dlist, idx):
-    for i in range(0, len(dlist)):
-        if dlist[i][0] == idx:
-            return dlist[i][1]
-    return ''
-
-
 def mergeUrl(purl, curl):
     for x in curl:
         if len(x) < 2:
@@ -155,7 +112,7 @@ def updateListSEL(params):
     surl = url.split('/')
     purl = surl[-2].split('.')
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'ls-nav-bar'})
 
@@ -193,7 +150,7 @@ def updateListSEL(params):
 def playList(params):
     url = params['url']
     name = params['name']
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
     lists = tree.find_all('a', {'class': 'vd-list-item'})
@@ -215,24 +172,22 @@ def playList(params):
             p_thumb = ''
         t = item.find('i', {'class': 'vtime'})
         time = t.text
-        vid = item['data-vid']
         li = xbmcgui.ListItem(p_name + '(' + time + ')',
                               iconImage='', thumbnailImage=p_thumb)
-        u = sys.argv[0] + '?mode=movielist'
+        u = sys.argv[0] + '?mode=movielist&url=' + href
         u += '&name=' + urllib.quote_plus(name)
         u += '&title=' + p_name
         u += '&thumb=' + p_thumb
-        u += '&url=' + href + '&vid=' + vid
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
 
 def relatedList(params):
-    vid = params['vid']
     name = params['name']
     url = params['url']
+    vid = r1('http://www.fun.tv/vplay/.*g-(\d+)', url)
     # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/media?isajax=1'
     rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
-    link = getHttpData(rel_api % vid)
+    link = get_html(rel_api % vid)
     tree = BeautifulSoup(link, 'html.parser')
 
     items = tree.find_all('div', {'class': 'mod-vd-i'})
@@ -279,27 +234,24 @@ def relatedList(params):
 
         li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
-        u = sys.argv[0] + '?mode=albumlist'
+        u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + urllib.quote_plus(name)
         u += '&title=' + p_name
         u += '&thumb=' + p_thumb
-        u += '&url=' + href + '&vid=' + p_id
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
 
 ##################################################################################
 def singleVideo(params):
     url = params['url']
-    sid = params['vid']
     title = params['title']
     thumb = params['thumb']
     name = params['name']
 
-    u = sys.argv[0] + '?mode=movielist&title=' + urllib.quote_plus(title)
+    u = sys.argv[0] + '?mode=movielist&url=' + url
+    u += '&title=' + urllib.quote_plus(title)
     u += '&name=' + urllib.quote_plus(name)
     u += '&thumb=' + urllib.quote_plus(thumb)
-    u += '&vid=' + urllib.quote_plus(sid)
-
     li = xbmcgui.ListItem(BANNER_FMT % title, iconImage='', thumbnailImage=thumb)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
@@ -315,28 +267,24 @@ def singleVideo(params):
 
 ##################################################################################
 def seriesList(params):
+    url = params['url']
     name = params['name']
-    id = params['vid']
     thumb = params['thumb']
+    id = r1('http://www.fun.tv/vplay/.*g-(\d+)', url)
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
     url = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
-    link = getHttpData(url % id)
+    link = get_html(url % id)
     json_response = simplejson.loads(link)
     if json_response['status'] == 404:
         ok = xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
         return
 
-    resolution = selResolution()
-
     items = json_response['data']['videos']
     # name = json_response['data']['name'].encode('utf-8')
     for item in items:
         p_name = '%s' % (item['name'].encode('utf-8'))
+        url = httphead(item['url'])
         # p_number = str(item['number'])
-        try:
-            hashid = item['streams'][resolution]['hashid']
-        except:
-            hashid = ''
         p_thumb = item['pic'].encode('utf-8')
 
         if len(p_thumb) < 2:
@@ -345,17 +293,18 @@ def seriesList(params):
         seconds = item['duration']
         m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
-        time = "%d:%02d:%02d" % (h, m, s)
+        time = '%02d:%02d' % (m, s)
+        if h != 0:
+            time = '%d:%s' % (h, time)
 
         u = sys.argv[0] + '?mode=movielist&title=' + urllib.quote_plus(p_name)
         u += '&name=' + urllib.quote_plus(name)
         u += '&thumb=' + urllib.quote_plus(p_thumb)
+        u += '&url=' + url
         if item['dtype'] == 'prevue':
             extra = '|预'
-            u += '&vid=' + str(item['videoid'])
         else:
             extra = ''
-            u += '&hashid=' + urllib.quote_plus(hashid)
 
         li = xbmcgui.ListItem(p_name + '(' + time + extra + ')',
                               iconImage='', thumbnailImage=p_thumb)
@@ -384,38 +333,17 @@ def selResolution():
         return resolution
 
 
-def PlayVideo_test(thumb):
-    hashid = params.get('hashid')
+def PlayVideo_test(params):
+    url = params['url']
     title = params.get('title')
     thumb = params.get('thumb')
-    if hashid is None:
-        id = params.get('vid')
 
-        url = 'http://pv.funshion.com/v5/video/play/?id=%s&cl=aphone&uc=5'
-        link = getHttpData(url % id)
-        json_response = simplejson.loads(link)
+    resolution = selResolution()
 
-        resolution = selResolution()
-
-        hashid = json_response['mp4'][resolution]['infohash']
-        filename = json_response['mp4'][resolution]['filename']
-        # besides mp4, there maybe h265 available
-
-    url = 'http://jobsfe.funshion.com/query/v1/mp4/%s.json' % (hashid)
-
-    link = getHttpData(url)
-    json_response = simplejson.loads(link)
-    if json_response['return'].encode('utf-8') == 'succ':
+    v_urls = videos_from_url(url, level=resolution)
+    if len(v_urls) > 0:
+        v_url = replaceServer(v_urls[0])
         listitem = xbmcgui.ListItem(title, thumbnailImage=thumb)
-
-        #xbmc.Player().play(json_response['playlist'][0]['urls'][0], listitem)
-        # Randomly pick a server to stream video
-        v_urls = json_response['playlist'][0]['urls']   #json_response['data']['fsps']['mult']
-        # print "streamer servers: ", len(v_urls), v_urls, link, json_response['playlist'][0]
-        i_url = randrange(len(v_urls))
-
-        v_url = v_urls[i_url]
-        v_url = replaceServer(v_url)
         xbmc.Player().play(v_url, listitem)
     else:
         ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
@@ -431,7 +359,7 @@ def PlayVideo(params):
     playlist = xbmc.PlayList(1)
     playlist.clear()
 
-    v_pos = int(name.split('.')[0]) - 1
+    v_pos = int(name.split('.')[0])
     psize = playlistA.size()
     ERR_MAX = psize-1
     TRIAL = 1
@@ -442,7 +370,7 @@ def PlayVideo(params):
     ret = pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
     pDialog.update(0)
 
-    for x in range(psize):
+    for x in range(v_pos, psize):
         # abort if ERR_MAX or more access failures and no video playback
         if (errcnt >= ERR_MAX and k == 0):
             pDialog.close()
@@ -450,8 +378,6 @@ def PlayVideo(params):
             ok = dialog.ok(__addonname__, '无法播放：未匹配到视频文件')
             break
 
-        if x < v_pos:
-            continue
         p_item = playlistA.__getitem__(x)
         p_url = p_item.getfilename(x)
         p_list = p_item.getdescription(x)
@@ -459,13 +385,9 @@ def PlayVideo(params):
         li = p_item   # pass all li items including the embedded thumb image
         li.setInfo(type="Video", infoLabels={"Title": p_list})
 
-        type = 'video'        # choice?
+        type = 'video'        # choice?  'video' or 'ugc'
         if not re.search('http://', p_url):  # fresh search
-            if type == 'video':
-                url = 'http://api.funshion.com/ajax/get_media_data/ugc/%s' % (p_url)
-            else:
-                url = 'http://api.funshion.com/ajax/get_media_data/video/%s' % (p_url)
-
+            url = 'http://api.funshion.com/ajax/get_media_data/%s/%s' % (type, p_url)
             if (pDialog.iscanceled()):
                 pDialog.close()
                 x = psize     # quickily terminate any old thread
@@ -473,7 +395,7 @@ def PlayVideo(params):
                 return
             pDialog.update(errcnt*100/ERR_MAX + 100/ERR_MAX/TRIAL*1)
 
-            link = getHttpData(url)
+            link = get_html(url)
             try:
                 json_response = simplejson.loads(link)
                 hashid = json_response['data']['hashid'].encode('utf-8')
@@ -483,7 +405,7 @@ def PlayVideo(params):
                 continue
             url = 'http://jobsfe.funshion.com/query/v1/mp4/%s.json?file=%s' % (hashid, filename)
 
-            link = getHttpData(url)
+            link = get_html(url)
             try:   # prevent system occassion throw error
                 json_response = simplejson.loads(link)
                 status = json_response['return'].encode('utf-8')
@@ -504,13 +426,12 @@ def PlayVideo(params):
 
         v_url = replaceServer(v_url)
         playlist.add(v_url, li, k)
-        k += 1
-        if k == 1:
+        if k == 0:
             pDialog.close()
             xbmc.Player(1).play(playlist)
         if videoplaycont == 'false':
             break
-
+        k += 1
 
 ##################################################################################
 def albumList(params):
@@ -518,10 +439,8 @@ def albumList(params):
     sid = re.search('http://www.fun.tv/vplay/.*v-(\d+)', url)
     vid = re.search('http://www.fun.tv/vplay/.*g-(\d+)', url)
     if sid:
-        params['vid'] = sid.group(1)
         singleVideo(params)    # play single video
     elif vid:
-        params['vid'] = vid.group(1)
         seriesList(params)     # list series
     else:
         xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
@@ -534,7 +453,8 @@ def mainList(params):
     url = params['url']
     filtrs = params.get('filtrs', '').encode('utf-8')
 
-    html = getHttpData(url)
+    html = get_html(url)
+    html = re.sub('\r|\t|\n', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'mod-videos'})
 
@@ -542,9 +462,9 @@ def mainList(params):
     items = tree.find_all('div', {'class': 'mod-vd-i'})
 
     li = xbmcgui.ListItem(name + '【选择过滤】' + filtrs)
-    u = sys.argv[0] + '?mode=filter&name=' + urllib.quote_plus(name)
+    u = sys.argv[0] + '?mode=filter&name=' + name
     u += '&url=' + url
-    u += '&filtrs=' + urllib.quote_plus(filtrs)
+    u += '&filtrs=' + filtrs
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
     for item in items:
@@ -579,11 +499,9 @@ def mainList(params):
 
         li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
-        u = sys.argv[0] + '?mode=albumlist'
+        u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + urllib.quote_plus(name)
-        u += '&title=' + p_name
-        u += '&thumb=' + p_thumb
-        u += '&url=' + href
+        u += '&title=' + p_name + '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
     # Construct page selection
@@ -610,7 +528,7 @@ def mainList(params):
 
 ##################################################################################
 def rootList():
-    html = getHttpData('http://www.fun.tv/retrieve/')
+    html = get_html('http://www.fun.tv/retrieve/')
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'ls-nav-bar'})
     items = soup[0].find_all('li')

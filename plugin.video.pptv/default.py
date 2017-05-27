@@ -8,14 +8,12 @@ import xbmcaddon
 import urllib2
 import urllib
 import re
-import gzip
-import StringIO
-import datetime
 import time
-import socket
 from random import random
 import urlparse
 import simplejson
+from common import get_html
+from pptv import video_from_url
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -55,8 +53,6 @@ PPTV_LIVE_TYPES = {'http://live.pptv.com/list/sports_program/': '35',
                    'http://live.pptv.com/list/game_program/': '5',
                    'http://live.pptv.com/list/finance/': '47'}
 
-ppi_cookie = None
-
 ##### Common functions #####
 
 dbg = False
@@ -66,56 +62,6 @@ dbglevel = 3
 def log(description, level=0):
     if dbg and dbglevel > level:
         print description
-
-
-def r1(pattern, text):
-    m = re.search(pattern, text)
-    if m:
-        return m.group(1)
-
-
-def urlopen_with_retry(*args, **kwargs):
-    for i in range(10):
-        try:
-            return urllib2.urlopen(*args, **kwargs)
-        except socket.timeout:
-            pass
-
-
-def get_html(url, headers={'User-Agent': UserAgent_IPAD}, decoded=True):
-    """Gets the content of a URL via sending a HTTP GET request.
-
-    Args:
-        url: A URL.
-        headers: Request headers used by the client.
-        decoded: Whether decode the response body using UTF-8 or the charset specified in Content-Type.
-
-    Returns:
-        The content as a string.
-    """
-    global ppi_cookie
-
-    req = urllib2.Request(url, headers=headers)
-    if ppi_cookie:
-        req.add_header('Cookie', 'ppi=' + ppi_cookie)
-    response = urlopen_with_retry(req)
-    data = response.read()
-
-    # Handle HTTP compression for gzip and deflate (zlib)
-    content_encoding = response.headers.get('Content-Encoding')
-    if content_encoding == 'gzip':
-        data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
-
-    # Decode the response body
-    if decoded:
-        match = re.compile('<meta.+?charset=["]*(.+?)"').findall(data)
-        if len(match):
-            charset = match[0]
-            data = data.decode(charset)
-        else:
-            data = data.decode('utf-8', 'ignore')
-
-    return data
 
 
 def _getDOMContent(html, name, match, ret):  # Cleanup
@@ -371,7 +317,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
                     'spc': (len(spc) > 0 and '(' + spc + ')' or '')
                 })
     elif url in PPTV_LIVE_TYPES:
-        tmp = get_html(PPTV_SUBJECT_LIST + 'date=' + datetime.datetime.now().strftime('%Y-%m-%d') + '&type=' + PPTV_LIVE_TYPES[url])
+        tmp = get_html(PPTV_SUBJECT_LIST + 'date=' + time.strftime('%Y-%m-%d', time.localtime()) + '&type=' + PPTV_LIVE_TYPES[url])
         tmp = re.sub('\s*\(', '', tmp)
         tmp = re.sub('\)\s*$', '', tmp)
         pptmp = simplejson.loads(tmp)
@@ -436,16 +382,16 @@ def GetPPTVEpisodesList(params):
     cid = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']id["\']\s*:\s*(\d+)\s*,').findall(data))
     pid = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']pid["\']\s*:\s*["\']?\s*(\d+)["\']?\s*,').findall(data))
     channel_id = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']channel_id["\']\s*:\s*["\']?\s*(\d+)["\']?\s*,').findall(data))
+    cat_id = CheckValidList(re.compile('var webcfg\s*=.*\s*["\']cat_id["\']\s*:\s*["\']?\s*(\d+)["\']?\s*,').findall(data))
 
-    global ppi_cookie
     ppi_url = 'http://tools.aplusapi.pptv.com/get_ppi'
     html = get_html(ppi_url)
     data = re.compile('\((.+)\)').findall(html)
     try:
         jsdata = simplejson.loads(data[0])
         ppi_cookie = jsdata['ppi']
-        api_url = 'http://apis.web.pptv.com/show/videoList?from=web&version=1.0.0&format=jsonp&cb=videolist_request&pid='
-        html = get_html(api_url + pid)
+        api_url = 'http://apis.web.pptv.com/show/videoList?from=web&version=1.0.0&format=jsonp&cb=videolist_request&pid=%s&cat_id=%s'
+        html = get_html(api_url % (pid, cat_id), pptv_cookie=ppi_cookie)
         data = re.compile('\((.+)\)').findall(html)
         jsdata = simplejson.loads(data[0])
         ppvideos = jsdata['data']['list']
@@ -619,145 +565,6 @@ def GetPPTVVideoURL_Flash(url, quality):
     return url_list
 
 
-def constructKey(arg):
-
-    def str2hex(s):
-        r = ""
-        for i in s[:8]:
-            t = hex(ord(i))[2:]
-            if len(t) == 1:
-                t = "0" + t
-            r += t
-        for i in range(16):
-            r += hex(int(15*random()))[2:]
-        return r
-
-    # ABANDONED  Because SERVER_KEY is static
-    def getkey(s):
-        # returns 1896220160
-        l2 = [i for i in s]
-        l4 = 0
-        l3 = 0
-        while l4 < len(l2):
-            l5 = l2[l4]
-            l6 = ord(l5)
-            l7 = l6 << ((l4 % 4) * 8)
-            l3 = l3 ^ l7
-            l4 += 1
-        return l3
-        pass
-
-    def rot(k, b): ## >>> in as3
-        if k >= 0:
-            return k >> b
-        elif k < 0:
-            return (2**32+k) >> b
-        pass
-
-    def lot(k, b):
-        return (k << b) % (2**32)
-
-    #  WTF?
-    def encrypt(arg1, arg2):
-        delta = 2654435769
-        l3 = 16
-        l4 = getkey(arg2)        # 1896220160
-        l8 = [i for i in arg1]
-        l10 = l4
-        l9 = [i for i in arg2]
-        l5 = lot(l10, 8) | rot(l10, 24)    # 101056625
-        # assert l5==101056625
-        l6 = lot(l10, 16) | rot(l10, 16)    # 100692230
-        # assert 100692230==l6
-        l7 = lot(l10, 24) | rot(l10, 8)
-        # assert 7407110==l7
-        l11 = ""
-        l12 = 0
-        l13 = ord(l8[l12]) << 0
-        l14 = ord(l8[l12+1]) << 8
-        l15 = ord(l8[l12+2]) << 16
-        l16 = ord(l8[l12+3]) << 24
-        l17 = ord(l8[l12+4]) << 0
-        l18 = ord(l8[l12+5]) << 8
-        l19 = ord(l8[l12+6]) << 16
-        l20 = ord(l8[l12+7]) << 24
-
-        l21 = (((0 | l13) | l14) | l15) | l16
-        l22 = (((0 | l17) | l18) | l19) | l20
-
-        l23 = 0
-        l24 = 0
-        while l24 < 32:
-            l23 = (l23 + delta) % (2**32)
-            l33 = (lot(l22, 4) + l4) % (2**32)
-            l34 = (l22 + l23) % (2**32)
-            l35 = (rot(l22, 5) + l5) % (2**32)
-            l36 = (l33 ^ l34) ^ l35
-            l21 = (l21 + l36) % (2**32)
-            l37 = (lot(l21, 4) + l6) % (2**32)
-            l38 = (l21 + l23) % (2**32)
-            l39 = (rot(l21, 5)) % (2**32)
-            l40 = (l39 + l7) % (2**32)
-            l41 = ((l37 ^ l38) % (2**32) ^ l40) % (2**32)
-            l22 = (l22 + l41) % (2**32)
-
-            l24 += 1
-
-        l11 += chr(rot(l21, 0) & 0xff)
-        l11 += chr(rot(l21, 8) & 0xff)
-        l11 += chr(rot(l21, 16) & 0xff)
-        l11 += chr(rot(l21, 24) & 0xff)
-        l11 += chr(rot(l22, 0) & 0xff)
-        l11 += chr(rot(l22, 8) & 0xff)
-        l11 += chr(rot(l22, 16) & 0xff)
-        l11 += chr(rot(l22, 24) & 0xff)
-
-        return l11
-
-    loc1 = hex(int(arg))[2:]+(16 - len(hex(int(arg))[2:]))*"\x00"
-    SERVER_KEY = "qqqqqww"+"\x00"*9
-    res = encrypt(loc1, SERVER_KEY)
-    return str2hex(res)
-
-
-def r1(pattern, text):
-    m = re.search(pattern, text)
-    if m:
-        return m.group(1)
-
-
-def video_from_id(id):
-    api = PPTV_WEBPLAY_XML + 'web-m3u8-%s.m3u8?type=m3u8.web.pad'
-    api = PPTV_WEBPLAY_XML + 'webplay3-0-%s.xml?type=web.fpp'
-    xml = get_html(api % id)
-
-    #vt=3 means vod mode vt=5 means live mode
-    host = r1(r'<sh>([^<>]+)</sh>', xml)
-    k = r1(r'<key expire=[^<>]+>([^<>]+)</key>', xml)
-    rid = r1(r'rid="([^"]+)"', xml)
-    title = r1(r'nm="([^"]+)"', xml)
-
-    st = r1(r'<st>([^<>]+)</st>', xml)[:-4]
-    st = time.mktime(time.strptime(st)) - 60
-
-    key = constructKey(st)
-
-    pieces = re.findall('<sgm no="(\d+)"[^<>]+fs="(\d+)"', xml)
-    numbers, fs = zip(*pieces)
-    urls = ["http://{}/{}/{}?key={}&fpp.ver=1.3.0.4&k={}&type=web.fpp".format(host, i, rid, key, k) for i in range(max(map(int, numbers)) + 1)]
-
-    return urls
-
-
-def video_from_url(url, quality):
-    assert re.match(r'http://v.pptv.com/show/(\w+)\.html$', url)
-    html = get_html(url)
-    id = r1(r'webcfg\s*=\s*{"id":\s*(\d+)', html)
-    assert id
-
-    return video_from_id(id)
-
-
 def GetPPTVVideoURL(url, quality):
     # check whether is PPTV video
     domain = CheckValidList(re.compile('^http://(.*\.pptv\.com)/.*$').findall(url))
@@ -782,7 +589,6 @@ def GetPPTVVideoURL(url, quality):
             ipadurl += '&kk=' + kk
         ipadurl += '&o=' + domain
         return [ipadurl]
-
 
     return None
 
@@ -1028,7 +834,7 @@ def playVideo(params):
         li = p_item
         li.setInfo(type="Video", infoLabels={"Title": p_list})
 
-        ppurls = video_from_url(p_url, quality)
+        ppurls = video_from_url(p_url, level=quality)
         if ppurls and len(ppurls) > 0:
             for i in range(0, len(ppurls)):
                 title = p_list + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'

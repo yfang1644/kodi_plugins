@@ -7,7 +7,6 @@ import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
-import urlparse
 import re
 import sys
 import os
@@ -16,8 +15,9 @@ import StringIO
 import cookielib
 import simplejson
 from bs4 import BeautifulSoup
-from youku import getaddress_by_vid
-from youku import get_content as getHttpData
+from common import get_html, r1
+from youku import video_from_vid
+from tudou import video_from_iid
 
 ########################################################################
 # 土豆 www.tudou.com
@@ -42,7 +42,7 @@ UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKi
 #UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
-HOST_URL = 'http://www.tudou.com'
+HOST_URL = 'http://new.tudou.com'
 
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 TIMER_FMT = '[COLOR FF8040C0](%s)[/COLOR]'
@@ -113,10 +113,10 @@ class LetvPlayer(xbmc.Player):
                     pDialog.close()
 
                 v_url = self.v_urls[i]
-                bfile = getHttpData(v_url, binary=True)
+                bfile = get_html(v_url, binary=True)
                 # give another trial if playback is active and bfile is invalid
                 if ((len(bfile) < 30) and self.isPlayingVideo()):
-                    bfile = getHttpData(v_url, binary=True)
+                    bfile = get_html(v_url, binary=True)
                 fs.write(bfile)
 
                 # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
@@ -185,7 +185,7 @@ class LetvPlayer(xbmc.Player):
                 else:
                     pDialog.close()
 
-                bfile = getHttpData(v_url, True, True)
+                bfile = get_html(v_url, True, True)
                 fs.write(bfile)
 
                 # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
@@ -297,9 +297,8 @@ def PlayVideo(params):
     vcode = params.get('vcode')
     iid = params.get('iid')
 
-    print '------{}---{}-----'.format(vcode, iid)
     if vcode:
-        urls = getaddress_by_vid(vcode, stream_id=level)
+        urls = video_from_vid(vcode, stream_id=level)
         ulen = len(urls)
         if ulen > 0:
             playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -312,7 +311,7 @@ def PlayVideo(params):
 
             xbmc.Player().play(playlist)
     elif iid:
-        urls = tudou_download_by_iid(iid)
+        urls = video_from_iid(iid)
         ulen = len(urls)
         if ulen > 0:
             playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -327,7 +326,6 @@ def PlayVideo(params):
 
         '''
         pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
-        urls = tudou_download_by_iid(iid)
         pDialog.close()
         if len(urls) > 0:
             xplayer.play(title, thumb, urls)
@@ -352,42 +350,6 @@ def httphead(url):
     return url
 
 
-def tudou_download_by_iid(iid):
-    url = 'http://www.tudou.com/outplay/goto/getItemSegs.action?iid=%s'
-    html = getHttpData(url % iid)
-    data = simplejson.loads(html)
-
-    keys = data.keys()
-
-    for key in keys:
-        if data[key][0].get('size'):
-            vids = [t['k'] for t in data[key]]
-            break
-
-    urls = []
-    for vid in vids:
-        html = getHttpData('http://cnc.v2.tudou.com/f?id=%d&jp=1' % vid)
-        y = re.compile('<f.+?>(http.+?)<\/f>').findall(html)
-        if len(y) < 1:
-            break
-        y = y[0].replace('&amp;', '&')
-        urls.append(y.strip())
-    return urls
-
-
-def r1(pattern, text):
-    m = re.search(pattern, text)
-    if m:
-        return m.group(1)
-
-
-def tudou_download_by_id(id):
-    html = getHttpData('http://www.tudou.com/programs/view/%s/' % id)
-
-    iid = r1(r'iid\s*[:=]\s*(\S+)', html)
-    tudou_download_by_iid(iid)
-
-
 def buildParams(params):
     str = ''
     for item in params:
@@ -400,27 +362,72 @@ def mainMenu():
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    url = HOST_URL + '/list/index_list.html'
+    url = HOST_URL + '/category/c_97.html'
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('ul', {'class': 'menu'})
+    soup = tree.find_all('div', {'class': 'td__category__filter__nav__item'})
 
-    grp = soup[0].find_all('li')
-    for prog in grp[1:]:
+    for prog in soup:
         title = prog.text
-        href = prog.a['href']
+        cur = prog['class']
+        if len(cur) > 1:
+            href = url
+        else:
+            href = prog.a['href']
         href = httphead(href)
         nametype = href.split('/')[-1][:3]
-        if nametype == 'ach':
-            mode = 'videolist1'
-        elif nametype == 'ich':
-            mode = 'videolist2'
+        mode = 'videolist'
 
         li = xbmcgui.ListItem(title)
         u = sys.argv[0] + '?url=%s&mode=%s&name=%s' % (href, mode, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
+    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+
+
+def listSubMenu(params):
+    name = params['name']
+    url = params['url']
+    html = get_html(url)
+    filter = params.get('filter', '')
+
+    li = xbmcgui.ListItem(BANNER_FMT % (name+'(分类过滤)' + filter))
+    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    u += '&mode=select&name=' + name
+    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('div', {'class': 'v-pack--p'})
+
+    for item in soup:
+        thumb = item.img['src']
+        href = httphead(item.a['href'])
+        title = item.a['title']
+        li = xbmcgui.ListItem(title,
+                              iconImage=thumb, thumbnailImage=thumb)
+        u = sys.argv[0] + '?url=' + href
+        u += '&name=' + urllib.quote_plus(name)
+        u += '&thumb=' + urllib.quote_plus(thumb)
+        u += '&title=' + title
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    soup = tree.find_all('div', {'class': 'yk-pager'})
+    pages = soup[0].find_all('li')
+    print '======================', pages
+    for page in pages:
+        try:
+            href = httphead(page.a['href'])
+        except:
+            continue
+        title = page.a.text
+        u = sys.argv[0] + '?url=' + href
+        u += '&name=' + urllib.quote_plus(name)
+        u += '&mode=videolist&title=' + title
+        li = xbmcgui.ListItem(title)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -450,7 +457,7 @@ def listSubMenu1(params):
     name = params['name']
     url = params['url']
     filter = params.get('filter', '')
-    urlpage = getHttpData(url)
+    urlpage = get_html(url)
     page = params.get('pageNo', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
@@ -478,7 +485,7 @@ def listSubMenu1(params):
     strparam = '?' + strparam[1:] + mergeTags(tags)
 
     list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
-    html = getHttpData(list_api + strparam)
+    html = get_html(list_api + strparam)
     jsdata = simplejson.loads(html)
     items = jsdata['items']
     total = jsdata['total']
@@ -560,7 +567,7 @@ def listSubMenu2(params):
     name = params['name']
     url = params['url']
     filter = params.get('filter', '')
-    urlpage = getHttpData(url)
+    urlpage = get_html(url)
     page = params.get('page', '1')
     piece = url.split('/')[-1]
     tagId = re.compile('ch(\d+)').findall(piece)[0]
@@ -587,7 +594,7 @@ def listSubMenu2(params):
     strparam = '?' + strparam[1:] + mergeTags(tags)
 
     list_api = 'http://www.tudou.com/list/itemData.action'
-    html = getHttpData(list_api + strparam)
+    html = get_html(list_api + strparam)
 
     li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
@@ -666,7 +673,7 @@ def normalSelect(params):
         purl = purl[:-5] + 'a-2b-2c-2d-2e-2f-2g-2h-2i-2j-2k-2l-2m-2n-2sort2.html'
     filter = params.get('filter', '')
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'category_item fix'})
 
@@ -713,7 +720,7 @@ def relatedAlbumList(params):
     img = params.get('thumb', '')
     url = params.get('url')
     if url:
-        html = getHttpData(url)
+        html = get_html(url)
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
         u = sys.argv[0] + '?mode=playvideo&iid=%s&vcode=%s' % (iid[0], vcode[0])
@@ -729,7 +736,7 @@ def relatedAlbumList(params):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
-    jspage = getHttpData(album_api % aid, decoded=True)
+    jspage = get_html(album_api % aid, decoded=True)
 
     jsdata = simplejson.loads(jspage.encode('utf-8'))
     jsdata = jsdata['items']
@@ -759,7 +766,7 @@ def relatedAlbumList(params):
 
     rel_list = 'http://www.tudou.com/crp/getRelativeContent.action?a=%s'
 
-    jspage = getHttpData(rel_list % aid)
+    jspage = get_html(rel_list % aid)
     jsdata = simplejson.loads(jspage)
     headings = jsdata['data']['catList']
     heading = [x['name'] for x in headings]
@@ -794,7 +801,7 @@ def relatedPlayList(params):
     img = params.get('thumb')
     iid = [params.get('iid')]
     if url:
-        html = getHttpData(url)
+        html = get_html(url)
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
 
@@ -809,7 +816,7 @@ def relatedPlayList(params):
 
     rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
 
-    jspage = getHttpData(rel_list % iid[0])
+    jspage = get_html(rel_list % iid[0])
     jsdata = simplejson.loads(jspage)
     items = jsdata['data']['pList']
 
@@ -833,7 +840,7 @@ def relatedPlayList(params):
 
     rel_list = 'http://www.tudou.com/crp/plist.action?lcode=%s'
 
-    jspage = getHttpData(rel_list % code)
+    jspage = get_html(rel_list % code)
     jsdata = simplejson.loads(jspage)
     items = jsdata['items']
 
@@ -897,6 +904,7 @@ if mode is not None:
 
 runlist = {
     None: 'mainMenu()',
+    'videolist': 'listSubMenu(params)',
     'videolist1': 'listSubMenu1(params)',
     'videolist2': 'listSubMenu2(params)',
     'albumlist': 'albumList(params)',
@@ -906,4 +914,4 @@ runlist = {
     'select': 'normalSelect(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])

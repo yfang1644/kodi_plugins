@@ -9,8 +9,6 @@ import re
 import json
 import traceback
 
-UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-
 
 def colorize(label, color):
     return "[COLOR %s]" % color + label + "[/COLOR]"

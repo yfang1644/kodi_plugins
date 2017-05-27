@@ -10,6 +10,7 @@
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib" />
     <extension point="xbmc.addon.metadata">
         <summary lang="en">CNTV video plugin</summary>
         <summary lang="zh">CNTV 视频插件</summary>

@@ -8,6 +8,8 @@ import StringIO
 import socket
 cookies = None
 
+UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
+UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 fake_headers = {
@@ -28,17 +30,11 @@ def r1(pattern, text):
 def match1(text, *patterns):
     if len(patterns) == 1:
         pattern = patterns[0]
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1)
-        else:
-            return None
+        return r1(pattern, text)
     else:
         ret = []
         for pattern in patterns:
-            match = re.search(pattern, text)
-            if match:
-                ret.append(match.group(1))
+            ret.append(r1(pattern, text))
         return ret
 
 
@@ -50,7 +46,10 @@ def urlopen_with_retry(*args, **kwargs):
             pass
 
 
-def get_html(url, headers={'User-Agent': UserAgent}, decoded=True):
+def get_html(url,
+             headers={'User-Agent': UserAgent},
+             decoded=True,
+             pptv_cookie=None):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:
@@ -63,6 +62,8 @@ def get_html(url, headers={'User-Agent': UserAgent}, decoded=True):
     """
 
     req = urllib2.Request(url, headers=headers)
+    if pptv_cookie:
+        req.add_header('Cookie', 'ppi=' + pptv_cookie)
     if cookies:
         cookies.add_cookie_header(req)
         req.headers.update(req.unredirected_hdrs)
@@ -73,12 +74,15 @@ def get_html(url, headers={'User-Agent': UserAgent}, decoded=True):
     # Handle HTTP compression for gzip and deflate (zlib)
     content_encoding = response.headers.get('Content-Encoding')
     if content_encoding == 'gzip':
+        if data[-1] == '\n':
+            data = data[:-1]
         data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
 
     # Decode the response body
     if decoded:
-        charset = match1(response.headers.get('Content-Type'), r'charset=([\w-]+)')
-        if charset is not None:
+        match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(data)
+        if match:
+            charset = match[0]
             data = data.decode(charset)
         else:
             data = data.decode('utf-8', 'ignore')

@@ -192,7 +192,6 @@ def PlayVideoPPTV(params):
     thumb = params['thumb']
 
     quality = int(__addon__.getSetting('resolution'))
-    import resources.lib.pptv as pptv
     if quality > 0:
         quality = -1           # point to last item
 
