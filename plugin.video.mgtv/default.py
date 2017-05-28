@@ -222,6 +222,9 @@ def episodesList(params):
     list = data.get('list')
     total_page = data.get('total_page', 1)
 
+    playlist = xbmc.PlayList(0)
+    playlist.clear()
+    j = 0
     for series in list:
         title = series['t1'] + ' ' + series['t2']
         if series['isnew'] != '0':
@@ -238,9 +241,11 @@ def episodesList(params):
 
         li = xbmcgui.ListItem(title + pay, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
-        u += '&thumb=' + img
+        u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+        u += '&thumb=' + img + '&vid=%d.%s' % (j, vid)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(vid, li)
+        j += 1
 
     short = data.get('short')
     for series in short:
@@ -259,9 +264,11 @@ def episodesList(params):
 
         li = xbmcgui.ListItem(title + pay, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=playvideo&vid=' + vid
-        u += '&thumb=' + img
+        u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+        u += '&thumb=' + img + '&vid=%d.%s' % (j, vid)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(vid, li)
+        j += 1
 
     if page > 0:
         li = xbmcgui.ListItem(BANNER_FMT % '上一页')
@@ -338,11 +345,33 @@ def get_url_from_vid(vid):
 
 
 def playVideo(params):
-    vid = params['vid']
     thumb = params['thumb']
-    m3u_url, title = get_url_from_vid(vid)
-    li = xbmcgui.ListItem(title, thumbnailImage=thumb)
-    xbmc.Player().play(m3u_url, li)
+    vid = params['vid'].split('.')
+    v_pos = int(vid[0])
+    vid = vid[1]
+
+    playlistA = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
+    psize = playlistA.size()
+
+    playmode = __addon__.getSetting('video_vplaycont')
+
+    for x in range(v_pos, psize):
+        p_item = playlistA.__getitem__(x)
+        p_vid = p_item.getfilename(x)
+        p_list = p_item.getdescription(x)
+        li = p_item      # pass all li items including the embedded thumb image
+        li.setInfo(type='Video', infoLabels={'Title': p_list})
+
+        m3u_url, title = get_url_from_vid(p_vid)
+
+        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        playlist.add(m3u_url, li)
+        if x == v_pos:
+            xbmc.Player(1).play(playlist)
+        if playmode == 'false':
+            break
 
     '''
     urllist = get_mgtv_real_url(m3u_url)

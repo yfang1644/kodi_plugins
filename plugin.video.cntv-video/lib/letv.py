@@ -82,7 +82,7 @@ class LeTV():
 
         # hold on ! more things to do
         # to decode m3u8 (encoded)
-        suffix = '&r=' + str(int(time.time() * 1000)) + '&appid=500'
+        suffix = '&r=%d&appid=500' % (int(time.time() * 1000))
 
         m3u8 = get_html(info2['location'] + suffix, decoded=False)
         if m3u8 is None:

@@ -3,4 +3,6 @@
 	<setting id="resolution" type="enum" label="播放清晰度" values="流畅|高清|超清|1080P|每次询问" default="4"/>
     <setting id='version' type='enum' label='版本测试' values='稳定版|测试版'
         default='0'/>
+    <setting id="video_vplaycont" type="bool" label="视频连续播放 (Continuous Vide
+o Playback)" default="true"/>
 </settings>

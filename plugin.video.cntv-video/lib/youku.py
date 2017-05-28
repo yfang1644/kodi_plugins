@@ -32,9 +32,9 @@ class Youku():
         {'id': '3gphd',  'container': '3gp', 'video_profile': '标清（3GP）'},
     ]
 
-
     def __init__(self, *args):
         self.ccode = '0401'
+        self.title = ''
 
     def video_from_vid(self, vid, **kwargs):
         self.level = kwargs.get('level', -1)
@@ -88,7 +88,6 @@ class Youku():
         return [m3u8]
 
         urls = [s['cdn_url'] for s in streams[self.level]['segs']]
-
         return urls
 
     def vid_from_url(self, url):
@@ -109,7 +108,13 @@ class Youku():
         urls = self.video_from_vid(vid, **kwargs)
         return urls
 
+    def video_title(self):
+        if self.title is not None:
+            return self.title
+        else:
+            return 'XXXXXXXXXX'
 
 site = Youku()
 video_from_url = site.video_from_url
 video_from_vid = site.video_from_vid
+video_title = site.video_title

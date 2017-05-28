@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.audio.ximalaya"
-    name="喜马拉雅FM" version="1.0.0"
+    name="喜马拉雅FM" version="1.0.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>

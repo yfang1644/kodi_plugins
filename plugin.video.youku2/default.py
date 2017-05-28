@@ -8,10 +8,6 @@ import xbmcaddon
 import urllib2
 import urllib
 import sys
-import os
-import gzip
-import StringIO
-import cookielib
 import simplejson
 from bs4 import BeautifulSoup
 from common import get_html, match1
@@ -43,31 +39,48 @@ INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
 ############################################################################
 def PlayVideo(params):
     url = params['url']
-    title = params.get('title', '')
+    title = params['title']
     thumb = params.get('thumb')
     level = int(__addon__.getSetting('resolution'))
+    playmode = __addon__.getSetting('video_vplaycont')
 
     if level == 4:
         dialog = xbmcgui.Dialog()
         level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
         level = max(0, level)
 
-    urls = video_from_url(url, level=level)
+    playlistA = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
 
-    ulen = len(urls)
-    if ulen > 0:
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        playlist.clear()
+    title = title.split('.')
+    v_pos = int(title[0])
+    title = title[1]
+    psize = playlistA.size()
+
+    for x in range(v_pos, psize):
+        p_item = playlistA.__getitem__(x)
+        p_url = p_item.getfilename(x)
+        p_list = p_item.getdescription(x)
+        li = p_item      # pass all li items including the embedded thumb image
+        li.setInfo(type='Video', infoLabels={'Title': p_list})
+
+        urls = video_from_url(url, level=level)
+
+        ulen = len(urls)
+        if ulen < 1:
+            xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
+            return
+
         for i in range(ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
             listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-            listitem.setInfo(type="Video", infoLabels={"Title": name})
-            playlist.add(urls[i], listitem)
+            playlist.add(urls[i], li)
 
-        xbmc.Player().play(playlist)
-    else:
-        xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
-        return
+        if x == v_pos:
+            xbmc.Player(1).play(playlist)
+        if playmode == 'false':
+            break
 
 
 def httphead(url):
@@ -114,7 +127,7 @@ def listSubMenu(params):
     sort = params.get('sort', '')
 
     li = xbmcgui.ListItem(BANNER_FMT % (name+'(分类过滤 %s)' % filter.encode('utf-8')))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    u = sys.argv[0] + '?url=' + url
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -132,8 +145,7 @@ def listSubMenu(params):
         href = httphead(href)
         li = xbmcgui.ListItem(BANNER_FMT % title)
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=videolist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&mode=videolist&name=' + urllib.quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     # 剧目清单
@@ -155,10 +167,10 @@ def listSubMenu(params):
             ptime = ''
         li = xbmcgui.ListItem(title + pay % (ptime),
                               iconImage=img, thumbnailImage=img)
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
+        u = sys.argv[0] + '?url=' + href
         u += '&name=' + urllib.quote_plus(name)
         u += '&mode=episodelist&title=' + title
-        u += '&thumb=' + urllib.quote_plus(img)
+        u += '&thumb=' + img
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
@@ -276,6 +288,10 @@ def episodesList(params):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
+    playlist = xbmc.PlayList(0)
+    playlist.clear()
+    j = 0
+
     # 主题视频
     #soup = tree.find_all('div', {'class': 'lists'})
     items = tree.find_all('div', {'class': 'program'})
@@ -286,12 +302,14 @@ def episodesList(params):
         p_thumb = params['thumb']
         u = sys.argv[0] + '?url=' + url
         u += '&mode=playvideo'
-        u += '&title=' + urllib.quote_plus(title)
+        u += '&title=%d.%s' % (j, title)
         u += '&thumb=' + p_thumb
         li = xbmcgui.ListItem(title,
                               iconImage=p_thumb, thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(url, li)
+        j += 1
     else:
         for item in items:
             title = item['title']
@@ -299,30 +317,29 @@ def episodesList(params):
             img = item.img['src']
             t = item.find('span', {'class': 'c-time'})
             time = t.text
-            u = sys.argv[0] + '?url=' + href
-            u += '&mode=playvideo'
-            u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
-            u += '&thumb=' + img
+            u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+            u += '&title=%d.%s' % (j, title) + '&thumb=' + img
             li = xbmcgui.ListItem(title + '(' + time + ')',
                                   iconImage=img, thumbnailImage=img)
             li.setInfo(type='Video', infoLabels={'Title': title})
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+            playlist.add(href, li)
+            j += 1
 
     items = tree.find_all('div', {'class': 'item '})
 
     for item in items:
         title = item['title']
         href = httphead(item.a['href'])
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=playvideo'
-        u += '&thumb=' + thumb
-        u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+        u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
+        u += '&title=%d.%s' % (j, title) + '&thumb=' + thumb
         li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(href, li)
+        j += 1
 
     li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
-    u = sys.argv[0] + '?url=' + url
-    u += '&mode=episodelist'
+    u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     # 相关视频
@@ -333,10 +350,11 @@ def episodesList(params):
             title = item['title']
             href = httphead(item.a['href'])
             u = sys.argv[0] + '?url=' + href
-            u += '&mode=playvideo'
-            u += '&title=' + urllib.quote_plus(title.encode('utf-8'))
+            u += '&mode=playvideo&title=%d.%s' % (j, title)
             li = xbmcgui.ListItem(title)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+            playlist.add(href, li)
+            j += 1
 
     except:
         pass
@@ -358,10 +376,11 @@ def episodesList(params):
         href = httphead(item['playLink'])
         img = item['picUrl']
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=playvideo'
-        u += '&title=' + title
+        u += '&mode=playvideo&title=%d.%s' % (j, title) + '&thumb=' + img
         li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+        playlist.add(href, li)
+        j += 1
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -401,8 +420,7 @@ def searchInYouku(params):
         li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
-        u += '&thumb=' + img
-        u += '&title=' + title
+        u += '&thumb=' + img + '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')

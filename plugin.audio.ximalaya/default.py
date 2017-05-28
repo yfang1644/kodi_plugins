@@ -135,7 +135,6 @@ def PlayAudio(params):
     v_pos = int(title.split('.')[0])
     psize = playlistA.size()
     ERR_MAX = psize - 1
-    k = 0
 
     for x in range(v_pos, psize):
         p_item = playlistA.__getitem__(x)
@@ -145,10 +144,9 @@ def PlayAudio(params):
         li.setInfo(type='Music', infoLabels={'Title': p_list})
         v_url = url_from_id(sound_id)
 
-        playlist.add(v_url, li, k)
-        if k == 0:
+        playlist.add(v_url, li)
+        if x == v_pos:
             xbmc.Player(1).play(playlist)
-        k += 1
 
 
 def PlayAlbum(params):
