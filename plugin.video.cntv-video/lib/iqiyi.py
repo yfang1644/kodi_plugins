@@ -1,10 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import re
 import hashlib
 import time
-import random
+from random import randrange
 import simplejson
 from common import get_html, r1
 
@@ -22,7 +21,7 @@ class IQiyi():
         chars = 'abcdefghijklnmopqrstuvwxyz0123456789'
         size = len(chars)
         for i in range(32):
-            macid += list(chars)[random.randint(0,size-1)]
+            macid += list(chars)[randrange(size)]
         return macid
 
     def get_vf(self, url_params):
@@ -43,9 +42,13 @@ class IQiyi():
         return vf
 
     def getVMS(self, tvid, vid):
-        tm = int(time.time() * 1000)
         host = 'http://cache.video.qiyi.com'
-        src='/vps?tvid='+tvid+'&vid='+vid+'&v=0&qypid='+tvid+'_12&src=01012001010000000000&t='+str(tm)+'&k_tag=1&k_uid='+self.get_macid()+'&rs=1'
+        src = '/vps?tvid=' + tvid
+        src += '&vid=' + vid
+        src += '&v=0&qypid=%s_12' % tvid
+        src += '&src=01012001010000000000'
+        src += '&t=%d' %  (time.time() * 1000)
+        src += '&k_tag=1&rs=1&k_uid=' + self.get_macid()
         req_url = host + src + '&vf=' + self.get_vf(src)
         html = get_html(req_url)
         return simplejson.loads(html)

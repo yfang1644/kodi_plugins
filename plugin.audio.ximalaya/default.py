@@ -9,10 +9,9 @@ import urllib2
 import urllib
 import re
 import sys
-import gzip
-import StringIO
 import simplejson
 from bs4 import BeautifulSoup
+from common import get_html
 
 ########################################################################
 # www.ximalaya.com
@@ -22,8 +21,6 @@ from bs4 import BeautifulSoup
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
-
-UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 stream_types = [
     {'itag': '1', 'container': 'm4a', 'bitrate': 'default'},
@@ -39,41 +36,19 @@ INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
 INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
 
 
-def match1(text, *patterns):
-    if len(patterns) == 1:
-        pattern = patterns[0]
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1)
-        else:
-            return None
-    else:
-        ret = []
-        for pattern in patterns:
-            match = re.search(pattern, text)
-            if match:
-                ret.append(match.group(1))
-        return ret
-
-
 def url_from_id(id, stream_id=2):
     api = HOST_URL + '/tracks/%s.json' % id
-    json_data = simplejson.loads(getHttpData(api))
+    json_data = simplejson.loads(get_html(api))
     if 'res' in json_data:
         if json_data['res'] is False:
             raise ValueError('Server reported id %s is invalid' % id)
     if 'is_paid' in json_data and json_data['is_paid']:
         if 'is_free' in json_data and not json_data['is_free']:
             raise ValueError('%s is paid item' % id)
-    if 'title' in json_data:
-        title = json_data['title']
+    title = json_data.get('title')
 
-    if stream_id == 2:
-        url = json_data['play_path_64']
-    elif stream_id == 1:
-        url = json_data['play_path_32']
-    elif stream_id == 0:
-        url = json_data['play_path']
+    quality = ['play_path', 'play_path_32', 'play_path_64']
+    url = json_data[quality[stream_id]]
 
     return url
 
@@ -83,25 +58,20 @@ def audio_from_url(url, stream_id=2):
     if match:
         id = match.group(1)
         return url_from_id(id, stream_id=stream_id)
-    else:
-        return []
 
 
 def audios_from_url(playlist_url, stream_id=2):
     if re.match(r'http://www\.ximalaya\.com/(\d+)/album/(\d+)', playlist_url):
-        page_content = getHttpData(playlist_url)
-        pattern = re.compile(r'<li sound_id="(\d+)"')
-        ids = pattern.findall(page_content)
+        page_content = get_html(playlist_url)
+        ids = re.compile(r'<li sound_id="(\d+)"').findall(page_content)
         urls = []
         for id in ids:
             try:
                 url = url_from_id(id, stream_id=stream_id)
-                urls += url
+                urls += [url]
             except(ValueError):
                 return None
         return urls
-    else:
-        return None
 
 
 def ximalaya_download_playlist(url, stream_id=2):
@@ -110,7 +80,7 @@ def ximalaya_download_playlist(url, stream_id=2):
         return None
 
     pages = []
-    page_content = getHttpData(url)
+    page_content = get_html(url)
     if page_content.find('<div class="pagingBar_wrapper"') == -1:
         pages.append(url)
     else:
@@ -128,13 +98,12 @@ def ximalaya_download_playlist(url, stream_id=2):
 def PlayAudio(params):
     title = params['title']
 
-    playlistA = xbmc.PlayList(0)
-    playlist = xbmc.PlayList(1)
+    playlistA = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
 
     v_pos = int(title.split('.')[0])
     psize = playlistA.size()
-    ERR_MAX = psize - 1
 
     for x in range(v_pos, psize):
         p_item = playlistA.__getitem__(x)
@@ -146,13 +115,13 @@ def PlayAudio(params):
 
         playlist.add(v_url, li)
         if x == v_pos:
-            xbmc.Player(1).play(playlist)
+            xbmc.Player(0).play(playlist)
 
 
 def PlayAlbum(params):
     url = params['url']
     order = params.get('order', 'asc')
-    html = getHttpData(url + '?order=' + order)
+    html = get_html(url + '?order=' + order)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
@@ -186,33 +155,8 @@ def httphead(url):
     return url
 
 
-def getHttpData(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    try:
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        response.close()
-        if response.headers.get('content-encoding') == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-    except:
-        print 'GetHttpData Error: %s' % url
-        return ''
-
-    match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
-    charset = ''
-    if len(match) > 0:
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
-
-    return httpdata
-
-
 def mainMenu():
-    html = getHttpData(HOST_URL + '/dq/all/')
+    html = get_html(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'sort_list'})
 
@@ -244,7 +188,7 @@ def listSubMenu(params):
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    html = getHttpData(HOST_URL + '/dq/all/')
+    html = get_html(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
 
     soup = tree.find_all('div', {'data-cache': cid})
@@ -270,7 +214,7 @@ def albumList(params):
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'discoverAlbum_wrapper'})
 
@@ -316,7 +260,7 @@ def albumList(params):
 def playList(params):
     url = params['url']
     order = params.get('order', 'asc')
-    html = getHttpData(url + '?order=' + order)
+    html = get_html(url + '?order=' + order)
     tree = BeautifulSoup(html, 'html.parser')
 
     title = params['title']
@@ -333,7 +277,7 @@ def playList(params):
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
 
     number = 0

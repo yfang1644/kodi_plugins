@@ -8,9 +8,6 @@ import xbmcaddon
 import urllib2
 import urllib
 import re
-import gzip
-from random import randrange
-import StringIO
 from bs4 import BeautifulSoup
 import simplejson
 from lib.common import get_html
@@ -352,39 +349,27 @@ def PlayVideo(playurl, title, thumb):
         return
 
     if 'sohu.com' in playurl:
-        import lib.sohu as sohu
-        video = sohu.Sohu()
-        videourl = video.video_from_url(playurl, level=videoRes)
+        from lib.sohu import video_from_url
 
-    if 'qq.com' in playurl:
-        import lib.qq as qq
-        video = qq.QQ()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif 'qq.com' in playurl:
+        from lib.qq import video_from_url
 
-    if 'qiyi.com' in playurl:
-        import lib.iqiyi as iqiyi
-        video = iqiyi.IQiyi()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif 'qiyi.com' in playurl:
+        from lib.iqiyi import video_from_url
 
-    if 'fun.tv' in playurl:
-        import lib.funshion as funshion
-        video = funshion.Funshion()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif 'fun.tv' in playurl:
+        from lib.funshion import video_from_url
 
-    if 'youku.com' in playurl:
-        import lib.youku as youku
-        video = youku.Youku()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif 'youku.com' in playurl:
+        from lib.youku import video_from_url
 
-    if ('cntv.cn' in playurl) or ('cctv.com' in playurl):
-        import lib.cntv as cntv
-        video = cntv.CNTV()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif ('cntv.cn' in playurl) or ('cctv.com' in playurl):
+        from lib.cntv import video_from_url
 
-    if 'pptv.com' in playurl:
-        import lib.pptv as pptv
-        video = pptv.PPTV()
-        videourl = video.video_from_url(playurl, level=videoRes)
+    elif 'pptv.com' in playurl:
+        from lib.pptv import video_from_url
+
+    videourl = video_from_url(playurl, level=videoRes)
 
     ulen = len(videourl)
 
@@ -417,5 +402,5 @@ runlist = {
     'playmid': 'playVideo_by_mid(params)'
 }
 
-eval(runlist[mode])
+exec(runlist[mode])
 #http://api.cntv.cn/dianyingku/movies/searchTypeFw

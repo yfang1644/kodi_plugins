@@ -52,3 +52,7 @@ class CNTV():
     def video_from_url(self, url, **kwargs):
         vid = self.vid_from_url(url)
         return self.video_from_vid(vid, **kwargs)
+
+
+site = CNTV()
+video_from_url = site.vid_from_url

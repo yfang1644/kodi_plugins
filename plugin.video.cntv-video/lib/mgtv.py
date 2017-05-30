@@ -61,3 +61,7 @@ class MGTV():
         vid = self.vid_from_url(url)
         m3u_url = self.video_from_vid(vid, **kwargs)
         return m3u_url
+
+
+site = MGTV()
+video_from_url = site.vid_from_url

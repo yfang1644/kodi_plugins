@@ -190,7 +190,7 @@ def seriesList(params):
     info = tree.find('meta', {'name': 'description'})['content']
     img = tree.find('meta', {'itemprop': 'image'})['content']
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
     for item in soup:
@@ -234,7 +234,7 @@ def episodesList(params):
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
     for item in js['vid']:
@@ -298,7 +298,7 @@ def tedAlbum(params):
     soup = tree.find_all('div', {'class': 'mod_video_list_content ui_scroll_content'})
     soup = soup[0].find_all('li', {'class': 'item'})
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
 
@@ -415,13 +415,12 @@ def playVideo(params):
 
     title = params['title'].split('.')
 
-    playlistA = xbmc.PlayList(0)
-    playlist = xbmc.PlayList(1)
+    playlistA = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
 
-    title = title.split('.')
     v_pos = int(title[0])
-    title = title[1]
+    title = '.'.join(title[1:])
     psize = playlistA.size()
 
     for x in range(v_pos, psize):
@@ -438,7 +437,7 @@ def playVideo(params):
 
         if urls is False:
             xbcgui.Dialog().ok(__addonname__, '无法获取视频地址')
-            return
+            continue
 
         ulen = len(urls)
         for i in range(0, ulen):
@@ -448,7 +447,7 @@ def playVideo(params):
             playlist.add(urls[i], liz)
 
         if x == v_pos:
-            xbmc.Player(1).play(playlist)
+            xbmc.Player(0).play(playlist)
         if playmode == 'false':
             break
 
@@ -479,7 +478,7 @@ def searchTencent(params):
     content = BeautifulSoup(link, 'html.parser')
     soup = content.find_all('div', {'class': 'result_item'})
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
 

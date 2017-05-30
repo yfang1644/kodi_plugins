@@ -147,7 +147,7 @@ def updateListSEL(params):
     mainList(params)
 
 
-def playList(params):
+def playList(params, playlist, j):
     url = params['url']
     name = params['name']
     html = get_html(url)
@@ -176,12 +176,14 @@ def playList(params):
                               iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=movielist&url=' + href
         u += '&name=' + urllib.quote_plus(name)
-        u += '&title=' + p_name
+        u += '&title=%d.%s' %(j, p_name)
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+        playlist.add(href, li)
+        j += 1
 
 
-def relatedList(params):
+def relatedList(params, playlist, j):
     name = params['name']
     url = params['url']
     vid = r1('http://www.fun.tv/vplay/.*g-(\d+)', url)
@@ -236,9 +238,11 @@ def relatedList(params):
         li.setInfo(type="Video", infoLabels={"Title": p_name})
         u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + urllib.quote_plus(name)
-        u += '&title=' + p_name
+        u += '&title=%d.%s' % (j, p_name)
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
+        playlist.add(href, li)
+        j += 1
 
 
 ##################################################################################
@@ -248,18 +252,23 @@ def singleVideo(params):
     thumb = params['thumb']
     name = params['name']
 
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
+    j = 0
     u = sys.argv[0] + '?mode=movielist&url=' + url
-    u += '&title=' + urllib.quote_plus(title)
+    u += '&title=%d.%s' % (j, title)
     u += '&name=' + urllib.quote_plus(name)
     u += '&thumb=' + urllib.quote_plus(thumb)
-    li = xbmcgui.ListItem(BANNER_FMT % title, iconImage='', thumbnailImage=thumb)
+    li = xbmcgui.ListItem(BANNER_FMT % title, thumbnailImage=thumb)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+    playlist.add(url, li)
+    j += 1
 
     # playlist
-    playList(params)
+    playList(params, playlist, j)
 
     # related
-    relatedList(params)
+    relatedList(params, playlist, j)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -281,9 +290,12 @@ def seriesList(params):
 
     items = json_response['data']['videos']
     # name = json_response['data']['name'].encode('utf-8')
+    playlist = xbmc.PlayList(1)
+    playlist.clear()
+    j = 0
     for item in items:
-        p_name = '%s' % (item['name'].encode('utf-8'))
-        url = httphead(item['url'])
+        p_name = item['name'].encode('utf-8')
+        p_url = httphead(item['url'].encode('utf-8'))
         # p_number = str(item['number'])
         p_thumb = item['pic'].encode('utf-8')
 
@@ -297,10 +309,9 @@ def seriesList(params):
         if h != 0:
             time = '%d:%s' % (h, time)
 
-        u = sys.argv[0] + '?mode=movielist&title=' + urllib.quote_plus(p_name)
+        u = sys.argv[0] + '?mode=movielist&title=%d.%s' % (j, p_name)
         u += '&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(p_thumb)
-        u += '&url=' + url
+        u += '&thumb=' + p_thumb + '&url=' + p_url
         if item['dtype'] == 'prevue':
             extra = '|预'
         else:
@@ -309,12 +320,14 @@ def seriesList(params):
         li = xbmcgui.ListItem(p_name + '(' + time + extra + ')',
                               iconImage='', thumbnailImage=p_thumb)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
+        playlist.add(p_url, li)
+        j += 1
 
     # playlist
-    playList(params)
+    playList(params, playlist, j)
 
     # related
-    relatedList(params)
+    relatedList(params, playlist, j)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -326,8 +339,6 @@ def selResolution():
     if resolution == 4:
         list = [x[1] for x in RES_LIST]
         sel = xbmcgui.Dialog().select('清晰度', list)
-        if sel == -1:
-            sel = 2          # set default
         return sel
     else:
         return resolution
@@ -339,6 +350,8 @@ def PlayVideo_test(params):
     thumb = params.get('thumb')
 
     resolution = selResolution()
+    if resolution < 0:
+        return
 
     v_urls = videos_from_url(url, level=resolution)
     if len(v_urls) > 0:
@@ -351,12 +364,15 @@ def PlayVideo_test(params):
 
 ##################################################################################
 def PlayVideo(params):
+    videoplaycont = __addon__.getSetting('video_vplaycont')
+    resolution = selResolution()
+    if resolution < 0:
+        return
+
     name = params.get('title')
 
-    videoplaycont = __addon__.getSetting('video_vplaycont')
-
-    playlistA = xbmc.PlayList(0)
-    playlist = xbmc.PlayList(1)
+    playlistA = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
 
     v_pos = int(name.split('.')[0])
@@ -383,7 +399,7 @@ def PlayVideo(params):
         p_list = p_item.getdescription(x)
 
         li = p_item   # pass all li items including the embedded thumb image
-        li.setInfo(type="Video", infoLabels={"Title": p_list})
+        li.setInfo(type='Video', infoLabels={'Title': p_list})
 
         type = 'video'        # choice?  'video' or 'ugc'
         if not re.search('http://', p_url):  # fresh search
@@ -426,12 +442,12 @@ def PlayVideo(params):
 
         v_url = replaceServer(v_url)
         playlist.add(v_url, li, k)
-        if k == 0:
+        if x == v_pos:
             pDialog.close()
-            xbmc.Player(1).play(playlist)
+            xbmc.Player(0).play(playlist)
         if videoplaycont == 'false':
             break
-        k += 1
+
 
 ##################################################################################
 def albumList(params):
