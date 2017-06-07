@@ -8,7 +8,8 @@ import StringIO
 import re
 import json
 import traceback
-
+UserAgent_IOS = 'PUClient/3.5.5 (iPhone; iOS 10.0.1; Scale/2.00)'
+UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 def colorize(label, color):
     return "[COLOR %s]" % color + label + "[/COLOR]"
@@ -48,11 +49,7 @@ def GetHttpData(url, data=None, cookie=None, headers=None):
     xbmc.log("Fetch URL :%s, with data: %s" % (url, data))
     try:
         req = urllib2.Request(url)
-#        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
-#                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
-#                              'Chrome/51.0.2704.84 Safari/537.36'))
-        req.add_header('User-Agent', UserAgent_IPAD)
-
+        req.add_header('User-Agent', UserAgent)
         req.add_header('Accept-encoding', 'gzip')
         if cookie is not None:
             req.add_header('Cookie', cookie)

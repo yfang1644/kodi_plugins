@@ -20,6 +20,10 @@ msgctxt "#30000"
 msgid "Lines of every page"
 msgstr ""
 
+msgctxt "#30100"
+msgid "Page number"
+msgstr ""
+
 msgctxt "#30001"
 msgid "Video Quality"
 msgstr ""

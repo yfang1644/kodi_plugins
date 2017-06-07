@@ -7,21 +7,16 @@ import xbmcplugin
 import xbmcaddon
 import urllib2
 import urllib
-import re
-import gzip
-import StringIO
 from bs4 import BeautifulSoup
 import simplejson
+from common import get_html, r1
+from mgtv import video_from_vid
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 __cwd__       = __addon__.getAddonInfo('path')
-
-UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-
-UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 BANNER_FMT2 = '[COLOR FFDE0087]%s[/COLOR]'
@@ -45,32 +40,8 @@ def httphead(url):
     return url
 
 
-def GetHttpData(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent_IPAD)
-    try:
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        response.close()
-        if response.headers.get('content-encoding') == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-    except:
-        print 'GetHttpData Error: %s' % url
-        return ''
-
-    match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
-    charset = ''
-    if len(match) > 0:
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
-    return httpdata
-
-
 def mainMenu():
-    http = GetHttpData(LIST_URL)
+    http = get_html(LIST_URL)
     tree = BeautifulSoup(http, 'html.parser')
     soup = tree.find_all('div', {'class': 'm-catgory-listbox'})
 
@@ -80,7 +51,7 @@ def mainMenu():
         name = item.a.text
         href = httphead(item.a['href'])
         li = xbmcgui.ListItem(name)
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
+        u = sys.argv[0] + '?url=' + href
         u += '&mode=mainlist&name=' + name
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -92,7 +63,7 @@ def changeList(params):
     name = params['name']
     filter = params.get('filter')
 
-    html = GetHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'm-catgory-listbox'})
 
@@ -136,10 +107,10 @@ def listSubMenu(params):
     filter = filter.encode('utf-8')
     li = xbmcgui.ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
     u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
-    u += '&mode=select&name=' + name
+    u += '&mode=select&name=' + urllib.quote_plus(name)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = GetHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
     soup = tree.find_all('ul', {'class': 'v-list-inner'})
@@ -209,20 +180,19 @@ def episodesList(params):
     page = params.get('page', '0')
     page = int(page)
     if url[-1] == '/':    # is a directory
-        html = GetHttpData(url)
-        id = re.compile('vid: (\d+)').findall(html)[0]
+        html = get_html(url)
+        id = r1('vid:\s*(\d+)', html)
     else:
-        id = url.split('/')[-1]
-        id = re.compile('(\d+).html').findall(id)[0]
+        id = r1('(\d+).html', url)
 
-    html = GetHttpData(episode_api % (id, page))
+    html = get_html(episode_api % (id, page))
     jsdata = simplejson.loads(html)
 
     data = jsdata['data']
     list = data.get('list')
     total_page = data.get('total_page', 1)
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
     for series in list:
@@ -298,60 +268,15 @@ def episodesList(params):
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
-def get_mgtv_real_url(m3u_url):
-    """str->list of str
-    Give you the real URLs."""
-    from os.path import dirname
-    import urlparse
-    split = urlparse.urlsplit(m3u_url)
-
-    base_url = "{scheme}://{netloc}{path}/".format(scheme=split[0],
-                                                   netloc=split[1],
-                                                   path=dirname(split[2]))
-
-    # get the REAL M3U url, maybe to be changed later?
-    content = GetHttpData(m3u_url)
-    segment_list = []
-    segments_size = 0
-    for i in content.split():
-        if not i.startswith('#'):  # not the best way, better we use the m3u8 package
-            segment_list.append(base_url + i)
-            # use ext-info for fast size calculate
-        elif i.startswith('#EXT-MGTV-File-SIZE:'):
-            segments_size += int(i[i.rfind(':')+1:])
-
-    return segment_list
-
-
-def get_url_from_vid(vid):
-    api_endpoint = 'http://pcweb.api.mgtv.com/player/video?video_id='
-    html = GetHttpData(api_endpoint + vid)
-    content = simplejson.loads(html)
-    stream = content['data']['stream']
-
-    title = content['data']['info']['title']
-    domain = content['data']['stream_domain'][0]
-    level = int(__addon__.getSetting('resolution'))
-    if level == 4:
-        level = 0
-
-    url = content['data']['stream'][level]['url']
-
-    url = domain + re.sub(r'(\&arange\=\d+)', '', url)  # Un-Hum
-    content = simplejson.loads(GetHttpData(url))
-    url = content['info']
-
-    return url, title
-
-
 def playVideo(params):
+    level = int(__addon__.getSetting('resolution'))
     thumb = params['thumb']
     vid = params['vid'].split('.')
     v_pos = int(vid[0])
     vid = vid[1]
 
-    playlistA = xbmc.PlayList(0)
-    playlist = xbmc.PlayList(1)
+    playlistA = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
     psize = playlistA.size()
 
@@ -364,12 +289,11 @@ def playVideo(params):
         li = p_item      # pass all li items including the embedded thumb image
         li.setInfo(type='Video', infoLabels={'Title': p_list})
 
-        m3u_url, title = get_url_from_vid(p_vid)
+        m3u_url = video_from_vid(p_vid, level=level)
 
-        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
         playlist.add(m3u_url, li)
         if x == v_pos:
-            xbmc.Player(1).play(playlist)
+            xbmc.Player(0).play(playlist)
         if playmode == 'false':
             break
 

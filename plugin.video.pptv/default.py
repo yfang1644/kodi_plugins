@@ -391,7 +391,8 @@ def GetPPTVEpisodesList(params):
         jsdata = simplejson.loads(data[0])
         ppi_cookie = jsdata['ppi']
         api_url = 'http://apis.web.pptv.com/show/videoList?from=web&version=1.0.0&format=jsonp&cb=videolist_request&pid=%s&cat_id=%s'
-        html = get_html(api_url % (pid, cat_id), pptv_cookie=ppi_cookie)
+        html = get_html(api_url % (pid, cat_id),
+                        headers={'Cookie': 'ppi=' + ppi_cookie})
         data = re.compile('\((.+)\)').findall(html)
         jsdata = simplejson.loads(data[0])
         ppvideos = jsdata['data']['list']
@@ -485,173 +486,6 @@ def Segmentation(httpurl, duration):
         start += during
 
     return piece
-
-
-def GetPPTVVideoURL_Flash(url, quality):
-    data = get_html(url)
-    # get video ID
-    vid = re.compile('"id"\s*:\s*(\d+)\s*,').findall(data)
-    if len(vid) <= 0:
-        return []
-
-    # get data
-    data = get_html(PPTV_WEBPLAY_XML + 'webplay3-0-' + vid[0] + '.xml&ft=' + str(quality) + '&version=4&type=web.fpp')
-
-    # get current file name and index
-    rid = CheckValidList(parseDOM(data, 'channel', ret='rid'))
-    cur = CheckValidList(parseDOM(data, 'file', ret='cur'))
-
-    if len(rid) <= 0 or len(cur) <= 0:
-        return []
-
-    dt = CheckValidList(parseDOM(data, 'dt', attrs={'ft': cur}))
-    if len(dt) <= 0:
-        return []
-
-    # get server and file key
-    sh = CheckValidList(parseDOM(dt, 'sh'))
-    f_key = CheckValidList(parseDOM(dt, 'key'))
-    if len(sh) <= 0:
-        return []
-
-    # get segment list
-    dragdata = CheckValidList(parseDOM(data, 'dragdata', attrs={'ft': cur}))
-    if len(dragdata) <= 0:
-        return []
-    frid = re.compile('rid="(.+?)"').findall(dragdata)
-    sgms = parseDOM(dragdata, 'sgm', ret='no')
-    if len(sgms) <= 0:
-        return []
-
-    # STOP HERE!... FLVCD server is dead
-    # get key from flvcd.com, sorry we can't get it directly by now
-    parser_url1 = FLVCD_PARSER_PHP + '?format=' + PPTV_VIDEO_QUALITY_VALS[int(cur)] + '&kw=' + url
-
-    flvcd_sc_base = CheckValidList(re.compile('\|for\|([^\|]*)\|createSc\|').findall(data))
-    if len(flvcd_sc_base) <= 0:
-        return []
-
-    forms = CheckValidList(parseDOM(data, 'form', attrs={'name': 'mform'}))
-    if len(forms) <= 0:
-        return []
-    downparseurl = CheckValidList(parseDOM(data, 'form', attrs={'name': 'mform'}, ret='action'))
-    # get hidden values in form
-    input_names = parseDOM(forms, 'input', attrs={'type': 'hidden'}, ret='name')
-    input_values = parseDOM(forms, 'input', attrs={'type': 'hidden'}, ret='value')
-    if min(len(input_names), len(input_names)) <= 0:
-        return []
-
-    input_dicts = dict(zip(input_names, input_values))
-    if 'msKey' in input_dicts and 'tt' in input_dicts:
-        tmp_tt = int(input_dicts["tt"])
-        input_dicts["sc"] = flvcd_sc_input(flvcd_sc_base, input_dicts["msKey"], tmp_tt)
-
-    parser_url2 = downparseurl + '?' + urllib.urlencode(input_dicts)
-    data = get_html(parser_url2)
-    flvcd_id = CheckValidList(re.compile('xdown\.php\?id=(\d+)').findall(data))
-    if len(flvcd_id) <= 0:
-        return []
-
-    parser_url3 = FLVCD_DIY_URL + flvcd_id + '.htm'
-    data = get_html(parser_url3)
-    key = CheckValidList(re.compile('<U>.*&(key=[^&\n]*)').findall(data))
-    if len(key) <= 0:
-        return []
-
-    url_list = []
-    # add segments of video
-    for sgm in sgms:
-        url_list += ['http://' + sh + '/' + sgm + '/' + rid + '?type=fpp&' + key + '&k=' + f_key]
-    return url_list
-
-
-def GetPPTVVideoURL(url, quality):
-    # check whether is PPTV video
-    domain = CheckValidList(re.compile('^http://(.*\.pptv\.com)/.*$').findall(url))
-    if len(domain) <= 0:
-        xbmcgui.Dialog().ok(__addonname__, '视频地址无效, 可能不是PPTV视频!')
-        return []
-
-    data = get_html(url)
-    # new key for query XML
-    kk = CheckValidList(re.compile('&kk=([^"\']*)["\'],').findall(data))
-
-    # try to directly get iPad live video URL
-    ipadurl = CheckValidList(re.compile(',\s*["\']ipadurl["\']\s*:\s*["\']([^"\']*)["\']').findall(data))
-
-    if len(ipadurl) > 0:
-        ipadurl = re.sub('\\\/', '/', ipadurl)
-        # remove unneeded character if needed
-        ipadurl = ipadurl.replace('}', '')
-        if ipadurl.find('?type=') < 0:
-            ipadurl += '?type=m3u8.web.pad'
-        if len(kk) > 0:
-            ipadurl += '&kk=' + kk
-        ipadurl += '&o=' + domain
-        return [ipadurl]
-
-    return None
-
-    # get sports iPad live URL
-    ipadurl = CheckValidList(re.compile('["\']pbar_video_(\d+)["\']').findall(data))
-    if len(ipadurl) > 0:
-        return [PPTV_WEBPLAY_XML + 'web-m3u8-' + ipadurl + '.m3u8?type=m3u8.web.pad&o=' + domain]
-
-    # try to get iPad non-live video URL
-    if 'true' == __addon__.getSetting('ipad_video'):
-        vid = CheckValidList(re.compile('"id"\s*:\s*(\d+)\s*,').findall(data))
-        if len(vid) <= 0:
-            return []
-
-        if len(kk) <= 0:
-            return []
-
-        # get data
-        ipadurl = PPTV_WEBPLAY_XML + 'webplay3-0-' + vid + '.xml&version=4&type=m3u8.web.pad'
-        if len(kk) > 0:
-            ipadurl += '&kk=' + kk
-        data = get_html(ipadurl)
-
-        # get quality
-        tmp = CheckValidList(parseDOM(data, 'file'))
-        if len(tmp) <= 0:
-            return []
-        items = parseDOM(tmp, 'item', ret='rid')
-        if len(items) <= 0:
-            return []
-
-        if quality >= len(items):
-            # if specified quality is not in qualities list, use the last existing one
-            quality = len(items) - 1
-
-        rid = items[quality]
-        cur = str(quality)
-
-        if len(rid) <= 0 or len(cur) <= 0:
-            return []
-
-        dt = CheckValidList(parseDOM(data, 'dt', attrs={'ft': cur}))
-        if len(dt) <= 0:
-            return []
-
-        # get server and file key
-        sh = CheckValidList(parseDOM(dt, 'sh'))
-        f_key = CheckValidList(parseDOM(dt, 'key'))
-        if len(sh) <= 0:
-            return []
-
-        rid = CheckValidList(re.compile('([^\.]*)\.').findall(rid))
-        httpurl = 'http://' + sh + '/' + rid + '.m3u8?type=m3u8.web.pad&k=' + f_key
-
-        dur = re.compile('<channel .+dur="(\d+)".+>').findall(data)
-        duration = int(dur[0])
-        # Segment a long mv
-        if duration and int(duration) > SEGSIZE:
-            httpurl = Segmentation(httpurl[0], duration)
-        return httpurl
-
-    else:
-        return GetPPTVVideoURL_Flash(url, quality)
 
 
 def GetPPTVSearchList(url, matchnameonly=None):
@@ -764,7 +598,7 @@ def listVideo(params, list_ret):
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True, total_items)
 
     # show video list
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
 
     number = 0
@@ -807,26 +641,17 @@ def playVideo(params):
     # if live page without video link, try to get video link from search result
     #if re.match('^http://live\.pptv\.com/list/tv_program/.*$', url):
     #    url = GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(name), name)
+    playmode = __addon__.getSetting('video_vplaycont')
 
-    playlist = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
-    ppurls = GetPPTVVideoURL(url, quality)
-    if ppurls and len(ppurls) > 0:
-        for i in range(0, len(ppurls)):
-            title = name + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
-            liz = xbmcgui.ListItem(title, thumbnailImage=thumb)
-            liz.setInfo(type="Video", infoLabels={"Title": title})
-            playlist.add(ppurls[i], liz)
-        xbmc.Player().play(playlist)
-        return
 
-    playlistA = xbmc.PlayList(0)
+    playlistA = xbmc.PlayList(1)
     psize = playlistA.size()
     tmp = name.split('.')
-
     v_pos = int(tmp[0])
     name = '.'.join(tmp[1:])
-    k = 0
+
     for x in range(v_pos, psize):
         p_item = playlistA.__getitem__(x)
         p_url = p_item.getfilename(x)
@@ -842,12 +667,13 @@ def playVideo(params):
                 liz.setInfo(type='Video', infoLabels={'Title': title})
                 playlist.add(ppurls[i], liz)
         else:
-            xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
-            return
+            # xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
+            continue
 
-        if k == 0:
-            xbmc.Player(1).play(playlist)
-        k += 1
+        if x == v_pos:
+            xbmc.Player(0).play(playlist)
+        if playmode == 'false':
+            break
 
 
 def listFilter(params):

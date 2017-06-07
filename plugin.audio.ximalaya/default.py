@@ -157,6 +157,7 @@ def httphead(url):
 
 def mainMenu():
     html = get_html(HOST_URL + '/dq/all/')
+    html = re.sub('\t|\r|\n', '', html)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'sort_list'})
 
@@ -165,12 +166,13 @@ def mainMenu():
         try:
             href = prog.a['href']
         except:
-            break
+            continue
         cid = prog['cid']
         name = prog.text
         href = httphead(href)
 
         li = xbmcgui.ListItem(name)
+        li.setInfo(type='Music', infoLabels={'Title': name})
         u = sys.argv[0] + '?url=' + href
         u += '&mode=sublist&name=' + name + '&cid=' + cid
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)

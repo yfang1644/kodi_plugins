@@ -1,6 +1,6 @@
 # -*- coding: utf8 -*-
 
-from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbmcplugin
+from xbmcswift2 import Plugin, xbmcaddon, ListItem, xbmc
 from rrmj import *
 from common import *
 
@@ -10,7 +10,7 @@ except Exception, e:
     print e
     from xbmc import Keyboard
 
-CATE = ["喜剧", "科幻", "恐怖", "剧情", "魔幻", "罪案", "冒险", "动作", "悬疑"]
+CATE = ["喜剧", "科幻", "恐怖", "剧情", "魔幻", "罪案", "冒险", "动作", "悬疑", "爱情", '家庭', '战争', '历史', '伦理']
 
 ADDON = xbmcaddon.Addon()
 ADDON_ID = ADDON.getAddonInfo('id')
@@ -24,6 +24,7 @@ ADDON_DATA_PATH = xbmc.translatePath("special://profile/addon_data/%s" % ADDON_I
 plugin = Plugin()
 Meiju = RenRenMeiJu()
 PAGE_ROWS = plugin.get_setting("page_rows")
+PAGE_NUMBER = plugin.get_setting("page_num")
 SEASON_CACHE = plugin.get_storage('season')
 HISTORY = plugin.get_storage('history')
 
@@ -139,10 +140,13 @@ def input_keyword():
         plugin.redirect(url)
 
 
-@plugin.route('/search/cat_<cat>/page_<page>', name="cat_list", options={"page": "1"})  # get search result by catagory
-@plugin.route('/search/title_<title>/page_<page>', name="search_title", options={"page": "1"})  # get search result by search title
-@plugin.route('/search/s_<sort>/o_<order>/m_<mark>/page_<page>', name="mark_list", options={"page": "1"})  # get search result by catagory and page
-@plugin.route('/search/page_<page>', options={"page": "1"})  # get search result by nothing??
+options={'page': PAGE_NUMBER}
+
+@plugin.route('/search/cat_<cat>/page_<page>', name="cat_list", options=options)  # get search result by catagory
+@plugin.route('/search/title_<title>/page_<page>', name="search_title", options=options)  # get search result by search title
+@plugin.route('/search/s_<sort>/o_<order>/m_<mark>/page_<page>', name="mark_list", options=options)  # get search result by catagory and page
+@plugin.route('/search/page_<page>', options=options)  # get search result by nothing??
+
 def search(page, **kwargs):
     c_list = Meiju.search(page, PAGE_ROWS, **kwargs)
     for one in c_list["data"]["results"]:
@@ -186,7 +190,8 @@ def get_album(albumId):
 @plugin.route('/detail/<seasonId>', name="detail")
 def video_detail(seasonId):
     detail = Meiju.video_detail(seasonId)
-    title = detail["data"]["seasonDetail"]["title"]
+    season_data = detail["data"]["season"]
+    title = season_data["title"]
     SEASON_CACHE[seasonId] = detail["data"]  # store season detail
     history = HISTORY.get("list", None)
     playing_episode = "0"
@@ -194,19 +199,19 @@ def video_detail(seasonId):
         for l in history:
             if l["seasonId"] == seasonId:
                 playing_episode = l["index"]
-    for episode in detail["data"]["seasonDetail"]["episode_brief"]:
-        label = title + episode["episode"]
+    for episode in season_data["playUrlList"]:
+        label = title + str(episode["episode"])
         if episode["episode"] == playing_episode:
             label = "[B]" + colorize(label, "green") + "[/B]"
         item = ListItem(**{
             'label': label,
-            'path': plugin.url_for("play_season", seasonId=seasonId, index=episode["episode"], Esid=episode["sid"]),
+            'path': plugin.url_for("play_season", seasonId=seasonId, index=episode["episode"], Esid=episode["episodeSid"]),
         })
-        item.set_info("video", {"plot": episode["text"] if episode["text"] != "" else detail["data"]["seasonDetail"]["brief"],
+        item.set_info("video", {"plot": season_data["brief"],
                                 "TVShowTitle": title,
                                 "episode": int(episode["episode"]),
                                 "season": 0})
-        item._listitem.setArt({"poster": detail["data"]["seasonDetail"]["cover"]})
+        item._listitem.setArt({"poster": season_data["cover"]})
         item.set_is_playable(True)
         yield item
     plugin.set_content('episodes')
@@ -215,7 +220,7 @@ def video_detail(seasonId):
 @plugin.route('/play/<seasonId>/<index>/<Esid>', name="play_season")
 def play(seasonId="", index="", Esid=""):
     season_data = SEASON_CACHE.get(seasonId)
-    title = season_data["seasonDetail"]["title"]
+    title = season_data["season"]["title"]
     episode_sid = Esid
     rs = RRMJResolver()
     play_url, _ = rs.get_play(seasonId, episode_sid, plugin.get_setting("quality"))
@@ -223,7 +228,8 @@ def play(seasonId="", index="", Esid=""):
         add_history(seasonId, index, Esid, title)
         li = ListItem(title+index, path=play_url)
         plugin.set_resolved_url(li)
-
+    else:
+        plugin.set_resolved_url(False)
 
 def add_history(seasonId, index, Esid, title):
     if "list" not in HISTORY:

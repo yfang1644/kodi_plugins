@@ -4,6 +4,7 @@
 import re
 import simplejson
 from os.path import dirname
+from random import randrange
 import urlparse
 from common import get_html, match1
 
@@ -43,13 +44,18 @@ class MGTV():
         api_endpoint = 'http://pcweb.api.mgtv.com/player/video?video_id='
         html = get_html(api_endpoint + vid)
         content = simplejson.loads(html)
-        stream = content['data']['stream']
 
         # title = content['data']['info']['title']
-        domain = content['data']['stream_domain'][0]
-        level = kwargs.get('level', 0)
+        streams = content['data']['stream']
+        domains = content['data']['stream_domain']
+        index = randrange(len(domains))
+        domain = domains[index]
 
-        url = content['data']['stream'][level]['url']
+        level = kwargs.get('level', 0)
+    
+        if level >= 0:
+            level = min(level, len(streams)-1)
+        url = streams[level]['url']
 
         url = domain + re.sub(r'(\&arange\=\d+)', '', url)  # Un-Hum
         content = simplejson.loads(get_html(url))
@@ -64,4 +70,5 @@ class MGTV():
 
 
 site = MGTV()
-video_from_url = site.vid_from_url
+video_from_url = site.video_from_url
+video_from_vid = site.video_from_vid

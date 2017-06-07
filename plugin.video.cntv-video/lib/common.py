@@ -47,9 +47,8 @@ def urlopen_with_retry(*args, **kwargs):
 
 
 def get_html(url,
-             headers={'User-Agent': UserAgent},
-             decoded=True,
-             pptv_cookie=None):
+             headers=None,
+             decoded=True):
     """Gets the content of a URL via sending a HTTP GET request.
 
     Args:
@@ -61,12 +60,14 @@ def get_html(url,
         The content as a string.
     """
 
-    req = urllib2.Request(url, headers=headers)
-    if pptv_cookie:
-        req.add_header('Cookie', 'ppi=' + pptv_cookie)
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', UserAgent)
     if cookies:
         cookies.add_cookie_header(req)
         req.headers.update(req.unredirected_hdrs)
+    if headers is not None:
+        for item in headers:
+            req.add_header(item, headers[item])
 
     response = urlopen_with_retry(req)
     data = response.read()

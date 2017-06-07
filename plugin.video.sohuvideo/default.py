@@ -9,7 +9,6 @@ import urllib2
 import urllib
 import re
 import sys
-import os
 import datetime
 import simplejson
 from bs4 import BeautifulSoup
@@ -26,10 +25,6 @@ __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 cookieFile    = __profile__ + 'cookies.sohu'
-
-UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
-UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
 LIVEID_URL = 'http://live.tv.sohu.com/live/player_json.jhtml?lid=%s&type=1'
 HOST_URL = 'http://tv.sohu.com'
@@ -55,7 +50,7 @@ def PlayVideo(params):
         xbmcgui.Dialog().ok(__addonname__, '节目暂不能播放')
         return
 
-    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
 
     for i in range(0, ulen): 
@@ -64,7 +59,7 @@ def PlayVideo(params):
         li.setInfo(type="Video", infoLabels={"Title": title})
         playlist.add(urls[i], li)
 
-    xbmc.Player().play(playlist)
+    xbmc.Player(0).play(playlist)
 
 
 def httphead(url):
@@ -249,14 +244,14 @@ def episodesList1(params):
         totalItems = len(match)
 
         for p_thumb, p_url, p_vid, p_order in match:
-            p_name = '%s第%s集' % (title0, p_order)
+            p_name = '%s 第%s集' % (title0, p_order.encode('utf-8'))
             li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type="Video",
                        infoLabels={"Title": p_name, "episode": int(p_order)})
             u = sys.argv[0] + '?url=' + urllib.quote_plus(p_url) + '&mode=playvideo'
             u += '&name=' + name + '&title=' + urllib.quote_plus(p_name)
             u += '&thumb=' + urllib.quote_plus(p_thumb)
-            u += '&vid=' + p_vid
+            u += '&vid=' + p_vid.encode('utf-8')
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
     else:
         match0 = re.compile('var pid\s*=\s*(.+?);', re.DOTALL).findall(link)

@@ -49,13 +49,13 @@ def PlayVideo(params):
         level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
         level = max(0, level)
 
-    playlistA = xbmc.PlayList(0)
-    playlist = xbmc.PlayList(1)
+    playlistA = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(0)
     playlist.clear()
 
     title = title.split('.')
     v_pos = int(title[0])
-    title = title[1]
+    title = '.'.join(title[1:])
     psize = playlistA.size()
 
     for x in range(v_pos, psize):
@@ -63,7 +63,6 @@ def PlayVideo(params):
         p_url = p_item.getfilename(x)
         p_list = p_item.getdescription(x)
         li = p_item      # pass all li items including the embedded thumb image
-        li.setInfo(type='Video', infoLabels={'Title': p_list})
 
         urls = video_from_url(url, level=level)
 
@@ -74,11 +73,12 @@ def PlayVideo(params):
 
         for i in range(ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
-            listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+            li = xbmcgui.ListItem(name, thumbnailImage=thumb)
+            li.setInfo(type='Video', infoLabels={'Title': p_list})
             playlist.add(urls[i], li)
 
         if x == v_pos:
-            xbmc.Player(1).play(playlist)
+            xbmc.Player(0).play(playlist)
         if playmode == 'false':
             break
 
@@ -288,7 +288,7 @@ def episodesList(params):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
-    playlist = xbmc.PlayList(0)
+    playlist = xbmc.PlayList(1)
     playlist.clear()
     j = 0
 
