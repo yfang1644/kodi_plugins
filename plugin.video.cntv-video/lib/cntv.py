@@ -55,4 +55,4 @@ class CNTV():
 
 
 site = CNTV()
-video_from_url = site.vid_from_url
+video_from_url = site.video_from_url
