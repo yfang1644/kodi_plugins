@@ -49,7 +49,7 @@ def GetHttpData(url, data=None, cookie=None, headers=None):
     xbmc.log("Fetch URL :%s, with data: %s" % (url, data))
     try:
         req = urllib2.Request(url)
-        req.add_header('User-Agent', UserAgent)
+        req.add_header('User-Agent', UserAgent_IOS)
         req.add_header('Accept-encoding', 'gzip')
         if cookie is not None:
             req.add_header('Cookie', cookie)

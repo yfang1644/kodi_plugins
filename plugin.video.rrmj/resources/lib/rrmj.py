@@ -5,8 +5,7 @@ import urllib
 import json
 import time
 import hashlib
-from common import *
-import xbmc
+from common import GetHttpData
 import xbmcvfs
 import xbmcgui
 import xbmcaddon
@@ -76,8 +75,8 @@ class RenRenMeiJu(object):
         s = json.loads(GetHttpData(url, data=data, headers=headers))
         if pretty:
             print headers
-            xbmc.log(json.dumps(s, sort_keys=True,
-                     indent=4, separators=(',', ': ')))
+            print json.dumps(s, sort_keys=True,
+                             indent=4, separators=(',', ': '))
         return s
 
     def get_ticket(self):
@@ -91,7 +90,8 @@ class RenRenMeiJu(object):
                      "b": createKey()}
         data = self.get_json(SERVER + API, data=urllib.urlencode(auth_data))
         if data["data"]["ticket"] != "":
-            __ADDON__.setSetting("expired_time", str(data["data"]["expiredTime"]))
+            __ADDON__.setSetting("expired_time", str(
+                data["data"]["expiredTime"]))
 
     @property
     def header(self):

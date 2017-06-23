@@ -1,3 +1,6 @@
+2017/06/23 yfang1644
+href="#@"为当前页，跳过title
+
 [B]2.2.1[/B] (2017/03/18 yfang1644)
 - 从 yinyue.kuwo.cn/category.htm 起点
 

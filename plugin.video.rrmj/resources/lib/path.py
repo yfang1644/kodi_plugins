@@ -1,8 +1,12 @@
+#!/usr/bin/python
 # -*- coding: utf8 -*-
 
-from xbmcswift2 import Plugin, xbmcaddon, ListItem, xbmc
+from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbmcplugin
+import os
+import sys
 from rrmj import *
-from common import *
+from common import colorize, setSettingByRPC
+import urlparse
 
 try:
     from ChineseKeyboard import Keyboard
@@ -10,16 +14,32 @@ except Exception, e:
     print e
     from xbmc import Keyboard
 
-CATE = ["喜剧", "科幻", "恐怖", "剧情", "魔幻", "罪案", "冒险", "动作", "悬疑", "爱情", '家庭', '战争', '历史', '伦理']
-
-ADDON = xbmcaddon.Addon()
-ADDON_ID = ADDON.getAddonInfo('id')
-ADDON_ICON = ADDON.getAddonInfo('icon')
-ADDON_NAME = ADDON.getAddonInfo('name')
-ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
-ADDON_VERSION = ADDON.getAddonInfo('version')
-ADDON_DATA_PATH = xbmc.translatePath("special://profile/addon_data/%s" % ADDON_ID).decode("utf-8")
-
+CATE = ['喜剧',
+        '科幻',
+        '奇幻',
+        '魔幻',
+        '剧情',
+        '犯罪',
+        '罪案',
+        '警匪',
+        '恐怖',
+        '惊悚',
+        '冒险',
+        '悬疑',
+        '爱情',
+        '都市',
+        '浪漫',
+        '家庭',
+        '伦理',
+        '动作',
+        '战争',
+        '历史',
+        '青春',
+        '搞笑',
+        '纪录片',
+        '时装',
+        '动画',
+        '音乐']
 
 plugin = Plugin()
 Meiju = RenRenMeiJu()
@@ -29,14 +49,9 @@ SEASON_CACHE = plugin.get_storage('season')
 HISTORY = plugin.get_storage('history')
 
 
-def parse_qs(qs):
-    "Query String to Dictionary"
-    return dict([s1.split('=') for s1 in urllib.unquote(qs).split('&')])
-
-
 def remap_url(req_url):
     array = req_url.split("?")
-    params = parse_qs(array[1])
+    params = dict(urlparse.parse_qsl(array[1]))
     if array[0] == "/video/search":
         endpoint = "search"
         if "cat" in params:

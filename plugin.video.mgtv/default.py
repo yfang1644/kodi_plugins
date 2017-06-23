@@ -5,7 +5,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 from bs4 import BeautifulSoup
 import simplejson
@@ -32,8 +32,8 @@ RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清
 def httphead(url):
     if len(url) < 2:
         return url
-    if url[:2] == '/b':
-        url = HOST_URL + url
+    if url[:2] == '//':
+        url = LIST_URL + url
     elif url[0] == '/':
         url = LIST_URL + url
 
@@ -43,16 +43,17 @@ def httphead(url):
 def mainMenu():
     http = get_html(LIST_URL)
     tree = BeautifulSoup(http, 'html.parser')
-    soup = tree.find_all('div', {'class': 'm-catgory-listbox'})
+    soup = tree.find_all('div', {'class': 'm-category'})
 
-    title0 = soup[0].span.text
     items = soup[0].find_all('li')
     for item in items:
         name = item.a.text
-        href = httphead(item.a['href'])
+        url = item.a['href'].split('?')
+        href = httphead(url[0])
+        p_data = url[1].encode('utf-8')
         li = xbmcgui.ListItem(name)
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=mainlist&name=' + name
+        u += '&mode=mainlist&name=' + name + '&' + p_data
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -102,6 +103,7 @@ def changeList(params):
 
 def listSubMenu(params):
     url = params['url']
+    channelId = params['channelId']
     name = params['name']
     filter = params.get('filter', '')
     filter = filter.encode('utf-8')
@@ -110,11 +112,12 @@ def listSubMenu(params):
     u += '&mode=select&name=' + urllib.quote_plus(name)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    html = get_html(url)
+    html = get_html(url + '?channelId=' + channelId)
     tree = BeautifulSoup(html, 'html.parser')
 
-    soup = tree.find_all('ul', {'class': 'v-list-inner'})
-    items = soup[0].find_all('li')
+    soup = tree.find_all('div', {'class': 'm-result-list'})
+
+    items = soup[0].find_all('li', {'class': 'm-result-list-item'})
     for item in items:
         thumb = item.img['src']
         t = item.find('a', {'class': 'u-title'})
@@ -310,7 +313,7 @@ def playVideo(params):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

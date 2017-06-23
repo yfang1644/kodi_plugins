@@ -8,7 +8,7 @@ import xbmc
 import xbmcplugin
 import xbmcgui
 import xbmcaddon
-import urllib2
+import urlparse
 import re
 import sys
 from bs4 import BeautifulSoup
@@ -354,6 +354,9 @@ def sortitem(params):
 
     for item in li:
         url = item['href']
+        curr = item.get('class')
+        if curr == ['current']:
+            continue:
         name = item.text
         u = sys.argv[0] + '?url=' + url + '&mode=sortitem&name=' + name
         liz = xbmcgui.ListItem(name)
@@ -397,7 +400,7 @@ def listRoot():
 
 
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 
