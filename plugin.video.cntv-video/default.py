@@ -5,7 +5,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 from bs4 import BeautifulSoup
@@ -387,7 +387,7 @@ def PlayVideo(playurl, title, thumb):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

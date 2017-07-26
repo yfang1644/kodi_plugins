@@ -6,7 +6,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import urllib
-import urllib2
+import urlparse
 import sys
 
 
@@ -88,7 +88,7 @@ def search():
 
 
 params = sys.argv[2][1:]
-paramlist = dict(urllib2.urlparse.parse_qsl(params))
+paramlist = dict(urlparse.parse_qsl(params))
 mode = paramlist.get("mode", music.MODE_MENU)
 url = paramlist.get("url", "")
 

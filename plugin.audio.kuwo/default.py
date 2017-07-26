@@ -22,7 +22,7 @@ __cwd__       = __addon__.getAddonInfo('path')
 
 URL_BASE = 'http://yinyue.kuwo.cn'
 INDENT_STR = '    '
-BANNER_FMT = '[COLOR FFDEB887][%s][/COLOR]'
+BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 
 #
 # Media player
@@ -354,9 +354,9 @@ def sortitem(params):
 
     for item in li:
         url = item['href']
-        curr = item.get('class')
-        if curr == ['current']:
-            continue:
+        curr = item.get('class', '')
+        if 'current' in curr:
+            continue
         name = item.text
         u = sys.argv[0] + '?url=' + url + '&mode=sortitem&name=' + name
         liz = xbmcgui.ListItem(name)

@@ -11,9 +11,6 @@ import traceback
 UserAgent_IOS = 'PUClient/3.5.5 (iPhone; iOS 10.0.1; Scale/2.00)'
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
-def colorize(label, color):
-    return "[COLOR %s]" % color + label + "[/COLOR]"
-
 
 def setSettingByRPC(key, value):
     """Set Kodi Setting by JSON-RPC

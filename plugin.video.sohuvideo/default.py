@@ -5,7 +5,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 import sys
@@ -170,14 +170,14 @@ def listSubMenu(params):
         u += '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    u = sys.argv[0] + '?url=' + href
+    u = sys.argv[0]
     li = xbmcgui.ListItem(INDENT_FMT0 % ('分页'))
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     pages = tree.find_all('div', {'class': 'ssPages area'})
     pages = pages[0].find_all('a')
     for page in pages:
-        title = page['title'].encode('utf-8')
+        title = page['title']
         href = httphead(page['href'])
         li = xbmcgui.ListItem(title)
         u = sys.argv[0] + '?url=' + href
@@ -316,7 +316,7 @@ def episodesList1(params):
                     p_thumb = match[i][1]
                 thumbDict[p_url] = p_thumb
             #for img in thumbDict.items():
-            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.decode('utf-8').encode('gbk'))
+            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.encode('utf-8'))
             html = get_html(url)
             match = re.compile('class="serie-list(.+?)</div>').findall(html)
             if match:
@@ -362,7 +362,6 @@ def episodesList1(params):
                     title = item.a.text
                 href = httphead(item.a['href'])
                 li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-                li.setInfo(type='Video', infoLabels={'Title': title})
                 u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
                 u += '&name=' + urllib.quote_plus(name) + '&thumb=' + img
                 u += '&title=' + title
@@ -457,14 +456,11 @@ def LiveChannel(params):
         schedule = ''
         try:
             program = simplejson.loads(html)
-        except:
-            continue
-        try:
             program = program['attachment'][0]['MENU_LIST']
         except:
             continue
         for s in program:
-            schedule += '%s   %s\n' % (s['START_TIME'], s['NAME'])
+            schedule += '%s %s\n' % (s['START_TIME'], s['NAME'])
         li = xbmcgui.ListItem(disp_title,
                               iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': disp_title, 'Plot': schedule})
@@ -539,6 +535,7 @@ def searchSohu(params):
         u += '&mode=episodelist&title=' + urllib.quote_plus(p_name)
         u += '&thumb=' + urllib.quote_plus(img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
         album = page.find_all('a', {'class': 'ts'})
         for series in album:
             title = series['title']
@@ -554,7 +551,7 @@ def searchSohu(params):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

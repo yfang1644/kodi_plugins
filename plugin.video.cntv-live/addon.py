@@ -401,7 +401,7 @@ def cntvReplay(ch, title, thumb):
 
 def main():
     params = sys.argv[2][1:]
-    params = dict(urllib2.urlparse.parse_qsl(params))
+    params = dict(urlparse.parse_qsl(params))
 
     cntv = params.get('stream')
     city = params.get('city')

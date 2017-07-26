@@ -5,7 +5,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 import sys
@@ -30,10 +30,8 @@ stream_types = [
 
 HOST_URL = 'http://www.ximalaya.com'
 
-BANNER_FMT = '[COLOR FFDEB887][%s][/COLOR]'
+BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 TIMER_FMT = '[COLOR FF8040C0](%s)[/COLOR]'
-INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
-INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
 
 
 def url_from_id(id, stream_id=2):
@@ -121,7 +119,10 @@ def PlayAudio(params):
 def PlayAlbum(params):
     url = params['url']
     order = params.get('order', 'asc')
-    html = get_html(url + '?order=' + order)
+    page = params.get('page', '1')
+    pdata = {'page': page, 'order': order}
+    data = urllib.urlencode(pdata)
+    html = get_html(url + '?' + data)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'album_soundlist'})
     songs = soup[0].find_all('li')
@@ -129,9 +130,10 @@ def PlayAlbum(params):
     playlist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
     playlist.clear()
     firstId_in_url = songs[0]
-    begin_id = params.get('begin', '0')
 
-    begin_id = int(begin_id)
+    title = params.get('title', '0.0')
+    begin_id = int(title.split('.')[0])
+
     for song in songs[begin_id:]:
         sound_id = song['sound_id']
         info = song.find('a', {'class': 'title'})
@@ -162,6 +164,7 @@ def mainMenu():
     soup = tree.find_all('ul', {'class': 'sort_list'})
 
     grp = soup[0].find_all('li')
+    listing = []
     for prog in grp[1:]:
         try:
             href = prog.a['href']
@@ -175,8 +178,9 @@ def mainMenu():
         li.setInfo(type='Music', infoLabels={'Title': name})
         u = sys.argv[0] + '?url=' + href
         u += '&mode=sublist&name=' + name + '&cid=' + cid
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+	listing.append((u, li, True))
 
+    xbmcplugin.addDirectoryItems(int(sys.argv[1]), listing)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
@@ -188,7 +192,7 @@ def listSubMenu(params):
     name = re.sub('\t|\n|\r', '', name)
     li = xbmcgui.ListItem(BANNER_FMT % name)
     u = sys.argv[0]
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    listing = [(u, li, False)]
 
     html = get_html(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
@@ -203,8 +207,9 @@ def listSubMenu(params):
         u = sys.argv[0] + '?url=' + href
         u += '&mode=albumlist'
         u += '&title=' + title
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+	listing.append((u, li, True))
 
+    xbmcplugin.addDirectoryItems(int(sys.argv[1]), listing)
     xbmcplugin.setContent(int(sys.argv[1]), 'songs')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
@@ -214,7 +219,7 @@ def albumList(params):
     title = params['title']
     li = xbmcgui.ListItem(BANNER_FMT % title)
     u = sys.argv[0]
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    listing = [(u, li, False)]
 
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
@@ -229,19 +234,20 @@ def albumList(params):
         u += '&mode=playlist' + '&title=' + title + '&thumb=' + p_thumb
         li = xbmcgui.ListItem(title,
                               iconImage=p_thumb, thumbnailImage=p_thumb)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+	listing.append((u, li, True))
 
     soup = tree.find_all('div', {'class': 'pagingBar_wrapper'})
     try:
         pages = soup[0].find_all('a')
     except:
+        xbmcplugin.addDirectoryItems(int(sys.argv[1]), listing)
         xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
         return
 
     u = sys.argv[0]
     li = xbmcgui.ListItem(BANNER_FMT % '分页')
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
+    listing.append((u, li, False))
 
     for page in pages:
         href = page['href']
@@ -253,25 +259,35 @@ def albumList(params):
         u = sys.argv[0] + '?url=' + href
         u += '&mode=albumlist' + '&title=Page. ' + page_num
         li = xbmcgui.ListItem(title)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        listing.append((u, li, True))
 
+    xbmcplugin.addDirectoryItems(int(sys.argv[1]), listing)
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def playList(params):
     url = params['url']
+    page = params.get('page', '1')
     order = params.get('order', 'asc')
-    html = get_html(url + '?order=' + order)
+    pdata = {'page': page, 'order': order}
+    data = urllib.urlencode(pdata)
+    html = get_html(url + '?' + data)
     tree = BeautifulSoup(html, 'html.parser')
 
     title = params['title']
     info = tree.find_all('div', {'class': 'rich_intro'})
-    info = info[0].article.text
+    if info:
+        info = info[0].article.text
+    else:
+        info = ''
 
     u = sys.argv[0] + '?url=' + url + '&mode=playlist&title=' + title
+    u += '&page=' + page
     if order == 'asc':
         u += '&order=desc'
+    else:
+        u += '&order=asc'
     li = xbmcgui.ListItem(BANNER_FMT % (title + '(更改排序)'))
     li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -287,15 +303,33 @@ def playList(params):
         sound_id = song['sound_id']
         info = song.find('a', {'class': 'title'})
         href = httphead(info['href'])
-        title = info.text.strip()
-        u = sys.argv[0] + '?url=' + url + '&order=' + order
-        u += '&mode=playaudio&begin=' + str(number)
-        u += '&title=%d.%s' % (number, title) + '&sound_id=' + sound_id
-        li = xbmcgui.ListItem(title)
-        li.setInfo(type='Music', infoLabels={'Title': title})
+        p_title = info.text.strip()
+        u = sys.argv[0] + '?url=' + url + '&mode=playaudio'
+        u += '&order=' + order + '&page=' + page
+        u += '&title=%d.%s' % (number, p_title) + '&sound_id=' + sound_id
+        li = xbmcgui.ListItem(p_title)
+        li.setInfo(type='Music', infoLabels={'Title': p_title})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
         playlist.add(sound_id, li)
         number += 1
+
+    # pagelist
+    soup = tree.find_all('div', {'class': 'pagingBar_wrapper'})
+    try:
+        pages = soup[0].find_all('a')
+        for page in pages:
+            href = page['href']
+            if 'javascript' in href:
+                continue
+            href = href.split('?')[0]
+            href = httphead(href.encode('utf-8'))
+            p_title = page.text.encode('utf-8')
+            u = sys.argv[0] + '?url=' + href + '&mode=playlist&title=' + title
+            u += '&order=' + order + '&page=' + p_title
+            li = xbmcgui.ListItem(p_title)
+            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+    except:
+        pass
 
     xbmcplugin.setContent(int(sys.argv[1]), 'songs')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -303,7 +337,7 @@ def playList(params):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

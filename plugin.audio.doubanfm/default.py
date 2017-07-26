@@ -6,7 +6,7 @@ import xbmcplugin
 import xbmcgui
 import xbmc
 import urllib
-import urllib2
+import urlparse
 
 
 def addLink(name, url, totalItems):
@@ -19,7 +19,7 @@ def addLink(name, url, totalItems):
 
 
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 url = params.get('url')
 name = params.get('name')

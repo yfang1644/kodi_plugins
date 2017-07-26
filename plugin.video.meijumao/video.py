@@ -35,10 +35,11 @@ def getBrowers():
 if __name__ == "__main__":
     br = getBrowers()
     r = br.open("http://www.meijumao.net/alltvs")
+#    baidupcs解析
     html = r.read()
 #     print html
     #分类
-    soup = BeautifulSoup(html,"html5lib")
+    soup = BeautifulSoup(html, "html.parser")
     will_page = soup.find("ul",attrs={"id":"will_page"}).find_all("li")
     if len(will_page) > 0:
         print will_page[0].get("class"),will_page[0].find("a").get("href")
@@ -53,25 +54,25 @@ if __name__ == "__main__":
     #剧
     sect = br.open("http://www.meijumao.net/sections/4")
     html = sect.read()
-    soup_sections = BeautifulSoup(html,"html5lib")
+    soup_sections = BeautifulSoup(html, "html.parser")
     for section in soup_sections.find_all("article"):
 #         print section.div.a.get("href"), section.div.a.img.get("src"),section.div.a.img.get("alt")
         pass
     
     #剧集
     tvs = br.open("http://www.meijumao.net/tvs/184")
-    soup_ju = BeautifulSoup(tvs.read(),"html5lib")
+    soup_ju = BeautifulSoup(tvs.read(), "html.parser")
     for juji in soup_ju.find_all("div",attrs={"class":"col-lg-1 col-md-2 col-sm-4 col-xs-4"}):
 #         print juji.a.get("href"),juji.a.get_text().replace(" ","").replace("\n","")
         pass
     
     episode = br.open("http://www.meijumao.net/tvs/130/show_episode?episode=1839")
-    soup_source = BeautifulSoup(episode.read(),"html5lib")
+    soup_source = BeautifulSoup(episode.read(), "html.parser")
     for source in soup_source.find_all("a",attrs={"class":"button button-small button-rounded"}):
         print(source.get("href"),source.get_text())
 #         print juji
     final = br.open("http://www.meijumao.net/tvs/130/play_episode?episode=1839&type=0")
-    soup_js = BeautifulSoup(final.read(),"html5lib")
+    soup_js = BeautifulSoup(final.read(), "html.parser")
     print(soup_js.find_all("li",attrs={"class":"active"})[0].get_text())
     pattern = re.compile('var video=[.*?];')
     for script in soup_js.find_all('script'):
@@ -80,7 +81,7 @@ if __name__ == "__main__":
             #print matched.group().replace("\"","")
             pass
     search = br.open("http://www.meijumao.net/search?q=Game")
-    soup_search = BeautifulSoup(search.read(),"html5lib")
+    soup_search = BeautifulSoup(search.read(), "html.parser")
     print(soup_search)
     for section in soup_search.find_all("article"):
         print(section.div.a.get("href"), section.div.a.img.get("src"),section.div.a.img.get("alt"))

@@ -5,7 +5,7 @@ import urllib
 import json
 import time
 import hashlib
-from common import GetHttpData
+from common import get_html
 import xbmcvfs
 import xbmcgui
 import xbmcaddon
@@ -72,7 +72,7 @@ class RenRenMeiJu(object):
     def get_json(self, url, data=None, pretty=False):
         headers = self.header
         headers.update(b=url)
-        s = json.loads(GetHttpData(url, data=data, headers=headers))
+        s = json.loads(get_html(url, data=data, headers=headers))
         if pretty:
             print headers
             print json.dumps(s, sort_keys=True,
@@ -139,7 +139,7 @@ class RRMJResolver(RenRenMeiJu):
         headers['signature'] = signature
         post_data = 'episodeSid=%s&quality=%s&seasonId=%s' % (
             episodeSid, quality, seasonId)
-        ppp = GetHttpData(url, data=post_data, headers=headers)
+        ppp = get_html(url, data=post_data, headers=headers)
         data = json.loads(ppp)
         if data["code"] != "0000":
             return None, None

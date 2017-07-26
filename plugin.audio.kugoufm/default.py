@@ -6,7 +6,7 @@ import xbmcplugin
 import xbmcgui
 import kugou
 import sys
-import urllib2
+import urlparse
 import urllib
 import time
 
@@ -85,7 +85,7 @@ def play(hashId, title):
 plugin_url = sys.argv[0]
 handle = int(sys.argv[1])
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 act = params.get('act', 'index')
 fmid = params.get("fmid", '')

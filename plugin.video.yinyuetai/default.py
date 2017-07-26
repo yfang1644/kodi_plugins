@@ -5,6 +5,7 @@ import xbmcplugin
 import xbmcgui
 import xbmc
 import xbmcaddon
+import urlparse
 import urllib
 import urllib2
 import re
@@ -1133,7 +1134,7 @@ def playVideoX(name, url, thumb):
 
 ##################################################################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 if mode:

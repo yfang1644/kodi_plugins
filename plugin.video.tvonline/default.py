@@ -353,7 +353,7 @@ def mainMenu():
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

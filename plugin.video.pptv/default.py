@@ -5,12 +5,10 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 import time
-from random import random
-import urlparse
 import simplejson
 from common import get_html
 from pptv import video_from_url
@@ -528,8 +526,6 @@ def GetPPTVSearchList(url, matchnameonly=None):
     return video_list
 
 ##### PPTV functions end #####
-
-
 def listRoot():
     # show search entry
     u = sys.argv[0] + '?mode=search'
@@ -732,7 +728,7 @@ def searchResult(params):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

@@ -5,7 +5,7 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 import sys
@@ -515,7 +515,7 @@ dialog = xbmcgui.Dialog()
 pDialog = xbmcgui.DialogProgress()
 
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 #socket.setdefaulttimeout(10)

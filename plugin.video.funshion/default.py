@@ -5,12 +5,10 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
+import urlparse
 import urllib
 import re
 import sys
-import gzip
-import StringIO
 from random import randrange
 from bs4 import BeautifulSoup
 import simplejson
@@ -564,7 +562,7 @@ def rootList():
 #  main program goes here #
 pluginhandle = int(sys.argv[1])
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(urlparse.parse_qsl(params))
 
 mode = params.get('mode')
 

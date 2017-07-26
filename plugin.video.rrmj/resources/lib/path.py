@@ -5,14 +5,8 @@ from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbm
 import os
 import sys
 from rrmj import *
-from common import colorize, setSettingByRPC
 import urlparse
-
-try:
-    from ChineseKeyboard import Keyboard
-except Exception, e:
-    print e
-    from xbmc import Keyboard
+import json
 
 CATE = ['喜剧',
         '科幻',
@@ -47,6 +41,39 @@ PAGE_ROWS = plugin.get_setting("page_rows")
 PAGE_NUMBER = plugin.get_setting("page_num")
 SEASON_CACHE = plugin.get_storage('season')
 HISTORY = plugin.get_storage('history')
+
+
+def setSettingByRPC(key, value):
+    """Set Kodi Setting by JSON-RPC
+
+    Args:
+        key (TYPE): Description
+        value (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0", "method":"Settings.SetSettingValue", "params":{"setting":"%s", "value":%s}, "id":1}' % (key, value))
+    result = json.loads(result)
+    return result
+
+
+def getSettingByRPC(key):
+    """Get Kodi Setting by JSON-RPC
+
+    Args:
+        key (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Settings.GetSettingValue","params":{"setting":"%s"},"id":1}' % key)
+    result = json.loads(result)
+    return result["result"]["value"]
+
+
+def colorize(label, color):
+    return "[COLOR %s]%s[/COLOR]" % (color, label)
 
 
 def remap_url(req_url):
@@ -146,7 +173,7 @@ def hotword():
 # get search result by input keyword
 @plugin.route("/input/")
 def input_keyword():
-    keyboard = Keyboard('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
     if (keyboard.isConfirmed()):
@@ -240,6 +267,8 @@ def play(seasonId="", index="", Esid=""):
     rs = RRMJResolver()
     play_url, _ = rs.get_play(seasonId, episode_sid, plugin.get_setting("quality"))
     if play_url is not None:
+        stackurl = play_url.split('|')
+        play_url = 'stack://' + ' , '.join(stackurl)
         add_history(seasonId, index, Esid, title)
         li = ListItem(title+index, path=play_url)
         plugin.set_resolved_url(li)
