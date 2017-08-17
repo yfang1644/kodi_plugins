@@ -22,7 +22,6 @@ CATE = ['喜剧',
         '悬疑',
         '爱情',
         '都市',
-        '浪漫',
         '家庭',
         '伦理',
         '动作',
@@ -261,8 +260,8 @@ def video_detail(seasonId):
 
 @plugin.route('/play/<seasonId>/<index>/<Esid>', name="play_season")
 def play(seasonId="", index="", Esid=""):
-    season_data = SEASON_CACHE.get(seasonId)
-    title = season_data["season"]["title"]
+    season_data = SEASON_CACHE.get(seasonId).get('season')
+    title = season_data["title"]
     episode_sid = Esid
     rs = RRMJResolver()
     play_url, _ = rs.get_play(seasonId, episode_sid, plugin.get_setting("quality"))
@@ -270,7 +269,11 @@ def play(seasonId="", index="", Esid=""):
         stackurl = play_url.split('|')
         play_url = 'stack://' + ' , '.join(stackurl)
         add_history(seasonId, index, Esid, title)
-        li = ListItem(title+index, path=play_url)
+        li = ListItem(title+index,
+                    path=play_url,
+                    thumbnail=season_data.get('cover'))
+        li.set_info('video', {"plot": season_data.get('brief','')})
+
         plugin.set_resolved_url(li)
     else:
         plugin.set_resolved_url(False)

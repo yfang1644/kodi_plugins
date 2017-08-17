@@ -203,6 +203,7 @@ def normalSelect(params):
 
     for item in filter:
         title = item.dt.text
+        title = re.sub('\t|\n|\r', '', title)
         si = item.find_all('a')
         list = []
         for x in si:
@@ -235,16 +236,15 @@ def episodesList1(params):
     url = params['url']
     link = get_html(url)
 
-    listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
-    if url.find('.html') > 0:
-        match0 = re.compile('var playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
-
+    match0 = re.compile('var playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
+    if match0 is not None:
+        listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
         link = get_html(listapi + 'playlist_id=' + match0[0])
         match = re.compile('"videoImage":"(.+?)",.+?"videoUrl":"(.+?)".+?"videoId":(.+?),.+?"videoOrder":"(.+?)",', re.DOTALL).findall(link)
         totalItems = len(match)
 
         for p_thumb, p_url, p_vid, p_order in match:
-            p_name = '%s 第%s集' % (title0, p_order.encode('utf-8'))
+            p_name = '%s第%s集' % (title0, p_order.encode('utf-8'))
             li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type="Video",
                        infoLabels={"Title": p_name, "episode": int(p_order)})
@@ -316,7 +316,7 @@ def episodesList1(params):
                     p_thumb = match[i][1]
                 thumbDict[p_url] = p_thumb
             #for img in thumbDict.items():
-            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name.encode('utf-8'))
+            url = 'http://so.tv.sohu.com/mts?c=2&wd=' + urllib.quote_plus(name)
             html = get_html(url)
             match = re.compile('class="serie-list(.+?)</div>').findall(html)
             if match:

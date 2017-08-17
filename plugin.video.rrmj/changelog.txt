@@ -1,3 +1,5 @@
+v0.3.1 (2017.8.17)
+- fix token from  https://github.com/wilsonwen/kanmeiju
 v0.1.6
 - fix album error 修复专辑进入错误
 

@@ -13,6 +13,7 @@ SERVER = "https://api.rr.tv"
 __ADDON__ = xbmcaddon.Addon()
 
 TOKEN = "fb46bc0647084927bff7fed43bde4572"
+TOKEN = '945e82b94c08447aafe45e6051159737'
 
 FAKE_HEADERS = {
     "a": "cf2ecd4d-dea3-40ca-814f-3f0462623b1c",
@@ -155,5 +156,5 @@ class RRMJResolver(RenRenMeiJu):
             else:
                 return m3u8["url"], current_quality
 
-    def get_play(self, seasonId, episodeSid, quality="super"):
-        return self.get_by_sid(seasonId, episodeSid, 'super')
+    def get_play(self, seasonId, episodeSid, quality='super'):
+        return self.get_by_sid(seasonId, episodeSid, quality)
