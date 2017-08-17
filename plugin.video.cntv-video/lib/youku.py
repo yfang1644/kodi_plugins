@@ -63,7 +63,6 @@ class Youku():
             request._opener.add_handler(handler)
         request._opener.addheaders = [('Cookie','__ysuid={}'.format(time.time()))]
 
-
         if self.vid is None:
             self.download_playlist_by_url(self.url, **kwargs)
             exit(0)
@@ -75,17 +74,21 @@ class Youku():
             ))
         assert data['e']['code'] == 0, data['e']['desc']
         data = data['data']
-        self.title = data['video']['title']
+        try:
+            self.title = data['video']['title']
+        except:
+            self.title = 'XXXXXXXXXX'
+
         streams = data['stream']
 
         stream_types = dict([(i['id'], i) for i in self.stream_types])
-        audio_lang = data['stream'][0]['audio_lang']
+        audio_lang = streams[0]['audio_lang']
 
         if self.level > 0:
             self.level = min(len(streams)-1, self.level)
 
-        m3u8 = streams[self.level]['m3u8_url']
-        return [m3u8]
+        #m3u8 = streams[self.level]['m3u8_url']
+        #return [m3u8]
 
         urls = [s['cdn_url'] for s in streams[self.level]['segs']]
         return urls

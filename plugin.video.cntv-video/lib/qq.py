@@ -8,8 +8,8 @@ import uuid
 from common import get_html, match1
 
 PLAYER_PLATFORM = 1          # default
-PLAYER_PLATFORM = 11         # ok, but limited
 PLAYER_PLATFORM = 10901      # some VIP available but slow
+PLAYER_PLATFORM = 11         # ok, but limited
 PLAYER_VERSION = '3.2.18.286'
 
 

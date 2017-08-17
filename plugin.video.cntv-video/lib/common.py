@@ -47,6 +47,7 @@ def urlopen_with_retry(*args, **kwargs):
 
 
 def get_html(url,
+             data=None,
              headers=None,
              decoded=True):
     """Gets the content of a URL via sending a HTTP GET request.
@@ -60,7 +61,7 @@ def get_html(url,
         The content as a string.
     """
 
-    req = urllib2.Request(url)
+    req = urllib2.Request(url, data)
     req.add_header('User-Agent', UserAgent)
     if cookies:
         cookies.add_cookie_header(req)
@@ -89,3 +90,16 @@ def get_html(url,
             data = data.decode('utf-8', 'ignore')
 
     return data
+
+
+def updateTime():
+    import time, os
+    req = urllib2.Request('http://time.pptv.com')
+    resp = urllib2.urlopen(req)
+    data = resp.read()
+    timefmt = time.localtime(float(data))
+
+    settime = time.strftime('%Y%m%d%2H%2M.%S', timefmt)
+    os.system('date -s' + settime)
+
+#updateTime()
