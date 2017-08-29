@@ -192,8 +192,8 @@ def seriesList(params):
 
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    j = 0
-    for item in soup:
+
+    for j, item in enumerate(soup):
         try:
             p_title = item.a['title']
         except:
@@ -211,7 +211,6 @@ def seriesList(params):
         u += '&title=%d.%s' % (j, p_title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
         playlist.add(href, li)
-        j += 1
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -226,7 +225,7 @@ def episodesList(params):
     tree = BeautifulSoup(html, 'html.parser')
     info = tree.find('meta', {'name': 'description'})['content']
 
-    match = re.compile('var LIST_INFO\s*=\s*({.+?}});{0,}\n').search(html)
+    match = re.compile('var LIST_INFO\s*=\s*({.*}).*\n').search(html)
     js = simplejson.loads(match.group(1))
     li = xbmcgui.ListItem(BANNER_FMT % title,
                           iconImage=thumb, thumbnailImage=thumb)
@@ -236,24 +235,23 @@ def episodesList(params):
 
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    j = 0
-    for item in js['vid']:
+
+    for j, item in enumerate(js['vid']):
         try:
-            title = js['data'][item]['title']
+            p_title = js['data'][item]['title']
         except:
-            continue
-        vid = js['data'][item]['vid']
+            p_title = title + '-' + str(j+1)
+        vid = item
         try:
             img = js['data'][item]['preview']
         except:
             img = thumb
         img = httphead(img)
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-        u = sys.argv[0] + '?mode=playvideo&vid=' + vid
-        u += '&title=%d.%s' % (j, title) + '&thumb=' + img
+        li = xbmcgui.ListItem(p_title, iconImage=img, thumbnailImage=img)
+        u = sys.argv[0] + '?mode=playvideo&vid=' + vid + '&thumb=' + img
+        u += '&title=%d.%s' % (j, urllib.quote_plus(p_title))
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
         playlist.add(vid, li)
-        j += 1
 
     li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
     u = sys.argv[0]
@@ -300,9 +298,8 @@ def tedAlbum(params):
 
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    j = 0
 
-    for item in soup:
+    for j, item in enumerate(soup):
         vid = item.a['id']
         info = item.a['desc']
         href = httphead(item.a['href'])
@@ -313,7 +310,6 @@ def tedAlbum(params):
         u += '&title=%d.%s' % (j, title) + '&url=' + href
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
         playlist.add(vid, li)
-        j += 1
 
     xbmcplugin.setContent(int(sys.argv[1]), 'video')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
