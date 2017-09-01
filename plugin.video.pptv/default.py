@@ -9,6 +9,7 @@ import urlparse
 import urllib
 import re
 import time
+from random import random
 import simplejson
 from common import get_html
 from pptv import video_from_url
@@ -526,6 +527,8 @@ def GetPPTVSearchList(url, matchnameonly=None):
     return video_list
 
 ##### PPTV functions end #####
+
+
 def listRoot():
     # show search entry
     u = sys.argv[0] + '?mode=search'
@@ -538,10 +541,10 @@ def listRoot():
     data = get_html(PPTV_LIST)
     chl = CheckValidList(parseDOM(data, 'div', attrs={'class': 'detail_menu'}))
     if len(chl) > 0:
-        links = parseDOM(chl, 'a', ret='href')
-        names = parseDOM(chl, 'a')
+        links += parseDOM(chl, 'a', ret='href')
+        names += parseDOM(chl, 'a')
 
-    data = get_html('http://www.pptv.com')
+    data = get_html('http://www.pptv.com', decoded=False)
     chl = CheckValidList(parseDOM(data, 'div', attrs={'class': 'morech cf'}))
     if len(chl) > 0:
         links += parseDOM(chl, 'a', ret='href')

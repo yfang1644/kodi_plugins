@@ -74,7 +74,7 @@
 
 <addon id="plugin.video.pptv"
     name="PPTV视频"
-    version="1.2.12"
+    version="1.2.13"
     provider-name="Uranus Zhou,yfang1644">
     <requires>
         <import addon="script.module.simplejson" version="3.3.0"/>
