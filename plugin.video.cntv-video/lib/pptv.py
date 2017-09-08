@@ -111,6 +111,11 @@ def constructKey(arg):
 class PPTV():
 
     def video_from_id(self, id, **kwargs):
+        _weekdayname = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        _monthname = [None,
+            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
         PPTV_WEBPLAY_XML = 'http://web-play.pptv.com/'
         api = PPTV_WEBPLAY_XML + 'web-m3u8-%s.m3u8?type=m3u8.web.pad'
         api = PPTV_WEBPLAY_XML + 'webplay3-0-%s.xml?type=web.fpp'
@@ -122,7 +127,17 @@ class PPTV():
         title = r1(r'nm="([^"]+)"', xml)
 
         st = r1(r'<st>([^<>]+)</st>', xml)[:-4]
-        st = time.mktime(time.strptime(st)) - 60
+        for x in _weekdayname:
+            if x in st:
+                st = st.strip(x).strip()
+                break;
+
+        for (i, x) in enumerate(_monthname[1:]):
+            if x in st:
+                st = st.replace(x, str(i+1))
+                break;
+
+        st = time.mktime(time.strptime(st, "%m %d %H:%M:%S %Y")) - 60
 
         key = constructKey(st)
 

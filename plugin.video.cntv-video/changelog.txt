@@ -1,2 +1,4 @@
-﻿V1.0.0 (2017-5.5)
+﻿V1.0.5 (2017-09-08)
+    time.strptime() format err "Fri Sep" in pptv.py
+V1.0.0 (2017-5.5)
 - initial
