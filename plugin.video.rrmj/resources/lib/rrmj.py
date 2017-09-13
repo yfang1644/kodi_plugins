@@ -13,30 +13,16 @@ SERVER = "https://api.rr.tv"
 __ADDON__ = xbmcaddon.Addon()
 
 TOKENS = [
-    '99ce6f3f7ff840e586958770472ec893',
-    '37570aa5dabe44219ab8a13986778390',
-    '6f8443b2d6c54d39bf7ab780bb5df3b2',
-    '3739e42b649948febad6dbfeaeecddfe',
-    'ffeb43e117d744e6822c3fe6abc12dea',
-    '5f6d0d3a49e5439e8492515c49b797c5',
-    '41d74adccd4b46389882242949e82cea',
-    'ff750a61e2684b7d9d4f783b4e3b14b1',
-    'f703dcbae2fb42889e8b111829b36167',
-    '9aea227ebb224a8b9bea347c13192706',
-    '827af86209464b038552a87f1cd546b2',
-    'bfc156b8c9ce48d98f2f9e48868130b3',
-    'c0a60ecf198d458d83b475e50b8d7893',
-    '22f6e8f0fac049849ce6db26535ecf6d',
-    'cce5bae0fcdd446fa87f0e61d86cd345',
-    'd1f33f20d83441228adf791215308d6d',
-    '803db2c8c9de400a9e90f75c2926d98a',
-    'b7c4f78d734f48fb871b3c7667f32019',
-    '99b3109e62fa4f1eb449182f5428cb84',
-    '10347e508c5946ec9116e3044b728f01',
-    'fb46bc0647084927bff7fed43bde4572',
-    '945e82b94c08447aafe45e6051159737']
+    '3ee37d0103cf45ce9e9e9cdcdb5466f0',
+    'eb7305529a2b474686d6151c6b4c4bb2',
+    'd1072fed002c4b6da6ca5513d9f6b6b9',
+    'a5e91098ca384c299c384590da5c3ca6',
+    '390bf4a9fba546219fa9cebe82848b3d',
+    'b581a7cc66404e1ca4a5d8db0ceb1fad',
+    '3b0cc36d3ac8453ea4840504f34e3ea2',
+]
 
-TOKEN = TOKENS[2]
+TOKEN = TOKENS[5]
 
 FAKE_HEADERS = {
     "a": "cf2ecd4d-dea3-40ca-814f-3f0462623b1c",
