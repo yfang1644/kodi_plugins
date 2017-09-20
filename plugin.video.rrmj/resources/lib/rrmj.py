@@ -12,17 +12,7 @@ import xbmcaddon
 SERVER = "https://api.rr.tv"
 __ADDON__ = xbmcaddon.Addon()
 
-TOKENS = [
-    '3ee37d0103cf45ce9e9e9cdcdb5466f0',
-    'eb7305529a2b474686d6151c6b4c4bb2',
-    'd1072fed002c4b6da6ca5513d9f6b6b9',
-    'a5e91098ca384c299c384590da5c3ca6',
-    '390bf4a9fba546219fa9cebe82848b3d',
-    'b581a7cc66404e1ca4a5d8db0ceb1fad',
-    '3b0cc36d3ac8453ea4840504f34e3ea2',
-]
-
-TOKEN = TOKENS[5]
+TOKEN = 'e4c636f879274746a4ae3a544a6926d2'
 
 FAKE_HEADERS = {
     "a": "cf2ecd4d-dea3-40ca-814f-3f0462623b1c",
