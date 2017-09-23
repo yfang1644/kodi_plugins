@@ -521,7 +521,7 @@
 
 <addon id="plugin.video.rrmj"
        name="人人美剧"
-       version="0.3.4"
+       version="0.3.5"
        provider-name="jindaxia,yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
