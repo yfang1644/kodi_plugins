@@ -280,6 +280,7 @@ class Bilibili():
         return result
 
     def get_video_urls(self, cid):
+        print "========================",cid
         m = hashlib.md5()
         m.update(INTERFACE_PARAMS.format(str(cid), SECRETKEY_MINILOADER))
         url = INTERFACE_URL.format(str(cid), m.hexdigest())

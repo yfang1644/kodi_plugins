@@ -1,3 +1,4 @@
+#!/usr/bin/python
 #coding=utf-8
 from xbmcswift2 import Plugin, xbmc, xbmcgui
 from resources.lib.bilibili import Bilibili
