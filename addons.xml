@@ -764,7 +764,6 @@
     <summary lang="zh">bilibili视频插件</summary>
     <description lang="en">Online video from www.bilibili.com</description>
     <description lang="zh">视频来源：www.bilibili.com</description>
-    <source>https://github.com/catro/plugin.video.bilibili2</source>
   </extension>
 </addon>
 
