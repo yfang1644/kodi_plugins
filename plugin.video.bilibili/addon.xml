@@ -15,5 +15,6 @@
         <language></language>
         <summary>XBMC Bilibili Plugin</summary>
         <description>XBMC BiliBili Plugin</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.bilibili</source>
     </extension>
 </addon>
