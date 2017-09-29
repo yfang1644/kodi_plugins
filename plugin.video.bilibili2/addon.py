@@ -1,9 +1,10 @@
 #!/usr/bin/python
 #coding=utf-8
+
 from xbmcswift2 import Plugin, xbmc, xbmcgui
 from resources.lib.bilibili import Bilibili
 import time
-import random, os
+import string, random, os
 
 try:
     from resources.lib.login_dialog import LoginDialog
@@ -43,8 +44,6 @@ def get_av_item(aid, **kwargs):
 @plugin.route('/play/<cid>/')
 def play(cid):
     urls = bilibili.get_video_urls(cid)
-    for i in range(len(urls)):
-        urls[i] = urls[i] + '|Referer=http://www.bilibili.com/'
     if (len(urls) > 1):
         plugin.set_resolved_url('stack://' + ' , '.join(urls))
     else:
@@ -276,7 +275,7 @@ def login():
             if username=='' or password=='':
                 plugin.notify('用户名或密码为空', delay=2000)
                 return
-        filename = tempdir + ''.join(random.choice('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(10)) + '.jpg'
+        filename = tempdir + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10)) + '.jpg'
         captcha = LoginDialog(captcha = bilibili.get_captcha(filename)).get()
         os.remove(filename)
         result, msg = bilibili.login(username, password, captcha)

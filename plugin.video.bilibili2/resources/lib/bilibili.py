@@ -25,8 +25,7 @@ class Bilibili():
             self.cj.load()
             key = None
             for ck in self.cj:
-                print "=================",ck.name
-                if ck.name == 'JSESSIONID':
+                if ck.name == 'DedeUserID':
                     key = ck.value
                     break
             if key is not None:
@@ -45,7 +44,7 @@ class Bilibili():
         if key is None:
             get_html(LOGIN_CAPTCHA_URL.format(random()),
                     headers = {'Referer':'https://passport.bilibili.com/login'})
-        result = get_html(LOGIN_CAPTCHA_URL.format(random()),
+        result = get_html(LOGIN_CAPTCHA_URL.format(random()), decoded=False,
                     headers = {'Referer':'https://passport.bilibili.com/login'})
         if path == None:
             path = tempfile.gettempdir() + '/captcha.jpg'
@@ -66,18 +65,16 @@ class Bilibili():
         return pwd
 
     def api_sign(self, params):
-        params['appkey']=self.appkey
-        data = ""
+        params['appkey'] = self.appkey
+        data = ''
         keys = params.keys()
+        # must sorted.  urllib.urlencode(params) doesn't work
         keys.sort()
         for key in keys:
-            if data != "":
-                data += "&"
-            value = params[key]
-            if type(value) == int:
-                value = str(value)
-            data += key + "=" + str(urllib.quote(value))
-        if self.appsecret == None:
+            data += '{}={}&'.format(key, urllib.quote(str(params[key])))
+
+        data = data[:-1]  # remove last '&'
+        if self.appsecret is None:
             return data
         m = hashlib.md5()
         m.update(data + self.appsecret)
@@ -246,8 +243,7 @@ class Bilibili():
 
         key = None
         for ck in self.cj:
-            print "=================",ck.name
-            if ck.name == 'JSESSIONID':
+            if ck.name == 'DedeUserID':
                 key = ck.value
                 break
 
@@ -280,16 +276,17 @@ class Bilibili():
         return result
 
     def get_video_urls(self, cid):
-        print "========================",cid
         m = hashlib.md5()
         m.update(INTERFACE_PARAMS.format(str(cid), SECRETKEY_MINILOADER))
         url = INTERFACE_URL.format(str(cid), m.hexdigest())
         doc = parseString(get_html(url))
-        urls = [durl.getElementsByTagName('url')[0].firstChild.nodeValue for durl in doc.getElementsByTagName('durl')]
-        urls = [url
-                if not re.match(r'.*\.qqvideo\.tc\.qq\.com', url)
-                else re.sub(r'.*\.qqvideo\.tc\.qq\.com', 'http://vsrc.store.qq.com', url)
-                for url in urls]
+        urls = []
+        for durl in doc.getElementsByTagName('durl'):
+            u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
+            if re.match(r'.*\.qqvideo\.tc\.qq\.com', url):
+                re.sub(r'.*\.qqvideo\.tc', 'http://vsrc.store', u)
+            urls.append(u + '|Referer=http://www.bilibili.com')
+
         return urls
 
     def add_history(self, aid, cid):
