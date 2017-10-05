@@ -1,3 +1,6 @@
+-2017-10-2
+remove simplejson, with json instead of
+
 [B]0.0.5[/B] (2015/11/09 by Benyjuice)
 - JSON API 地址改变
 

@@ -4,7 +4,7 @@
 import hashlib
 import time
 from random import randrange
-import simplejson
+from json import loads
 from common import get_html, r1
 
 
@@ -51,7 +51,7 @@ class IQiyi():
         src += '&k_tag=1&rs=1&k_uid=' + self.get_macid()
         req_url = host + src + '&vf=' + self.get_vf(src)
         html = get_html(req_url)
-        return simplejson.loads(html)
+        return loads(html)
 
     def vid_from_url(self, url, **kwargs):
         link = get_html(url)
@@ -83,7 +83,7 @@ class IQiyi():
         real_urls = []
         for seg_info in fs_array:
             url = url_prefix + seg_info['l']
-            json_data = simplejson.loads(get_html(url))
+            json_data = loads(get_html(url))
             down_url = json_data['l']
             real_urls.append(down_url)
         return real_urls

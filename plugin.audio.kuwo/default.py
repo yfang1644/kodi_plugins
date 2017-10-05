@@ -6,9 +6,9 @@
 
 import xbmc
 import xbmcplugin
-import xbmcgui
+from xbmcgui import ListItem
 import xbmcaddon
-import urlparse
+from urlparse import parse_qsl
 import re
 import sys
 from bs4 import BeautifulSoup
@@ -54,7 +54,7 @@ def PlayMusic(params):
             url = get_html(api_url + '&format={}&rid=MUSIC_{}'.format(t, mid))
             if url:
                 break
-        listitem = xbmcgui.ListItem(title,
+        listitem = ListItem(title,
                                     iconImage=iconimage,
                                     thumbnailImage=iconimage)
         listitem.setInfo(type='Music',
@@ -71,7 +71,7 @@ def PlayMV(params):
 
     html = get_html(url)
     mp4 = match1(html, 'var mp4url.+(http:.+?mp4)')
-    listitem = xbmcgui.ListItem(name, iconImage=thumb, thumbnailImage=thumb)
+    listitem = ListItem(name, iconImage=thumb, thumbnailImage=thumb)
     listitem.setInfo(type="Video", infoLabels={"Title": name})
     xbmc.Player().play(mp4, listitem)
 
@@ -86,7 +86,7 @@ def musiclist(params):
         return
     l = eval(l[0])
     mids = "/".join([d['musicrid'] for d in l])
-    item = xbmcgui.ListItem(BANNER_FMT % name)
+    item = ListItem(BANNER_FMT % name)
     u = sys.argv[0] + '?mode=play&url=' + mids
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
     for d in l:
@@ -94,7 +94,7 @@ def musiclist(params):
         artist = d['artist']
         mid = d['musicrid']
         displayname = artist + ' - ' + title if artist else title
-        item = xbmcgui.ListItem(displayname)
+        item = ListItem(displayname)
         u = sys.argv[0] + '?mode=play&url=' + mid
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, listitem=item, isFolder=False)
 
@@ -120,7 +120,7 @@ def albumlist(params, tree=None):
         name = name + '(' + itemp + ')'
         image = item.img['lazy_src']
         u = sys.argv[0] + '?url=' + url + '&mode=%s&name='%attr + name
-        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        liz = ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -132,7 +132,7 @@ def category():
     soup = tree.find_all('div', {'class': 'hotlist'})
 
     for hotlist in soup:
-        item = xbmcgui.ListItem(BANNER_FMT % hotlist.h1.text)
+        item = ListItem(BANNER_FMT % hotlist.h1.text)
         u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
@@ -144,7 +144,7 @@ def category():
             name = item.text
             url = URL_BASE + url
             u = sys.argv[0] + '?url=' + url + '&mode=album&name=' + name
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     pdict = {'name': 'Main Menu', 'url': url}
@@ -157,7 +157,7 @@ def singeralbum(params):
     page = int(params.get('page', 0))
     artistid = params.get('artistId')
 
-    item = xbmcgui.ListItem(BANNER_FMT % '专辑')
+    item = ListItem(BANNER_FMT % '专辑')
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
@@ -174,13 +174,13 @@ def singeralbum(params):
         aurl = name.a['href']
         name = name.text.strip('\n')
         u = sys.argv[0] + '?url=' + aurl + '&mode=album1&name=' + name
-        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        liz = ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     # MV ###############################################
     soup = tree.find_all('div', {'id': 'mv'})
     li = soup[0].find_all('li')
-    item = xbmcgui.ListItem(BANNER_FMT % 'MV')
+    item = ListItem(BANNER_FMT % 'MV')
     u = sys.argv[0] + '?mode=title'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
     for mv in li:
@@ -191,7 +191,7 @@ def singeralbum(params):
         name = name.text.strip('\n')
         u = sys.argv[0] + '?url=' + aurl + '&mode=playmv&name=' + name
         u += "&thumb=%s" % image
-        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        liz = ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     # SONGS ###############################################
@@ -205,7 +205,7 @@ def singeralbum(params):
     if l:
         tree = BeautifulSoup(html, 'html.parser')
         soup = tree.find_all('li', {'class': 'onLine'})
-        item = xbmcgui.ListItem(BANNER_FMT % '单曲(全部播放)')
+        item = ListItem(BANNER_FMT % '单曲(全部播放)')
         mids = '/'.join(l)
         u = sys.argv[0] + '?mode=play&url=' + mids
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
@@ -215,7 +215,7 @@ def singeralbum(params):
             aurl = url
             aurl += "&artistId=%s&page=%d" % (artistid, page-1)
             u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum'
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
         for song in soup:
@@ -223,7 +223,7 @@ def singeralbum(params):
             mid = mid[0]
             name = song.a.text
             u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
 
         if page < maxpage:
@@ -231,7 +231,7 @@ def singeralbum(params):
             aurl = url
             aurl += "&artistId=%s&page=%d" % (artistid, page+1)
             u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum'
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -252,7 +252,7 @@ def singergroup(params):
         name = BANNER_FMT % '上一页'
         aurl = url + '&prefix=%s&page=%d' % (prefix, page-1)
         u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
-        liz = xbmcgui.ListItem(name)
+        liz = ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     for artist in soup:
@@ -264,7 +264,7 @@ def singergroup(params):
         u = sys.argv[0] + '?url=' + aurl + '&mode=singeralbum&name=' + name
         u += "&page=0&artistId=%s" % artistid
         image = artist.img['src']
-        liz = xbmcgui.ListItem(name, iconImage=image, thumbnailImage=image)
+        liz = ListItem(name, iconImage=image, thumbnailImage=image)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     soup = tree.find('div', {'class': 'page'})
@@ -273,14 +273,14 @@ def singergroup(params):
         name = BANNER_FMT % '下一页'
         aurl = url + '&prefix=%s&page=%d' % (prefix, page+1)
         u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
-        liz = xbmcgui.ListItem(name)
+        liz = ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     for abc in range(0x41, 0x5B):   # A--Z
         ch = chr(abc)
         aurl = url + '&prefix=%s&page=%d' % (ch, page)
         u = sys.argv[0] + '?url=' + aurl + '&mode=singers'
-        liz = xbmcgui.ListItem(ch)
+        liz = ListItem(ch)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -292,7 +292,7 @@ def singerlist():
     soup = tree.find_all('dl', {'class': 'area'})
 
     for singer in soup:
-        item = xbmcgui.ListItem(BANNER_FMT % singer.span.text)
+        item = ListItem(BANNER_FMT % singer.span.text)
         u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
@@ -303,7 +303,7 @@ def singerlist():
             url = 'http://www.kuwo.cn' + url
             name = item.text.strip('\n')
             u = sys.argv[0] + '?url=' + url + '&mode=singers&name=' + name
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
@@ -320,7 +320,7 @@ def single_album(params):
     if not l:
         return
     mids = "/".join(l)
-    item = xbmcgui.ListItem(BANNER_FMT % name)
+    item = ListItem(BANNER_FMT % name)
     u = sys.argv[0] + '?mode=play&url=' + mids
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
@@ -328,7 +328,7 @@ def single_album(params):
         mid = item.p.input['mid']
         name = item.a.text
         u = sys.argv[0] + '?url=' + mid + '&mode=play&name=' + name
-        liz = xbmcgui.ListItem(name)
+        liz = ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -346,7 +346,7 @@ def sortitem(params):
         url = item.a['href']
         name = item.a['title']
         u = sys.argv[0] + '?url=' + url + '&mode=album1&name=' + name
-        liz = xbmcgui.ListItem(name)
+        liz = ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     soup = tree.find_all('div', {'class': 'page'})
@@ -359,7 +359,7 @@ def sortitem(params):
             continue
         name = item.text
         u = sys.argv[0] + '?url=' + url + '&mode=sortitem&name=' + name
-        liz = xbmcgui.ListItem(name)
+        liz = ListItem(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
@@ -370,7 +370,7 @@ def sortlist():
     soup = tree.find_all('div', {'class': 'sdlist clearfix'})
 
     for sdlist in soup:
-        item = xbmcgui.ListItem(BANNER_FMT % sdlist.h1.text)
+        item = ListItem(BANNER_FMT % sdlist.h1.text)
         u = sys.argv[0]
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, item, False)
 
@@ -380,19 +380,19 @@ def sortlist():
             url = item.a['href']
             name = item.text
             u = sys.argv[0] + '?url=' + url + '&mode=sortitem&name=' + name
-            liz = xbmcgui.ListItem(name)
+            liz = ListItem(name)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
 
 
 def listRoot():
-    li = xbmcgui.ListItem('分类')
+    li = ListItem('分类')
     u = sys.argv[0] + '?url=url&mode=category'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-    li = xbmcgui.ListItem('歌手')
+    li = ListItem('歌手')
     u = sys.argv[0] + '?url=url&mode=singer'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-    li = xbmcgui.ListItem('专辑')
+    li = ListItem('专辑')
     u = sys.argv[0] + '?url=url&mode=sort'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -400,7 +400,7 @@ def listRoot():
 
 
 params = sys.argv[2][1:]
-params = dict(urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 

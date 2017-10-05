@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmcplugin
-import xbmcgui
+from xbmcgui import Dialog, DialogProgress, ListItem
 import xbmc
 import xbmcaddon
 import urlparse
@@ -19,9 +19,6 @@ import simplejson
 
 ##########################################################################
 # 音悦台MV
-##########################################################################
-# Version 1.7.9 2015-12-07 (cmeng)
-# - Add requires of simplejson
 ##########################################################################
 
 __addonname__ = "音悦台MV"
@@ -256,15 +253,14 @@ def getTimeList(area):
 ##################################################################################
 def MainMenu(ctl):
     vlist = [x for x in ctl[None][2]]
-    j = 0
-    for mode in vlist:
-        j += 1
+
+    for (j, mode) in enumerate(vlist):
         name = ctl[mode][1]
         url = 'http://www.yinyuetai.com'+ctl[mode][2]
         isDir = ctl[mode][3]
         pic = __addonicon__
         u = sys.argv[0]+"?url="+url+"&mode="+str(mode)+"&name="+name
-        li = xbmcgui.ListItem('%d.%s' % (j, name), pic, pic)
+        li = ListItem('%d.%s' % (j + 1, name), pic, pic)
         li.setInfo(type="Video", infoLabels={"Title": name})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, isFolder=isDir)
 
@@ -294,7 +290,7 @@ def listVChart(params):
     year = fltrDate[:4]
 
     # Fetch & build video titles list for user selection, highlight user selected filter
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+year+'[/COLOR]/[COLOR FF5555FF]'+date+'[/COLOR]】（按此选择）')
+    li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+year+'[/COLOR]/[COLOR FF5555FF]'+date+'[/COLOR]】（按此选择）')
     u = sys.argv[0] + "?mode=11&name="+urllib.quote_plus(name)+"&area="+area+"&date="+date
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -309,8 +305,8 @@ def listVChart(params):
         totalItems = len(matchli)
         playlist = xbmc.PlayList(1) # use Music playlist for temporary storage
         playlist.clear()
-        j = 0
-        for item in matchli:
+
+        for (j item) in enumerate(matchli):
             matchp = re.compile('<a href="(.+?)" target="_blank".+?img src="(.+?)" alt="(.+?)"/>').findall(item)
             p_url = matchp[0][0]
             p_thumb = matchp[0][1]
@@ -328,14 +324,13 @@ def listVChart(params):
 
             p_list = p_name+' [COLOR FFFF55FF]['+p_artist+'][/COLOR][COLOR FFFFFF55] ('+p_score+') [/COLOR]['+p_date+']'
 
-            li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+            li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type="Video", infoLabels={"Title": p_list, "Artist": p_artist.split(',')})
             u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
             u += '&name=%d.%s' % (j, urllib.quote_plus(p_list))
             u += '&url=' + urllib.quote_plus(p_url)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
             playlist.add(p_url, li)
-            j += 1
 
         xbmcplugin.setContent(int(sys.argv[1]), 'movies')
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -348,7 +343,7 @@ def performChangeVChart(params):
     date = params.get('date')
 
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in VCHART_LIST]
     sel = dialog.select('艺人地区', list)
     if sel != -1:
@@ -386,7 +381,7 @@ def performChangeVChart(params):
 ##################################################################################
 def performChangeVChartx(params):
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in VCHART_LIST]
     sel = dialog.select('悦单', list)
     if sel != -1:
@@ -418,7 +413,7 @@ def listFocusMV(params):
     url = p_url + fltrCat
 
     # Fetch & build video titles list for user selection, highlight user selected filter
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FF00FF00]'+cat+'[/COLOR]】（按此选择）')
+    li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FF00FF00]'+cat+'[/COLOR]】（按此选择）')
     u = sys.argv[0] + "?mode=12&name="+urllib.quote_plus(name)+"&url="+urllib.quote_plus(p_url)+"&cat="+cat
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -430,7 +425,7 @@ def listFocusMV(params):
     playlist.clear()
 
     # fetch and build the video series episode list
-    vlist = simplejson.loads(link)
+    vlist = json.loads(link)
     totalItems = len(vlist)
     for i in range(0, totalItems):
         vid = str(vlist[i]['videoId'])
@@ -448,7 +443,7 @@ def listFocusMV(params):
         p_list = p_title
         p_list += ' [COLOR FF00FFFF][' + p_artist[:-2] + '][/COLOR]'
 
-        li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+        li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title":p_list, "Artist":p_artist.split(',')})
         u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
         u += '&name=%d.%s' % (i, urllib.quote_plus(p_list))
@@ -467,7 +462,7 @@ def performChangeFocus(params):
     name = params.get('name')
 
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in FCS_LIST]
     sel = dialog.select(name, list)
     if sel != -1:
@@ -533,7 +528,7 @@ def listAllMV(params):
         url += '&enName='+fname
     url += '&page='+page
 
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+artist+'[/COLOR]/[COLOR FF5555FF]'+version+'[/COLOR]/[COLOR FFFFFF00]'+tag+'[/COLOR]/[COLOR FFFF55FF]'+genre+'[/COLOR]/[COLOR FFFF5555]姓:'+fname+'[/COLOR]】（按此选择）')
+    li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+artist+'[/COLOR]/[COLOR FF5555FF]'+version+'[/COLOR]/[COLOR FFFFFF00]'+tag+'[/COLOR]/[COLOR FFFF55FF]'+genre+'[/COLOR]/[COLOR FFFF5555]姓:'+fname+'[/COLOR]】（按此选择）')
     u = sys.argv[0]+"?mode=13&name="+urllib.quote_plus(name)+"&url="+urllib.quote_plus(url)+"&artist="+artist+"&area="+area+"&version="+version+"&tag="+urllib.quote(tag)+"&genre="+genre+"&fname="+urllib.quote(fname)+"&order="+"&page="+page+"&listpage="+urllib.quote_plus(listpage)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -545,15 +540,11 @@ def listAllMV(params):
     matchli = re.compile('<li>(.+?)</li>').findall(matchs[0])
 
     totalItems = len(matchli)
-    if totalItems == 0:
-        li = xbmcgui.ListItem('[COLOR FFFF0000]非常抱歉 ![/COLOR] 您选择的查询条件暂无结果')
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-        xbmcplugin.endOfDirectory(int(sys.argv[1]))
-    else:
+    if totalItems > 0:
         playlist = xbmc.PlayList(1) # use Music playlist for temporary storage
         playlist.clear()
-        j = 0
-        for item in matchli:
+
+        for (j, item) in enumerate(matchli):
             item = item.replace('\\"','\'')
             match = re.compile('<a href="(.+?)" target="_blank">').findall(item)
             #p_url = 'http://www.yinyuetai.com' + match[0]
@@ -573,14 +564,13 @@ def listAllMV(params):
             if p_artist:
                 p_list += ' ['+p_artist + ']'
 
-            li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+            li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type='Video', infoLabels={'Title': p_list, 'Artist': p_artist.split(',')})
             u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
             u += '&name=%d.%s' % (j, urllib.quote_plus(p_list))
             u += '&url=' + urllib.quote_plus(p_url)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
             playlist.add(p_url, li)
-            j += 1
 
             # Fetch and build page selection menu
         matchp = re.compile('<div class="page-nav"(.+?)</div>').findall(link)
@@ -590,9 +580,13 @@ def listAllMV(params):
             for num in matchp1:
                 if num not in plist:
                     plist.append(num)
-                    li = xbmcgui.ListItem("... 第" + num + "页")
+                    li = ListItem("... 第" + num + "页")
                     u = sys.argv[0]+"?mode=3&name="+urllib.quote_plus(name)+"&url="+urllib.quote_plus(url)+"&artist="+artist+"&area="+area+"&version="+version+"&tag="+urllib.quote(tag)+"&genre="+genre+"&fname="+fname+"&order="+"&page="+num+"&listpage="+urllib.quote_plus(listpage)
                     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    else:
+        li = ListItem('[COLOR FFFF0000]非常抱歉 ![/COLOR] 您选择的查询条件暂无结果')
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -609,7 +603,7 @@ def performChangesAllMV(params):
     listpage = params.get('listpage')
 
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     arealist, artistlist, versionlist, taglist, genrelist = getListMV(listpage)
 
     if len(arealist) > 0:
@@ -671,7 +665,7 @@ def listRecommendMV(params):
     url = "http://mv.yinyuetai.com/ajax/recommend-list?page=" + page
 
     # Fetch & build video titles list for user selection, highlight user selected filter
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FF00FF00]Page: '+page+'[/COLOR]】')
+    li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]【[COLOR FF00FF00]Page: '+page+'[/COLOR]】')
     u = sys.argv[0] + "?mode=4&name="+urllib.quote_plus(name)+"&page="+page
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -683,7 +677,7 @@ def listRecommendMV(params):
     playlist.clear()
 
     # fetch and build the video series episode list
-    content = simplejson.loads(link)
+    content = json.loads(link)
     vlist = content['output']
     totalItems = len(vlist)
     for i in range(0, totalItems):
@@ -698,7 +692,7 @@ def listRecommendMV(params):
         p_list = p_title
         p_list += ' [COLOR FF00FFFF][' + p_artist + '][/COLOR]'
 
-        li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+        li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': p_list, 'Artist':p_artist.split(',')})
         u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
         u += '&name=%d.%s' % (i, urllib.quote_plus(p_list))
@@ -715,7 +709,7 @@ def listRecommendMV(params):
     for num in range(p_pageTotal):
         page = num + 1
         if (page) != p_pageNum:
-            li = xbmcgui.ListItem("... 第" + str(page) + "页")
+            li = ListItem("... 第" + str(page) + "页")
             u = sys.argv[0] + "?mode=4&name="+urllib.quote_plus(name)+"&page="+page
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -728,7 +722,7 @@ def listRecommendMV(params):
 ##################################################################################
 def performChangesMV(params):
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in MVR_LIST]
     sel = dialog.select('地区', list)
     if sel != -1:
@@ -760,10 +754,10 @@ def listFavouriteMV(params):
 
     if re.search('热门', cat):
         url = 'http://pl.yinyuetai.com/playlist_'+fltrCat+'/'+fltrOrder+'/'+page
-        li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+cat+'[/COLOR]/[COLOR FF00FF00]'+order+'[/COLOR]】（按此选择）')
+        li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+cat+'[/COLOR]/[COLOR FF00FF00]'+order+'[/COLOR]】（按此选择）')
     else:
         url = 'http://pl.yinyuetai.com/playlist_'+fltrCat+'?page='+page
-        li = xbmcgui.ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FF00FF00]'+cat+'[/COLOR]】（按此选择）')
+        li = ListItem('[COLOR FF00FFFF]'+name+'[/COLOR]（第'+page+'页）【[COLOR FF00FF00]'+cat+'[/COLOR]】（按此选择）')
 
     # Fetch & build video titles list for user selection, highlight user selected filter
     u = sys.argv[0] + "?mode=15&name="+urllib.quote_plus(name)+"&cat="+cat+"&order="+order+"&page="+page
@@ -776,12 +770,12 @@ def listFavouriteMV(params):
     matchs = re.compile('<ul class="clearfix">(.+?)</ul>').findall(link)
     matchli = re.compile('<li>(.+?)</li>').findall(matchs[0])
 
-    if len(matchli):
-        totalItems = len(matchli)
+    totalItems = len(matchli)
+    if totalItems > 0:
         playlist = xbmc.PlayList(1) # use Music playlist for temporary storage
         playlist.clear()
-        j = 0
-        for item in matchli:
+
+        for (j, item) in enumerate(matchli):
             match = re.compile('<a href="(.+?)" title="(.+?)" target="_blank">[\s]*<img src="(.+?)"').findall(item)
             #p_url = 'http://www.yinyuetai.com' + match[0][0]
             p_url = match[0][0]
@@ -799,14 +793,13 @@ def listFavouriteMV(params):
             if p_artist:
                 p_list += ' ['+p_artist + ']'
 
-            li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+            li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type='Video', infoLabels={'Title': p_list, 'Artist':p_artist.split(',')})
             u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
             u += '&name=%d.%s' % (j, urllib.quote_plus(p_list))
             u += '&url=' + urllib.quote_plus(p_url)
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False, totalItems)
             playlist.add(p_url, li)
-            j += 1
 
         # Fetch and build page selection menu
         matchp = re.compile('<div class="page-nav">(.+?)</div>').findall(link)
@@ -816,7 +809,7 @@ def listFavouriteMV(params):
             for num in matchp1:
                 if num not in plist:
                     plist.append(num)
-                    li = xbmcgui.ListItem("... 第" + num + "页")
+                    li = ListItem("... 第" + num + "页")
                     u = sys.argv[0] + "?mode=5&name="+urllib.quote_plus(name)+"&cat="+cat+"&order="+order+"&page="+num
                     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -831,7 +824,7 @@ def performChangeFavourite(params):
     cat = params.get('cat')
 
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in MVF_LIST]
     sel = dialog.select('悦单', list)
     if sel != -1:
@@ -871,7 +864,7 @@ def listArtist(params):
         url += '&enName='+fname
     url += '&page='+page + '&pageTab=all'
 
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+__addonname__+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+geshou+'[/COLOR]/[COLOR FFFF5555]姓:'+fname+'[/COLOR]】（按此选择）')
+    li = ListItem('[COLOR FF00FFFF]'+__addonname__+'[/COLOR]（第'+page+'页）【[COLOR FFFF0000]'+area+'[/COLOR]/[COLOR FF00FF00]'+geshou+'[/COLOR]/[COLOR FFFF5555]姓:'+fname+'[/COLOR]】（按此选择）')
     u = sys.argv[0]+"?mode=16&name="+urllib.quote_plus(name)+"&area="+urllib.quote_plus(area)+"&geshou="+urllib.quote_plus(geshou)+"&fname="+fname+"&page="+page
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -900,7 +893,7 @@ def listArtist(params):
             p_list = str(i+1)+'. ' + p_name
             p_name += ' [[COLOR FFFF5555]'+area+'[/COLOR]/[COLOR FF5555FF]'+geshou+'[/COLOR]]'
 
-            li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)  #name,area,geshou,fname,page
+            li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)  #name,area,geshou,fname,page
             u = sys.argv[0]+"?mode=7&name="+urllib.quote_plus(p_name)+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(p_thumb)+"&page=1"
             li.setInfo(type="Video", infoLabels={"Title": p_name})
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True, totalItems)
@@ -910,7 +903,7 @@ def listArtist(params):
         matchp1 = re.compile('<a href=".+?>([0-9]+)</a>', re.DOTALL).findall(matchp[0])
         for num in matchp1:
             if num != page:
-                li = xbmcgui.ListItem("... 第" + num + "页")
+                li = ListItem("... 第" + num + "页")
                 u = sys.argv[0]+"?mode=6&name="+urllib.quote_plus(p_name)+"&area="+urllib.quote_plus(area)+"&geshou="+urllib.quote_plus(geshou)+"&fname="+fname+"&page="+num
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -932,7 +925,7 @@ def listArtistMV(params):
     # fetch user specified parameters
     p_url = 'http://www.yinyuetai.com/fanclub/mv-all/%s/toNew/%s' % (id[0], page)
 
-    li = xbmcgui.ListItem('[COLOR FF00FFFF]'+__addonname__+'[/COLOR]（第'+page+'页）【[COLOR FF00FF00]'+name+'[/COLOR]】')
+    li = ListItem('[COLOR FF00FFFF]'+__addonname__+'[/COLOR]（第'+page+'页）【[COLOR FF00FF00]'+name+'[/COLOR]】')
     # Fetch & build video titles list for user selection, highlight user selected filter
     u = sys.argv[0]+"?mode=7&name="+urllib.quote_plus(name)+"&url="+urllib.quote_plus(p_url)+"&thumb="+urllib.quote_plus(thumb)+"&page="+page
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -944,8 +937,8 @@ def listArtistMV(params):
     vlist = re.compile('<div class="mv_list"><ul>(.+?)</ul></div>').findall(link)
     match = re.compile('<div class="thumb"><a target="_blank" title="(.+?)" href="(.+?)"><img.+?src="(.+?)"').findall(vlist[0])
 
-    if len(match):
-        totalItems = len(match)
+    totalItems = len(match)
+    if totalItems > 0:
         playlist = xbmc.PlayList(1) # use Music playlist for temporary storage
         playlist.clear()
         j = 0
@@ -958,7 +951,7 @@ def listArtistMV(params):
             #p_thumb += '|User-Agent='+UserAgent
             p_thumb += '|Referer=http://www.yinyuetai.com'
 
-            li = xbmcgui.ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
+            li = ListItem(p_list, iconImage='', thumbnailImage=p_thumb)
             li.setInfo(type='Video', infoLabels={'Title': p_list, 'Artist': p_artist.split(',')})
             u = sys.argv[0] + '?mode=10&thumb=' + p_thumb
             u += '&name=%d.%s' % (j, urllib.quote_plus(p_list))
@@ -973,7 +966,7 @@ def listArtistMV(params):
         matchp1 = re.compile('<a href=".+?>([0-9]+)</a>', re.DOTALL).findall(matchp[0])
         for num in matchp1:
             if num != page:
-                li = xbmcgui.ListItem("... 第" + num + "页")
+                li = ListItem("... 第" + num + "页")
                 u = sys.argv[0]+"?mode=7&name="+urllib.quote_plus(name)+"&url="+urllib.quote_plus(url)+"&thumb="+urllib.quote_plus(thumb)+"&page="+num
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -986,7 +979,7 @@ def listArtistMV(params):
 ##################################################################################
 def performChangeGs(params):
     change = False
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     list = [x[1] for x in AREA_LIST]
     sel = dialog.select('地区', list)
     if sel != -1:
@@ -1055,7 +1048,7 @@ def playVideo(params):
     errcnt = 0
     k = 0
 
-    pDialog = xbmcgui.DialogProgress()
+    pDialog = DialogProgress()
     ret = pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
     pDialog.update(0)
 
@@ -1063,8 +1056,7 @@ def playVideo(params):
         # abort if 5 or more access failures and no video playback
         if (errcnt >= ERR_MAX and k == 0):
             pDialog.close()
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '无法播放：多次未匹配到视频文件，请选择其它视频')
+            Dialog().ok(__addonname__, '无法播放：多次未匹配到视频文件，请选择其它视频')
             break
 
         if x < v_pos:
@@ -1073,7 +1065,7 @@ def playVideo(params):
         p_url = p_item.getfilename(x)
         p_list = p_item.getdescription(x)
 
-        # li = xbmcgui.ListItem(p_list)
+        # li = ListItem(p_list)
         li = p_item # pass all li items including the embedded thumb image
         li.setInfo(type="Video", infoLabels={"Title": p_list})
 
@@ -1119,17 +1111,15 @@ def playVideoX(name, url, thumb):
     if v_url:
         playlist = xbmc.PlayList(0)
         playlist.clear()
-        listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+        listitem = ListItem(name, thumbnailImage=thumb)
         listitem.setInfo(type="Video", infoLabels={"Title": name})
         playlist.add(v_url, listitem)
         xbmc.Player(0).play(playlist)
     else:
         if link.find('该视频为加密视频') > 0:
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '无法播放：该视频为加密视频')
+            Dialog().ok(__addonname__, '无法播放：该视频为加密视频')
         elif link.find('解析失败，请确认视频是否被删除') > 0:
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '无法播放：该视频或为收费节目')
+            Dialog().ok(__addonname__, '无法播放：该视频或为收费节目')
 
 
 ##################################################################################

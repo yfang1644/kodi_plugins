@@ -1,41 +1,46 @@
-#coding: utf8
+#!/usr/bin/python
+#coding=utf-8
 
-from config import *
-import feedparser
-from xml.dom.minidom import parseString
+import base64
+import json
+import hashlib
+import urllib, urllib2
 import re
-import time
 import os
 import tempfile
+from random import random
+from xml.dom.minidom import parseString
+from cookielib import MozillaCookieJar
 from common import get_html
-import cPickle as pickle
-import hashlib
+from bs4 import BeautifulSoup
+from bilibili_config import *
 from niconvert import create_website
 
-class Bili():
-    def __init__(self, width=720, height=480):
-        self.WIDTH = width                                          # 屏幕宽度，用于确定弹幕大小
-        self.HEIGHT = height                                        # 屏幕高度，用于确定弹幕大小
-        self.BASE_URL = BASE_URL                                    # B站根地址
-        self.RSS_URLS = RSS_URLS                                    # B站RSS地址
-        self.INDEX_URLS = INDEX_URLS                                # B站索引地址
-        self.ROOT_PATH = ROOT_PATH                                  # 根菜单
-        self.LIST_TYPE = LIST_TYPE                                  # 列表类型
-        self.INTERFACE_URL = INTERFACE_URL                          # 视频地址请求页面地址
-        self.INTERFACE_PARAMS = INTERFACE_PARAMS                    # 视频地址请求参数
-        self.SECRETKEY_MINILOADER = SECRETKEY_MINILOADER
-        self.COMMENT_URL = COMMENT_URL                              # 评论页面地址
-        self.URL_PARAMS = re.compile('cid=(\d+)&(?:bili-)?aid=\d+')           # 匹配视频请求ID(cid)
-        self.URL_PARAMS2 = re.compile("cid:'(\d+)'")                # 匹配另一种页面上的视频请求ID(cid)
-        # 匹配视频列表
-        self.PARTS = re.compile("<option value=.{1}(/video/av\d+/index_\d+\.html).*>(.*)</option>")
-        # 匹配索引视频列表
-        self.ITEMS = re.compile('<li.*?pubdate="(.*?)">.*?<a href=".*?av(\d+)/".*?>(.*?)</a></li>')
-        # 生成完整的URL
-        for item in self.RSS_URLS:
-            item['url'] = self.BASE_URL + item['url']
-        for item in self.INDEX_URLS:
-            item['url'] = self.BASE_URL + item['url']
+class Bilibili():
+    def __init__(self, appkey=APPKEY, appsecret=APPSECRET,
+                 width=720, height=480):
+        self.defaultHeader = {'Referer':'http://www.bilibili.com'}
+        self.defaultHeader = {}
+        self.appkey = appkey
+        self.appsecret = appsecret
+        self.WIDTH = width
+        self.HEIGHT = height
+        self.is_login = False
+        cookie_path = os.path.dirname(os.path.abspath(__file__)) + '/.cookie'
+        self.cj = MozillaCookieJar(cookie_path)
+        if os.path.isfile(cookie_path):
+            self.cj.load()
+            key = None
+            for ck in self.cj:
+                if ck.name == 'DedeUserID':
+                    key = ck.value
+                    break
+            if key is not None:
+                self.is_login = True
+                self.mid = str(key)
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+        urllib2.install_opener(opener)
+
         try:
             os.remove(self._get_tmp_dir() + '/tmp.ass')
         except:
@@ -47,206 +52,313 @@ class Bili():
         except:
             return ''
 
-    def _print_info(self, info):
-        print '[Bilibili]: ' + info
+    def get_captcha(self, path = None):
+        key = None
+        for ck in self.cj:
+            if ck.name == 'sid':
+                key = ck.value
+                break
 
-    # 根据英文名称返回URL
-    def _get_url(self, dict_obj, name):
-        for item in dict_obj:
-            if item['eng_name'] == name:
-                return item['url']
+        if key is None:
+            get_html(LOGIN_CAPTCHA_URL.format(random()),
+                    headers = {'Referer':'https://passport.bilibili.com/login'})
+        result = get_html(LOGIN_CAPTCHA_URL.format(random()), decoded=False,
+                    headers = {'Referer':'https://passport.bilibili.com/login'})
+        if path is None:
+            path = tempfile.gettempdir() + '/captcha.jpg'
+        with open(path, 'wb') as f:
+            f.write(result)
+        return path
 
-    # 根据英文名称获取RSS页面URL
-    def _get_rss_url(self, name):
-        return self._get_url(self.RSS_URLS, name)
+    def get_encryped_pwd(self, pwd):
+        import rsa
+        result = json.loads(get_html(LOGIN_HASH_URL.format(random()),
+                    headers={'Referer':'https://passport.bilibili.com/login'}))
+        pwd = result['hash'] + pwd
+        key = result['key']
+        pub_key = rsa.PublicKey.load_pkcs1_openssl_pem(key)
+        pwd = rsa.encrypt(pwd.encode('utf-8'), pub_key)
+        pwd = base64.b64encode(pwd)
+        pwd = urllib.quote(pwd)
+        return pwd
 
-    # 根据英文名称获取索引页面URL
-    def _get_index_url(self, name):
-        return self._get_url(self.INDEX_URLS, name)
+    def api_sign(self, params):
+        params['appkey'] = self.appkey
+        data = ''
+        keys = params.keys()
+        # must sorted.  urllib.urlencode(params) doesn't work
+        keys.sort()
+        for key in keys:
+            data += '{}={}&'.format(key, urllib.quote(str(params[key])))
 
-    # 根据页面内容解析视频请求页面URL
-    def _parse_urls(self, page_content, need_subtitle = True):
-        self._print_info('Parsing page')
-        url_params = self.URL_PARAMS.findall(page_content)
-        interface_full_url = ''
-        # 如果使用第一种正则匹配成功
-        if url_params and len(url_params) == 1 and url_params[0]:
-            interface_hash = hashlib.md5()
-            interface_hash.update(self.INTERFACE_PARAMS.format(str(url_params[0]), self.SECRETKEY_MINILOADER))
-            interface_full_url = self.INTERFACE_URL.format(str(url_params[0]), interface_hash.hexdigest())
-        # 如果匹配不成功则使用第二种正则匹配
-        if not url_params:
-            self._print_info('Parsing page by another regex')
-            url_params = self.URL_PARAMS2.findall(page_content)
-            if url_params and len(url_params) == 1 and url_params[0]:
-                interface_hash = hashlib.md5()
-                interface_hash.update(self.INTERFACE_PARAMS.format(str(url_params[0]), self.SECRETKEY_MINILOADER))
-                interface_full_url = self.INTERFACE_URL.format(str(url_params[0]), interface_hash.hexdigest())
-        if interface_full_url:
-            self._print_info('Interface url: ' + interface_full_url)
-            # 解析RSS页面
-            self._print_info('Getting video address by interface page')
-            content = get_html(interface_full_url)
-            self._print_info('Interface page length: ' + str(len(content)))
-            doc = parseString(content)
-            parts = doc.getElementsByTagName('durl')
-            self._print_info('Video parts found: ' + str(len(parts)))
-            result = []
-            # 找出所有视频地址
-            for part in parts:
-                urls = part.getElementsByTagName('url')
-                if len(urls) > 0:
-                    result.append(urls[0].firstChild.nodeValue)
-            if need_subtitle:
-                return (result, self._parse_subtitle(url_params[0]))
+        data = data[:-1]  # remove last '&'
+        if self.appsecret is None:
+            return data
+        m = hashlib.md5()
+        m.update(data + self.appsecret)
+        return data + '&sign=' + m.hexdigest()
+
+    def get_category_from_web_page(self):
+        category_dict = {'0': {'title': u'全部', 'url': HOME_URL}}
+        node = category_dict['0']
+        url = node['url']
+        result = BeautifulSoup(get_html(url), "html.parser").findAll('li', {'class': 'm-i'})
+        for item in result:
+            if len(item['class']) != 1:
+                continue
+            tid = item['data-tid']
+            title = item.em.contents[0]
+            url = 'http:' + item.a['href']
+            category_dict[tid] = {'title': title, 'url': url}
+            node['subs'].append(tid)
+
+        #Fix video and movie
+        if '11' not in category_dict['0']['subs']:
+            category_dict['0']['subs'].append('11')
+        if '23' not in category_dict['0']['subs']:
+            category_dict['0']['subs'].append('23')
+        category_dict['11'] = {'title': u'电视剧', 'url': 'http://bangumi.bilibili.com/tv/'}
+        category_dict['23'] = {'title': u'电影', 'url': 'http://bangumi.bilibili.com/movie/'}
+
+        for sub in category_dict['0']['subs']:
+            node = category_dict[sub]
+            url = node['url']
+            result = BeautifulSoup(get_html(url), "html.parser").select('ul.n_num li')
+            for item in result[1:]:
+                if not item.has_attr('tid'):
+                    continue
+                if not hasattr(item, 'a'):
+                    continue
+                if item.has_attr('class'):
+                    continue
+                tid = item['tid']
+                title = item.a.contents[0]
+                if item.a['href'][:2] == '//':
+                    url = 'http:' + item.a['href']
+                else:
+                    url = HOME_URL + item.a['href']
+                category_dict[tid] = {'title': title, 'url': url}
+                node['subs'].append(tid)
+        return category_dict
+
+    def get_category(self, tid = '0'):
+        items = [{tid: {'title': '全部', 'url': CATEGORY[tid]['url']}}]
+        for sub in CATEGORY[tid]['subs']:
+            items.append({sub: CATEGORY[sub]})
+        return items
+
+    def get_category_name(self, tid):
+        return CATEGORY[str(tid)]['title']
+
+    def get_order(self):
+        return ORDER
+
+    def get_category_list(self, tid = 0, order = 'default', days = 30, page = 1, pagesize = 20):
+        params = {'tid': tid, 'order': order, 'days': days, 'page': page, 'pagesize': pagesize}
+        url = LIST_URL.format(self.api_sign(params))
+
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        results = []
+        for i in range(pagesize):
+            if result['list'].has_key(str(i)):
+                results.append(result['list'][str(i)])
             else:
-                return (result, '')
+                continue
+        return results, result['pages']
+
+    def get_my_info(self):
+        if self.is_login == False:
+            return []
+        result = json.loads(get_html(MY_INFO_URL))
+        return result['data']
+
+    def get_bangumi_chase(self, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = BANGUMI_CHASE_URL.format(self.mid, page, pagesize)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data']['result'], result['data']['pages']
+
+    def get_bangumi_detail(self, season_id):
+        url = BANGUMI_SEASON_URL.format(season_id)
+        result = get_html(url, headers=self.defaultHeader)
+        if result[0] != '{':
+            start = result.find('(') + 1
+            end = result.find(');')
+            result = result[start:end]
+        result = json.loads(result)
+        return result['result']
+
+    def get_history(self, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = HISTORY_URL.format(page, pagesize)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        if len(result['data']) >= int(pagesize):
+            total_page = int(page) + 1
         else:
-            self._print_info('Interface url not found!')
-        return ([], '')
+            total_page = int(page)
+        return result['data'], total_page
+
+    def get_dynamic(self, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = DYNAMIC_URL.format(pagesize, page)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        total_page = int((result['data']['page']['count'] + pagesize - 1) / pagesize)
+        return result['data']['feeds'], total_page
+
+    def get_attention(self, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = ATTENTION_URL.format(self.mid, page, pagesize)
+        print '=========ATTENTION_URL======================',url
+        ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'}
+        data = get_html(url, headers=ua, decoded=False)
+        print data
+        result = json.loads(get_html(url, headers=ua))
+        return result['data']['list'], result['data']['pages']
+
+    def get_attention_video(self, mid, tid = 0, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = ATTENTION_VIDEO_URL.format(mid, page, pagesize, tid)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data'], result['data']['pages']
+
+    def get_attention_channel(self, mid):
+        if self.is_login == False:
+            return []
+        url = ATTENTION_CHANNEL_URL.format(mid)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data']['list']
+
+    def get_attention_channel_list(self, mid, cid, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = ATTENTION_CHANNEL_LIST_URL.format(mid, cid, page, pagesize)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data']['list'], result['data']['total']
+
+    def get_fav_box(self):
+        if self.is_login == False:
+            return []
+        url = FAV_BOX_URL.format(self.mid)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data']['list']
+
+    def get_fav(self, fav_box, page = 1, pagesize = 20):
+        if self.is_login == False:
+            return []
+        url = FAV_URL.format(self.mid, page, pagesize, fav_box)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result['data']['vlist'], result['data']['pages']
+
+    def login(self, userid, pwd, captcha):
+        #utils.get_html('http://www.bilibili.com')
+        if self.is_login == True:
+            return True, ''
+        pwd = self.get_encryped_pwd(pwd)
+        data = 'cType=2&vcType=1&captcha={}&user={}&pwd={}&keep=true&gourl=http://www.bilibili.com/'.format(captcha, userid, pwd)
+        result = get_html(LOGIN_URL, data,
+                    {'Origin':'https://passport.bilibili.com',
+                    'Referer':'https://passport.bilibili.com/login'})
+
+        key = None
+        for ck in self.cj:
+            if ck.name == 'DedeUserID':
+                key = ck.value
+                break
+
+        if key is None:
+            return False, LOGIN_ERROR_MAP[json.loads(result)['code']]
+        self.cj.save()
+        self.is_login = True
+        self.mid = str(key)
+        return True, ''
+
+    def logout(self):
+        self.cj.clear()
+        self.cj.save()
+        self.is_login = False
+
+    def get_av_list_detail(self, aid, page = 1, fav = 0, pagesize = 20):
+        params = {'id': aid, 'page': page}
+        if fav != 0:
+            params['fav'] = fav
+        url = VIEW_URL.format(self.api_sign(params))
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        results = [result]
+        if (int(page) < result['pages']) and (pagesize > 1):
+            results += self.get_av_list_detail(aid, int(page) + 1, fav, pagesize = pagesize - 1)[0]
+
+        return results, result['pages']
+
+    def get_av_list(self, aid):
+        url = AV_URL.format(aid)
+        result = json.loads(get_html(url, headers=self.defaultHeader))
+        return result
+
 
     # 调用niconvert生成弹幕的ass文件
-    def _parse_subtitle(self, cid):
-        page_full_url = self.COMMENT_URL.format(cid)
-        self._print_info('Page full url: ' + page_full_url)
-        website = None
-        try:
-            website = create_website(page_full_url)
-            if website is None:
-                self._print_info(page_full_url + " not supported")
-                return ''
-            else:
-                self._print_info('Generating subtitle')
-                text = website.ass_subtitles_text(
-                    font_name=u'黑体',
-                    font_size=24,
-                    resolution='%d:%d' % (self.WIDTH, self.HEIGHT),
-                    line_count=12,
-                    bottom_margin=0,
-                    tune_seconds=0
-                )
-                f = open(self._get_tmp_dir() + '/tmp.ass', 'w')
-                f.write(text.encode('utf-8'))
-                f.close()
-                self._print_info('Subtitle generation succeeded!')
-                return 'tmp.ass'
-        except Exception as e:
-            self._print_info("Exception raised when generating subtitle: %s" % e)
+    def parse_subtitle(self, cid):
+        page_full_url = COMMENT_URL.format(cid)
+        website = create_website(page_full_url)
+        if website is None:
             return ''
-
-    def _need_rebuild(self, file_path):
-        return time.localtime(os.stat(file_path).st_ctime).tm_mday != time.localtime().tm_mday
-
-    def _get_index_items_from_web(self, url):
-        page_content = get_html(url)
-        results_dict = dict()
-        results_month_dict = dict()
-        parts = page_content.split('<h3>')
-        for part in parts:
-            results = self.ITEMS.findall(part)
-            key = part[0]
-            results_dict[key] = []
-            for r in results:
-                results_dict[key].append((r[1], r[2], r[0]))
-                if r[0] in results_month_dict.keys():
-                    results_month_dict[r[0]].append((r[1], r[2]))
-                else:
-                    results_month_dict[r[0]] = [(r[1], r[2])]
-        return results_dict, results_month_dict
-
-    # 获取索引项目，并缓存
-    def _get_index_items(self, url):
-        pickle_file_by_word = self._get_tmp_dir() + '/' + url.split('/')[-1].strip() + '_word_tmp.pickle'
-        pickle_file_by_month = self._get_tmp_dir() + '/' + url.split('/')[-1].strip() + '_month_tmp.pickle'
-        try:
-            if  os.path.exists(pickle_file_by_word) and os.path.exists(pickle_file_by_month) and not self._need_rebuild(pickle_file_by_word) and not self._need_rebuild(pickle_file_by_month):
-                self._print_info('Index files already exists!')
-                return pickle.load(open(pickle_file_by_word, 'rb')), pickle.load(open(pickle_file_by_month, 'rb'))
-            else:
-                results_dict, results_month_dict = self._get_index_items_from_web(url)
-                try:
-                    word_file = open(pickle_file_by_word, 'wb')
-                    month_file = open(pickle_file_by_month, 'wb')
-                    pickle.dump(results_dict, word_file)
-                    pickle.dump(results_month_dict, month_file)
-                    self._print_info('Index files fetched succeeded!')
-                except:
-                    self._print_info('Index files generate failed!')
-                return results_dict, results_month_dict
-        except:
-            return self._get_index_items_from_web(url)
-
-    # 获取RSS项目，返回合法的菜单列表
-    def get_rss_items(self, category):
-        self._print_info('Getting RSS Items')
-        rss_url = self._get_rss_url(category)
-        parse_result = feedparser.parse(rss_url)
-        self._print_info('RSS Items fetched succeeded!')
-        return [ {
-            'title': x.title,
-            'link': x.link.replace(BASE_URL+'video/av', '').replace('/', ''),
-            'description': x.description,
-            'published': x.published
-        } for x in parse_result.entries ]
-
-    # 获取索引项目，返回合法的菜单列表
-    def get_index_items(self, category, type_id=0):
-        self._print_info('Getting Index Items')
-        if type_id > 1:
-            return []
-        index_url = self._get_index_url(category)
-        parse_result = self._get_index_items(index_url)
-        self._print_info('Index items fetched succeeded!')
-        return [ {
-            'title': x,
-            'link': x,
-            'description': x,
-            'published': x
-        } for x in sorted(parse_result[type_id].keys(), reverse=bool(type_id))]
-
-    # 从缓存字典中返回视频结果
-    def get_video_by_ident(self, category, display_type, ident):
-        self._print_info('Getting items from cache')
-        index_url = self._get_index_url(category)
-        parse_result = self._get_index_items(index_url)
-        self._print_info('Cached items fetched succeeded!')
-        return [ {
-            'title': x[1],
-            'link': x[0],
-            'description': x[1],
-            'published': ident
-        } for x in parse_result[display_type][ident] ]
-
-    # 根据不同类型返回相应的视频列表
-    def get_items(self, target, category=None):
-        self._print_info('Getting items by type')
-        if target == 'RSS':
-            if category:
-                return self.get_rss_items(category)
-            else:
-                return self.RSS_URLS
-        elif target == 'Index':
-            if category:
-                return self.get_index_items(category)
-            else:
-                return self.INDEX_URLS
-        return []
-
-    # 获取一个页面的所有视频
-    def get_video_list(self, av_id):
-        page_full_url = self.BASE_URL + 'video/av' + str(av_id) + '/'
-        page_content = get_html(page_full_url)
-        parts = self.PARTS.findall(page_content)
-        if len(parts) == 0:
-            return [(u'播放', 'video/av' + str(av_id) + '/')]
         else:
-            return [(part[1], part[0][1:]) for part in parts]
+            text = website.ass_subtitles_text(
+                font_name=u'黑体',
+                font_size=24,
+                resolution='%d:%d' % (self.WIDTH, self.HEIGHT),
+                line_count=12,
+                bottom_margin=0,
+                tune_seconds=0
+            )
+            f = open(self._get_tmp_dir() + '/tmp.ass', 'w')
+            f.write(text.encode('utf8'))
+            f.close()
+            return 'tmp.ass'
 
-    # 获取视频地址
-    def get_video_urls(self, url, need_subtitle=True):
-        self._print_info('Getting video address')
-        page_full_url = self.BASE_URL + url
-        self._print_info('Page url: ' + page_full_url)
-        page_content = get_html(page_full_url)
-        self._print_info('Origin page length: ' + str(len(page_content)))
-        return self._parse_urls(page_content, need_subtitle)
+    def get_video_urls(self, cid):
+        m = hashlib.md5()
+        m.update(INTERFACE_PARAMS.format(str(cid), SECRETKEY_MINILOADER))
+        url = INTERFACE_URL.format(str(cid), m.hexdigest())
+        doc = parseString(get_html(url, headers=self.defaultHeader))
+        urls = []
+        for durl in doc.getElementsByTagName('durl'):
+            u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
+            if re.match(r'.*\.qqvideo\.tc\.qq\.com', url):
+                re.sub(r'.*\.qqvideo\.tc', 'http://vsrc.store', u)
+            urls.append(u + '|Referer=http://www.bilibili.com')
+
+        return urls
+
+    def add_history(self, aid, cid):
+        url = ADD_HISTORY_URL.format(str(cid), str(aid))
+        get_html(url)
+
+
+if __name__ == '__main__':
+    b = Bilibili()
+    #if b.is_login == False:
+    #    b.get_captcha('')
+    #    captcha = raw_input('Captcha: ')
+    #    print b.login(u'catro@foxmail.com', u'123456', captcha)
+    #print b.get_fav(49890104)
+    #print b.get_av_list(8163111)
+    #print b.add_history(8163111, 13425238)
+    #print b.get_video_urls(12821893)
+    #print b.get_category_list('32')
+    #print b.get_dynamic('2')[1]
+    #print b.get_category()
+    #print b.get_bangumi_chase()
+    #print b.get_attention()
+    #print b.get_attention_video('7349', 0, 1, 1)
+    #print b.get_attention_channel('7349')
+    #print json.dumps(b.get_bangumi_detail('5800'), indent=4, ensure_ascii=False)
+    #print b.get_bangumi_detail('5800')
+    #print b.get_history(1)
+    #with open('bilibili_config.py', 'a') as f:
+    #    f.write('\nCATEGORY = ')
+    #    f.write(json.dumps(b.get_category_from_web_page(), indent=4, ensure_ascii=False).encode('utf8'))

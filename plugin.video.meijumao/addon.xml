@@ -5,7 +5,6 @@
     provider-name="BirdZhang">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.keyboard.chinese" version="2.0.4" optional="true"/>
         <import addon="plugin.video.cntv-video" version="1.0.0"/>
     </requires>
     <extension

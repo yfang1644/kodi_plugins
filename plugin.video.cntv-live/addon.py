@@ -12,7 +12,7 @@ import traceback
 import urllib
 import urllib2
 import urlparse
-import simplejson
+from json import loads
 
 mainList = {
     'yangshi': '央视频道',
@@ -278,7 +278,7 @@ def programList(city):
     data = resp.read()
     data = data.decode('utf-8').encode('utf-8', 'ignore')
     data = re.compile('\((.+)\)').findall(data)
-    jsdata = simplejson.loads(data[0])
+    jsdata = loads(data[0])
     info = ''
     try:
         jsprog = jsdata['programs']
@@ -424,7 +424,7 @@ def main():
                 return
 
             url = None
-            jsondata = simplejson.loads(data.encode('utf-8'))
+            jsondata = loads(data.encode('utf-8'))
             urlsTried = 0
             urlsToTry = 5
 

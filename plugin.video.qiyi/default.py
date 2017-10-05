@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, DialogProgress, ListItem
 import xbmcplugin
 import xbmcaddon
-import urlparse
-import urllib
+from urlparse import parse_qsl
+from urllib import quote_plus
 import re
 import sys
-import simplejson
+from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
 from iqiyi import video_from_vid
@@ -63,7 +63,7 @@ def selResolution(items):
     if len(ratelist) > 1:
         resolution = int(__addon__.getSetting('resolution'))
         if resolution == 0:    # 每次询问点播视频清晰度
-            dialog = xbmcgui.Dialog()
+            dialog = Dialog()
             list = [x[1] for x in ratelist]
             sel = dialog.select('清晰度（低网速请选择低清晰度）', list)
             if sel == -1:
@@ -87,8 +87,7 @@ def PlayVideo(params):
     sel = 1
     real_urls = video_from_vid(tvId, videoId, level=sel)
     if real_urls is None:
-        dialog = xbmcgui.Dialog()
-        ok = dialog.ok(__addonname__, '无法播放此视频')
+        Dialog().ok(__addonname__, '无法播放此视频')
         return
 
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
@@ -97,14 +96,14 @@ def PlayVideo(params):
     if ulen > 0:
         for i in range(0, ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
-            liz = xbmcgui.ListItem(name, thumbnailImage='')
+            liz = ListItem(name, thumbnailImage='')
             liz.setInfo(type="Video", infoLabels={"Title": name})
             playlist.add(real_urls[i], liz)
     xbmc.Player().play(playlist)
 
 
 def mainMenu():
-    li = xbmcgui.ListItem('[COLOR FF00FF00] 【爱奇艺 - 搜索】[/COLOR]')
+    li = ListItem('[COLOR FF00FF00] 【爱奇艺 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -118,8 +117,8 @@ def mainMenu():
     for prog in grp[:-1]:
         name = prog.text.strip(' ')
         href = httphead(prog['href'])
-        li = xbmcgui.ListItem(name)
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
+        li = ListItem(name)
+        u = sys.argv[0] + '?url=' + quote_plus(href)
         u += '&mode=videolist&name=' + name.encode('utf-8')
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -139,12 +138,12 @@ def listSubMenu(params):
     if page == '':
         page = '1'
 
-    li = xbmcgui.ListItem(name + '[第%s页](分类过滤)' % page)
+    li = ListItem(name + '[第%s页](分类过滤)' % page)
     u = sys.argv[0] + '?url=' + url.encode('ascii')
-    u += '&mode=filter&name=' + urllib.quote_plus(name)
+    u += '&mode=filter&name=' + quote_plus(name)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    li = xbmcgui.ListItem(BANNER_FMT % '排序方式')
+    li = ListItem(BANNER_FMT % '排序方式')
     u = sys.argv[0] + '?url=' + url
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
@@ -158,9 +157,9 @@ def listSubMenu(params):
             title = INDENT_FMT1 % title
         else:
             title = INDENT_FMT0 % title
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         u = sys.argv[0] + '?url=' + href.encode('ascii')
-        u += '&mode=videolist&name=' + urllib.quote_plus(name)
+        u += '&mode=videolist&name=' + quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     soup = tree.find_all('div', {'class': 'site-piclist_pic'})
@@ -187,17 +186,17 @@ def listSubMenu(params):
         tvId = item.a.get('data-qidanadd-tvid', 'X')
         if albumId == 'X':
             albumId = tvId
-        li = xbmcgui.ListItem(title + '(' + info + vip + pay + ')',
+        li = ListItem(title + '(' + info + vip + pay + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=episodelist&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+        u += '&mode=episodelist&name=' + quote_plus(name)
+        u += '&thumb=' + quote_plus(img) + '&title=' + title
         u += '&albumId=%s&tvId=%s' % (albumId, tvId)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     u = sys.argv[0]
-    li = xbmcgui.ListItem(INDENT_FMT0 % ('分页'))
+    li = ListItem(INDENT_FMT0 % ('分页'))
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     pages = tree.find_all('div', {'class': 'mod-page'})
@@ -205,10 +204,10 @@ def listSubMenu(params):
     for page in pages:
         title = page.text
         href = httphead(page['href'])
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         u = sys.argv[0] + '?url=' + href
         u += '&mode=videolist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'videos')
@@ -222,17 +221,17 @@ def referenceList(params):
     title = params['title']
     videoId = params['vid']
     # recommend
-    li = xbmcgui.ListItem(BANNER_FMT % (title + '  相关视频'),
+    li = ListItem(BANNER_FMT % (title + '  相关视频'),
                           iconImage=thumb, thumbnailImage=thumb)
     u = sys.argv[0] + '?mode=playvideo&tvId=%s&vid=%s' % (tvId0, videoId)
-    u += '&title=' + urllib.quote_plus(title)
-    u += '&thumb=' + urllib.quote_plus(thumb) + '&url=' + url
+    u += '&title=' + quote_plus(title)
+    u += '&thumb=' + quote_plus(thumb) + '&url=' + url
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     url = 'http://mixer.video.iqiyi.com/jp/recommend/videos?referenceId=%s&area=swan&type=video' % tvId0
     link = get_html(url)
     data = link[link.find('=')+1:]
-    json_response = simplejson.loads(data)
+    json_response = loads(data)
     items = json_response['mixinVideos']
     for series in items:
         title = series['name']
@@ -242,7 +241,7 @@ def referenceList(params):
         thumb = series['imageUrl']
         info = series['description']
         url = series['url']
-        li = xbmcgui.ListItem(title, iconImage='thumb', thumbnailImage=thumb)
+        li = ListItem(title, iconImage='thumb', thumbnailImage=thumb)
         li.setInfo(type='Video', infoLabels={'Title': title,
                                              'Plot': info})
         u = sys.argv[0] + '?title=' + title + '&thumb=' + thumb
@@ -264,7 +263,7 @@ def listType1(albumType, albumId):
     url = 'http://cache.video.qiyi.com/jp/sdvlst/%d/%d/' % (albumType, albumId)
     link = get_html(url)
     data = link[link.find('=')+1:]
-    json_response = simplejson.loads(data)
+    json_response = loads(data)
     if 'data' not in json_response:
         return False
 
@@ -273,7 +272,7 @@ def listType1(albumType, albumId):
         videoId = item['vid']
         p_thumb = item['aPicUrl']
         p_name = item['videoName'] + item['tvYear']
-        li = xbmcgui.ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+        li = ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=playvideo&title=' + p_name
         u += '&tvId=%d&vid=%s' % (tvId, videoId.encode('utf-8'))
         u += '&thumb=' + p_thumb
@@ -286,7 +285,7 @@ def listType2(albumId, page, thumb, title):
     url = 'http://cache.video.qiyi.com/avlist/%d/%s/50/' % (albumId, page)
     link = get_html(url)
     data = link[link.find('=')+1:]
-    json_response = simplejson.loads(data)
+    json_response = loads(data)
 
     try:
         totalpages = json_response['data']['pgt']
@@ -309,7 +308,7 @@ def listType2(albumId, page, thumb, title):
             time = '%d:%s' % (h, time)
         if item['vt']:
             p_name = p_name + ' ' + item['vt']
-        li = xbmcgui.ListItem(p_name + '(' + time + ')',
+        li = ListItem(p_name + '(' + time + ')',
                               iconImage=p_thumb, thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': p_name,
                                              'Plot': desc})
@@ -321,11 +320,11 @@ def listType2(albumId, page, thumb, title):
     um = sys.argv[0] + '?mode=episodelist&title=' + title
     um += '&albumId=%d' % (albumId) + '&thumb=' + thumb + '&page='
     if currpage > 1:
-        li = xbmcgui.ListItem('上一页')
+        li = ListItem('上一页')
         u = um + str(currpage-1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
     if currpage < totalpages:
-        li = xbmcgui.ListItem('下一页')
+        li = ListItem('下一页')
         u = um + str(currpage+1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -342,7 +341,7 @@ def episodesList(params):
 
     link = get_html(url)
     data = link[link.find('=')+1:]
-    json_response = simplejson.loads(data)
+    json_response = loads(data)
     item = json_response['data']
     if item['tvYear']:
         p_year = item['tvYear']
@@ -358,7 +357,7 @@ def episodesList(params):
     params['tvId'] = str(tvId)
     params['vid'] = videoId
     params['url'] = item['purl']
-    li = xbmcgui.ListItem(BANNER_FMT % title,
+    li = ListItem(BANNER_FMT % title,
                           iconImage=thumb, thumbnailImage=thumb)
     li.setInfo(type="Video", infoLabels={"Title": title, 'Plot': info})
     u = sys.argv[0] + '?mode=playvideo&title=' + title
@@ -408,7 +407,7 @@ def changeList(params):
     surl = url.split('/')
     lurl = surl[-1].split('-')
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     for item in filter[1:]:
         title = item.h3.text
@@ -450,18 +449,18 @@ def searchiQiyi(params):
         return
 
     keyword = keyboard.getText()
-    key = urllib.quote_plus(keyword)
+    key = quote_plus(keyword)
     url = 'http://so.iqiyi.com/so/q_' + key + '?source=hot'
 
     link = get_html(url)
 
     if link is None:
-        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + '   [/COLOR]的相关视频')
+        li = ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + '   [/COLOR]的相关视频')
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
         xbmcplugin.endOfDirectory(int(sys.argv[1]))
         return
 
-    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]')
+    li = ListItem('[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]')
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
@@ -490,20 +489,20 @@ def searchiQiyi(params):
             site = series.find_all('em', {'class': 'vm-inline'})
             for t in site:
                 title += ' |' + t.text
-            li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
+            li = ListItem(title, iconImage='', thumbnailImage=img)
             li.setInfo(type='Video',
                        infoLabels={'Title': title, 'Plot': info})
 
             u = sys.argv[0] + '?url=' + href + '&mode=playfound'
-            u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+            u += '&thumb=' + quote_plus(img) + '&title=' + title
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
             album = series.find_all('li', {'class': 'album_item'})
             for page in album:
                 href = page.a['href']
                 title = page.a['title']
-                li = xbmcgui.ListItem('--' + title, thumbnailImage=img)
+                li = ListItem('--' + title, thumbnailImage=img)
                 u = sys.argv[0] + '?url=' + href + '&mode=playfound'
-                u += '&thumb=' + urllib.quote_plus(img) + '&title=' + title
+                u += '&thumb=' + quote_plus(img) + '&title=' + title
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'videos')
@@ -511,11 +510,11 @@ def searchiQiyi(params):
 
 
 # main programs goes here #########################################
-dialog = xbmcgui.Dialog()
-pDialog = xbmcgui.DialogProgress()
+dialog = Dialog()
+pDialog = DialogProgress()
 
 params = sys.argv[2][1:]
-params = dict(urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 #socket.setdefaulttimeout(10)

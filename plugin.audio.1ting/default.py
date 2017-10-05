@@ -5,8 +5,8 @@ import music
 import xbmc
 import xbmcgui
 import xbmcplugin
-import urllib
-import urlparse
+from urllib import urlencode
+from urlparse import parse_qsl
 import sys
 
 
@@ -32,7 +32,7 @@ def addList(lists):
             query.update(info)
             li.setInfo(type="Music", infoLabels=info)
             isFolder = False
-        u = "%s?%s" % (plugin, urllib.urlencode(query))
+        u = "%s?%s" % (plugin, urlencode(query))
         xbmcplugin.addDirectoryItem(handle, u, li, isFolder, n)
     xbmcplugin.endOfDirectory(handle)
 
@@ -65,12 +65,8 @@ def playList(url):
 
 
 def get_keyword():
-    try:
-        import ChineseKeyboard as m
-    except:
-        m = xbmc
-    keyboard = m.Keyboard('', '请输入歌名,专辑或歌手进行搜索,支持简拼.')
-    # xbmc.sleep(1500)
+    keyboard = xbmc.Keyboard('', '请输入歌名,专辑或歌手进行搜索,支持简拼.')
+    xbmc.sleep(1500)
     keyboard.doModal()
     if keyboard.isConfirmed():
         keyword = keyboard.getText()
@@ -88,7 +84,7 @@ def search():
 
 
 params = sys.argv[2][1:]
-paramlist = dict(urlparse.parse_qsl(params))
+paramlist = dict(parse_qsl(params))
 mode = paramlist.get("mode", music.MODE_MENU)
 url = paramlist.get("url", "")
 

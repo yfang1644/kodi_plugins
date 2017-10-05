@@ -725,26 +725,6 @@
 
 <addon id="plugin.video.bilibili"
     name="哔哩哔哩(bilibili)"
-    version="0.2.9"
-    provider-name="Syndim,yfang1644">
-    <requires>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.1"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <platform>all</platform>
-        <language></language>
-        <summary>XBMC Bilibili Plugin</summary>
-        <description>XBMC BiliBili Plugin</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.bilibili</source>
-    </extension>
-</addon>
-
-<addon id="plugin.video.bilibili2"
-    name="哔哩哔哩(bilibili2)"
     version="1.0.4"
     provider-name="Catro,yfang1644">
     <requires>
@@ -752,7 +732,7 @@
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
         <import addon="plugin.video.cntv-video" version="1.0.1"/>
     </requires>
-    <extension point="xbmc.python.pluginsource" library="addon.py">
+    <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -761,7 +741,7 @@
         <summary lang="zh">bilibili视频插件</summary>
         <description lang="en">Online video from www.bilibili.com</description>
         <description lang="zh">视频来源：www.bilibili.com</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.bilibili2</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.bilibili</source>
     </extension>
 </addon>
 

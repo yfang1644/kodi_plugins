@@ -3,8 +3,6 @@
     name="5ivdo(5ivdo)"
     version="1.2.0"
     provider-name="5ivdo,yfang1644">
-    <requires>
-    </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>

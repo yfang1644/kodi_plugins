@@ -3,10 +3,8 @@
     name="百度云盘" version="0.1.9"
     provider-name="caasiu,yfang1644">
 	<requires>
-		<import addon="xbmc.python" version="2.20.0" />
 		<import addon="script.module.xbmcswift2" version="2.4.0" />
         <import addon="script.module.requests" version="2.9.1" option="false" />
-        <import addon="script.module.keyboard.chinese" option="true" />
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>audio video</provides>

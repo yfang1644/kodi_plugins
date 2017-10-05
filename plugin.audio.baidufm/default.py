@@ -1,17 +1,15 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
+
 import xbmc
 import xbmcgui
 import xbmcaddon
 import xbmcplugin
 import sys
 import urllib
-import urlparse
+from urlparse import parse_qsl
 import string
-
-try:
-    import simplejson
-except ImportError:
-    import json as simplejson
+from json import loads
 
 __addon__ = xbmcaddon.Addon()
 __addonname__ = __addon__.getAddonInfo("name")
@@ -49,7 +47,7 @@ class BaiduFmPlayer(xbmc.Player):
         print argv
         self.pluginName = argv[0]
         self.windowId = int(argv[1])
-        self.params = dict(urlparse.parse_qsl(argv[2][1:]))
+        self.params = dict(parse_qsl(argv[2][1:]))
 
         action = self.getParam("action")
 
@@ -65,7 +63,7 @@ class BaiduFmPlayer(xbmc.Player):
 
     def loadChannelList(self):
         json = urllib.urlopen("http://fm.baidu.com/dev/api/?tn=channellist").read()
-        data = simplejson.loads(json)
+        data = loads(json)
         self.onChannelListLoaded(data["channel_list"])
 
     def onChannelListLoaded(self, channelList):
@@ -103,7 +101,7 @@ class BaiduFmPlayer(xbmc.Player):
 
     def loadSongList(self, channelId):
         html = urllib.urlopen("http://fm.baidu.com/dev/api/?tn=playlist&format=json&id="+urllib.quote(channelId)).read()
-        json = simplejson.loads(html)
+        json = loads(html)
         ids = []
         for song in json["list"]:
             ids.append(song["id"])
@@ -112,7 +110,7 @@ class BaiduFmPlayer(xbmc.Player):
     def loadSongLinks(self, ids):
         ids = string.join([str(i) for i in ids], ',')
         html = urllib.urlopen("http://music.baidu.com/data/music/fmlink?type=mp3&rate=320&songIds="+urllib.quote(ids)).read()
-        data = simplejson.loads(html)
+        data = loads(html)
         xcode = data["data"]["xcode"]
         songs = data["data"]["songList"]
         for song in songs:

@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, DialogProgress, ListItem
 import xbmcplugin
 import xbmcaddon
-import urlparse
-import urllib
+from urlparse import parse_qsl
+from urllib import quote_plus
 import re
 import sys
 import os
 import cookielib
-import simplejson
+import json
 from bs4 import BeautifulSoup
 from common import get_html, r1
 from youku import video_from_vid
@@ -30,10 +30,6 @@ __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
 cookieFile = __profile__ + 'cookies.tudou'
 
-if (__addon__.getSetting('keyboard') =='0'):
-    from xbmc import Keyboard as Apps
-else:
-    from ChineseKeyboard import Keyboard as Apps
 
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
 UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
@@ -94,7 +90,7 @@ class LetvPlayer(xbmc.Player):
             endIndex = min((self.curpos + self.maxfp), self.v_urls_size)
             self.title = "%s - 第(%s~%s)/%s节" % (self.name, str(self.curpos+1), str(endIndex), str(self.v_urls_size))
             # print "### Preparing: " + self.title
-            self.listitem = xbmcgui.ListItem(self.title, thumbnailImage=self.thumb)
+            self.listitem = ListItem(self.title, thumbnailImage=self.thumb)
             self.listitem.setInfo(type="Video", infoLabels={"Title": self.title})
 
             for i in range(self.curpos, endIndex):
@@ -288,7 +284,7 @@ def PlayVideo(params):
     level = int(__addon__.getSetting('resolution'))
 
     if level == 4:
-        dialog = xbmcgui.Dialog()
+        dialog = Dialog()
         level = dialog.select('清晰度选择', ['流畅', '高清', '超清', '1080P'])
         level = max(0, level)
 
@@ -303,7 +299,7 @@ def PlayVideo(params):
             playlist.clear()
             for i in range(ulen):
                 name = title + '(%d/%d)' % (i + 1, ulen)
-                listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+                listitem = ListItem(name, thumbnailImage=thumb)
                 listitem.setInfo(type="Video", infoLabels={"Title": name})
                 playlist.add(urls[i], listitem)
 
@@ -316,7 +312,7 @@ def PlayVideo(params):
             playlist.clear()
             for i in range(ulen):
                 name = title + '(%d/%d)' % (i + 1, ulen)
-                listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
+                listitem = ListItem(name, thumbnailImage=thumb)
                 listitem.setInfo(type="Video", infoLabels={"Title": name})
                 playlist.add(urls[i], listitem)
 
@@ -333,7 +329,7 @@ def PlayVideo(params):
                 xbmc.sleep(100)
         '''
     else:
-        xbmcgui.Dialog().ok(__addonname__, '未匹配到VID')
+        Dialog().ok(__addonname__, '未匹配到VID')
         return
 
 
@@ -351,12 +347,12 @@ def httphead(url):
 def buildParams(params):
     str = ''
     for item in params:
-        str += '&%s=' % item + urllib.quote_plus(params[item])
+        str += '&%s=' % item + quote_plus(params[item])
     return str
 
 
 def mainMenu():
-    li = xbmcgui.ListItem('[COLOR FF00FF00] 【土豆视频 - 搜索】[/COLOR]')
+    li = ListItem('[COLOR FF00FF00] 【土豆视频 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -377,7 +373,7 @@ def mainMenu():
         nametype = href.split('/')[-1][:3]
         mode = 'videolist'
 
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         u = sys.argv[0] + '?url=%s&mode=%s&name=%s' % (href, mode, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -390,8 +386,8 @@ def listSubMenu(params):
     html = get_html(url)
     filter = params.get('filter', '')
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'(分类过滤)' + filter))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    li = ListItem(BANNER_FMT % (name+'(分类过滤)' + filter))
+    u = sys.argv[0] + '?url=' + quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -402,11 +398,11 @@ def listSubMenu(params):
         thumb = item.img['src']
         href = httphead(item.a['href'])
         title = item.a['title']
-        li = xbmcgui.ListItem(title,
+        li = ListItem(title,
                               iconImage=thumb, thumbnailImage=thumb)
         u = sys.argv[0] + '?url=' + href
-        u += '&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(thumb)
+        u += '&name=' + quote_plus(name)
+        u += '&thumb=' + quote_plus(thumb)
         u += '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -420,9 +416,9 @@ def listSubMenu(params):
             continue
         title = page.a.text
         u = sys.argv[0] + '?url=' + href
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&mode=videolist&title=' + title
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
@@ -484,12 +480,12 @@ def listSubMenu1(params):
 
     list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
     html = get_html(list_api + strparam)
-    jsdata = simplejson.loads(html)
+    jsdata = json.loads(html)
     items = jsdata['items']
     total = jsdata['total']
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    li = ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
+    u = sys.argv[0] + '?url=' + quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -501,10 +497,10 @@ def listSubMenu1(params):
     for i in range(len(field)):
         title = field[i].text
         if field[i].has_attr('selected'):
-            li = xbmcgui.ListItem(INDENT_FMT0 % title)
+            li = ListItem(INDENT_FMT0 % title)
             currentPage = link[i]
         else:
-            li = xbmcgui.ListItem(INDENT_FMT1 % title)
+            li = ListItem(INDENT_FMT1 % title)
 
         href = HOST_URL + '/list/' + link[i]
         nametype = link[i][:3]
@@ -513,8 +509,8 @@ def listSubMenu1(params):
         else:
             mode = 'videolist2'
 
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
-        u += '&name=' + urllib.quote_plus(name)
+        u = sys.argv[0] + '?url=' + quote_plus(href)
+        u += '&name=' + quote_plus(name)
         u += '&mode=' + mode + '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -529,13 +525,13 @@ def listSubMenu1(params):
             info += '|付费'.decode('utf-8')
         albumId = item['albumId']
         aid = item['aid']
-        li = xbmcgui.ListItem(title + TIMER_FMT % info,
+        li = ListItem(title + TIMER_FMT % info,
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?url=' + href
         u += '&mode=albumlist&albumId=%d' % albumId
-        u += '&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(img)
+        u += '&name=' + quote_plus(name)
+        u += '&thumb=' + quote_plus(img)
         u += '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -544,17 +540,17 @@ def listSubMenu1(params):
     else:
         mode = 'videolist2'
     if int(page) > 1:
-        li = xbmcgui.ListItem(BANNER_FMT % '上一页')
+        li = ListItem(BANNER_FMT % '上一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist1&pageNo=%d' % (int(page)-1)
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if int(page) <= total // 30:
-        li = xbmcgui.ListItem(BANNER_FMT % '下一页')
+        li = ListItem(BANNER_FMT % '下一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist1&pageNo=%d' % (int(page)+1)
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
@@ -594,8 +590,8 @@ def listSubMenu2(params):
     list_api = 'http://www.tudou.com/list/itemData.action'
     html = get_html(list_api + strparam)
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    li = ListItem(BANNER_FMT % (name+'(第%s页|分类过滤)' % page + filter))
+    u = sys.argv[0] + '?url=' + quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -607,10 +603,10 @@ def listSubMenu2(params):
     for i in range(len(field)):
         title = field[i].text
         if field[i].has_attr('selected'):
-            li = xbmcgui.ListItem(INDENT_FMT0 % title)
+            li = ListItem(INDENT_FMT0 % title)
             currentPage = link[i]
         else:
-            li = xbmcgui.ListItem(INDENT_FMT1 % title)
+            li = ListItem(INDENT_FMT1 % title)
 
         href = HOST_URL + '/list/' + link[i]
         nametype = link[i][:3]
@@ -618,11 +614,11 @@ def listSubMenu2(params):
             mode = 'videolist1'
         else:
             mode = 'videolist2'
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
-        u += '&name=' + urllib.quote_plus(name)
+        u = sys.argv[0] + '?url=' + quote_plus(href)
+        u += '&name=' + quote_plus(name)
         u += '&mode=%s&title=%s' % (mode, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-    jsdata = simplejson.loads(html)
+    jsdata = json.loads(html)
     items = jsdata['data']
 
     for item in items:
@@ -631,10 +627,10 @@ def listSubMenu2(params):
         img = item['bigPicUrl']
         time = item['totalTimeStr']
         href = HOST_URL + '/programs/view/%s/' % item['code']
-        li = xbmcgui.ListItem(title + TIMER_FMT % time,
+        li = ListItem(title + TIMER_FMT % time,
                               iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?mode=albumlist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&thumb=' + img + '&url=' + href
         u += '&title=' + title
         u += '&iid=%d' % (iid)
@@ -645,14 +641,14 @@ def listSubMenu2(params):
     else:
         mode = 'videolist2'
     if int(page) > 1:
-        li = xbmcgui.ListItem(BANNER_FMT % '上一页')
+        li = ListItem(BANNER_FMT % '上一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist2&page=%d' % (int(page)-1)
         u += '&name=' + name
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if int(page) <= 2000:
-        li = xbmcgui.ListItem(BANNER_FMT % '下一页')
+        li = ListItem(BANNER_FMT % '下一页')
         u = sys.argv[0] + '?url=' + url
         u += '&mode=videolist2&page=%d' % (int(page)+1)
         u += '&name=' + name
@@ -675,7 +671,7 @@ def normalSelect(params):
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'category_item fix'})
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     color = '[COLOR FF00FF00]%s[/COLOR]'
     for iclass in soup:
         si = iclass.find_all('li')
@@ -722,21 +718,21 @@ def relatedAlbumList(params):
         iid = re.compile('iid: (\d+)').findall(html)
         vcode = re.compile('youkuCode: "(.+?)"').findall(html)
         u = sys.argv[0] + '?mode=playvideo&iid=%s&vcode=%s' % (iid[0], vcode[0])
-        u += '&title=' + urllib.quote_plus(title)
+        u += '&title=' + quote_plus(title)
         u += '&thumb=' + img
 
     else:
         u = sys.argv[0] + '?mode=albumlist&albumId=%s' % aid
         u += '&title=' + title + '&thumb=' + img
 
-    li = xbmcgui.ListItem(BANNER_FMT % title,
+    li = ListItem(BANNER_FMT % title,
                           iconImage=img, thumbnailImage=img)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
     jspage = get_html(album_api % aid, decoded=True)
 
-    jsdata = simplejson.loads(jspage.encode('utf-8'))
+    jsdata = json.loads(jspage.encode('utf-8'))
     jsdata = jsdata['items']
 
     for item in jsdata:
@@ -757,7 +753,7 @@ def relatedAlbumList(params):
         u += '&title=' + title
         u += '&thumb=' + img
         u += '&vcode=%s&iid=%d' % (vcode, iid)
-        li = xbmcgui.ListItem(title + '(' + time + ')',
+        li = ListItem(title + '(' + time + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
@@ -765,14 +761,14 @@ def relatedAlbumList(params):
     rel_list = 'http://www.tudou.com/crp/getRelativeContent.action?a=%s'
 
     jspage = get_html(rel_list % aid)
-    jsdata = simplejson.loads(jspage)
+    jsdata = json.loads(jspage)
     headings = jsdata['data']['catList']
     heading = [x['name'] for x in headings]
     title = '|'.join(heading).encode('utf-8')
 
     u = sys.argv[0] + '?mode=albumlist&albumId=%s' % aid
-    u += '&title=' + urllib.quote_plus(title)
-    li = xbmcgui.ListItem(BANNER_FMT % title)
+    u += '&title=' + quote_plus(title)
+    li = ListItem(BANNER_FMT % title)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     items = jsdata['data']['playAlbumInfoList']
@@ -782,7 +778,7 @@ def relatedAlbumList(params):
         title = item['albumName']
         extra = item['update']
         info = item['albumShortDesc']
-        li = xbmcgui.ListItem(title + '(' + extra + ')',
+        li = ListItem(title + '(' + extra + ')',
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?mode=albumlist'
@@ -808,19 +804,19 @@ def relatedPlayList(params):
             u += '&iid=' + iid[0]
         if vcode:
             u += '&vcode=' + vcode[0]
-        u += '&title=' + urllib.quote_plus(title)
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        u += '&title=' + quote_plus(title)
+        li = ListItem(title, iconImage=img, thumbnailImage=img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
 
     jspage = get_html(rel_list % iid[0])
-    jsdata = simplejson.loads(jspage)
+    jsdata = json.loads(jspage)
     items = jsdata['data']['pList']
 
     u = sys.argv[0] + '?mode=codelist&iid=%s' % iid[0]
     u += '&title=' + '相关视频'.decode('utf-8')
-    li = xbmcgui.ListItem(BANNER_FMT % '相关视频')
+    li = ListItem(BANNER_FMT % '相关视频')
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     for item in items:
@@ -828,7 +824,7 @@ def relatedPlayList(params):
         img = item['picUrl']
         info = item['description']
         code = item['code']
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        li = ListItem(title, iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?mode=codelist'
         u += '&title=%s&code=%s' % (title, code)
@@ -839,12 +835,12 @@ def relatedPlayList(params):
     rel_list = 'http://www.tudou.com/crp/plist.action?lcode=%s'
 
     jspage = get_html(rel_list % code)
-    jsdata = simplejson.loads(jspage)
+    jsdata = json.loads(jspage)
     items = jsdata['items']
 
     u = sys.argv[0] + '?mode=codelist&iid=%s' % iid
     u += '&title=' + '主题视频'.decode('utf-8')
-    li = xbmcgui.ListItem(BANNER_FMT % '主题视频')
+    li = ListItem(BANNER_FMT % '主题视频')
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     for item in items:
@@ -852,7 +848,7 @@ def relatedPlayList(params):
         img = item['pic']
         time = item['time']
         iid = item['iid']
-        li = xbmcgui.ListItem(title + '(' + time + ')',
+        li = ListItem(title + '(' + time + ')',
                               iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?mode=playvideo'
         u += '&title=%s&thumb=%s&iid=%d' % (title, img, iid)
@@ -875,16 +871,14 @@ def albumList(params):
 
 
 def searchInTudou(params):
-    if (__addon__.getSetting('keyboard') == '0'):
-        keyboard = xbmc.Keyboard('', '请输入搜索内容')
-    else:
-        keyboard = ChineseKeyboard.Keyboard('', '请输入搜索内容')
+    keyboard = xbmc.Keyboard('', '请输入搜索内容')
+
     xbmc.sleep(1500)
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         keyword = keyboard.getText()
         p_url = 'http://so.tv.sohu.com/mts?chl=&tvType=-2&wd='
-        url = p_url + urllib.quote_plus(keyword.decode('utf-8').encode('gbk'))
+        url = p_url + quote_plus(keyword.decode('utf-8').encode('gbk'))
         params['url'] = url
         params['keyword'] = keyword
         params['page'] = '1'
@@ -892,9 +886,9 @@ def searchInTudou(params):
 
 # main programs goes here #########################################
 xplayer = LetvPlayer()
-pDialog = xbmcgui.DialogProgress()
+pDialog = DialogProgress()
 params = sys.argv[2][1:]
-params = dict(urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 if mode is not None:

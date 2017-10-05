@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import simplejson
+from json import loads
 import time
 from random import random
 import urlparse
@@ -49,7 +49,7 @@ class Sohu():
 
     def real_url(self, host, vid, tvid, new, clipURL, ck):
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
-        return simplejson.loads(get_html(url))['url']
+        return loads(get_html(url))['url']
 
     def video_from_url(self, url, **kwargs):
         if re.match(r'http://share.vrs.sohu.com', url):
@@ -62,7 +62,7 @@ class Sohu():
         if re.match(r'http://tv.sohu.com/', url):
             # if extractor_proxy:
             #     set_proxy(tuple(extractor_proxy.split(":")))
-            info = simplejson.loads(get_html(self.v_api1 % vid))
+            info = loads(get_html(self.v_api1 % vid))
 
             vidlist = ['oriVid',
                        'superVid',
@@ -76,12 +76,12 @@ class Sohu():
             else:
                 hqvid = info[qtyp]
             if hqvid != 0 and hqvid != vid:
-                info = simplejson.loads(get_html(self.v_api1 % hqvid))
+                info = loads(get_html(self.v_api1 % hqvid))
             # if extractor_proxy:
             #     unset_proxy()
 
         else:
-            info = simplejson.loads(get_html(self.v_api2 % vid))
+            info = loads(get_html(self.v_api2 % vid))
 
         host = info['allot']
         prot = info['prot']

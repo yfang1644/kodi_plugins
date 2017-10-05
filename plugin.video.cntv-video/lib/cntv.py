@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import simplejson
+from json import loads
 from common import get_html, r1, match1
 
 
@@ -10,7 +10,7 @@ class CNTV():
     def video_from_vid(self, vid, **kwargs):
         api = 'http://vdn.apps.cntv.cn/api/getHttpVideoInfo.do?pid='
         html = get_html(api + vid)
-        info = simplejson.loads(html)
+        info = loads(html)
         title = info['title']
         video = info['video']
 

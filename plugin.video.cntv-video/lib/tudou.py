@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import simplejson
+from json import loads
 from common import get_html, r1
 
 
@@ -12,7 +12,7 @@ class Tudou():
     def video_from_iid(self, iid, **kwargs):
         url = 'http://www.tudou.com/outplay/goto/getItemSegs.action?iid=%s'
         html = get_html(url % iid)
-        data = simplejson.loads(html)
+        data = loads(html)
 
         keys = data.keys()
 
@@ -40,7 +40,7 @@ class Tudou():
     def parse_plist(url):
         html = get_html(url)
         lcode = r1(r"lcode:\s*'([^']+)'", html)
-        plist_info = simplejson.loads(get_html('http://www.tudou.com/crp/plist.action?lcode=' + lcode))
+        plist_info = loads(get_html('http://www.tudou.com/crp/plist.action?lcode=' + lcode))
         return ([(item['kw'], item['iid']) for item in plist_info['items']])
 
     def download_playlist(self, url, **kwargs):

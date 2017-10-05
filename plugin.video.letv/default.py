@@ -6,18 +6,17 @@ import xbmcgui
 import xbmcplugin
 import xbmcaddon
 import urllib2
-import urllib
+from urllib import quote_plus
+from urlparse import parse_qsl
 import re
 import sys
 import os
-import gzip
-import StringIO
 import time
 import random
 import hashlib
 import socket
 import cookielib
-import simplejson
+from json import loads
 from bs4 import BeautifulSoup
 
 ########################################################################
@@ -344,7 +343,7 @@ def decrypt_url(url, mCheck=True):
         vid = re.compile('/vplay/(\d+).html').findall(url)[0]
         j_url = t_url.format(vid, calcTimeKey(int(time.time())))
         link = getHttpData(j_url)
-        info = simplejson.loads(link)
+        info = loads(link)
         playurl = info['msgs']['playurl']
     except:
         return ''
@@ -399,7 +398,7 @@ def decrypt_url(url, mCheck=True):
         pDialog.update(60, line2="### 服务器  [ %i ]" % (index + 1))
 
     # try:
-    info2 = simplejson.loads(r2)
+    info2 = loads(r2)
     suffix = '&r=' + str(int(time.time() * 1000)) + '&appid=500'
 
     # need to decrypt m3u8 (encoded) - may hang here
@@ -586,7 +585,7 @@ def listSubMenu(params):
         title += typelist + '(' + type + ')' + '|'
 
     li = xbmcgui.ListItem(title)
-    u = sys.argv[0] + '?url=' + url + '&mode=filter&name=' + urllib.quote_plus(name)
+    u = sys.argv[0] + '?url=' + url + '&mode=filter&name=' + quote_plus(name)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     soup = tree.find_all('dl', {'class': 'dl_list'})
@@ -600,7 +599,7 @@ def listSubMenu(params):
                               iconImage=img, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?url=' + href
-        u += '&mode=episodelist&name=' + urllib.quote_plus(name)
+        u += '&mode=episodelist&name=' + quote_plus(name)
         u += '&title=%s&thumb=%s' % (title, img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -612,7 +611,7 @@ def listSubMenu(params):
         title = BANNER_FMT % '上一页'
         aurl = re.sub('p\d*.html', 'p%d.html' % (page-1), url)
         u = sys.argv[0] + '?url=%s&mode=videolist' % aurl
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         liz = xbmcgui.ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
@@ -620,7 +619,7 @@ def listSubMenu(params):
         title = BANNER_FMT % '下一页'
         aurl = re.sub('p\d*.html', 'p%d.html' % (page+1), url)
         u = sys.argv[0] + '?url=%s&mode=videolist' % aurl
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         liz = xbmcgui.ListItem(title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
@@ -751,7 +750,7 @@ def episodesList(params):
     vid = match[0]
 
     html = getHttpData(ALBULM_URL % (vid))
-    jsdata = simplejson.loads(html)
+    jsdata = loads(html)
 
     album = jsdata['data']['episode']['videolist']
     number = 0
@@ -853,11 +852,11 @@ def searchLeTV(params):
 
     page = params['page']
     p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
-    p_url = p_url + urllib.quote_plus(keyword)
+    p_url = p_url + quote_plus(keyword)
     link = getHttpData(p_url)
 
     li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')
-    u = sys.argv[0] + "?name=" + urllib.quote_plus(keyword) + "&page=" + page
+    u = sys.argv[0] + "?name=" + quote_plus(keyword) + "&page=" + page
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     if link is None:
@@ -894,8 +893,8 @@ def searchLeTV(params):
                    infoLabels={'Title': title, 'Plot': info})
 
         u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
-        u += '&name=' + urllib.quote_plus('电视剧')
-        u += '&thumb=' + urllib.quote_plus(img)
+        u += '&name=' + quote_plus('电视剧')
+        u += '&thumb=' + quote_plus(img)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'videos')
@@ -907,7 +906,7 @@ xplayer = LetvPlayer()
 pDialog = xbmcgui.DialogProgress()
 
 params = sys.argv[2][1:]
-params = dict(urllib2.urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 

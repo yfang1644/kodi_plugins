@@ -9,7 +9,6 @@ import xbmcvfs
 import os
 import sys
 import re
-import json
 
 __addon_id__= 'plugin.video.bdyun'
 plugin_path = xbmcaddon.Addon(__addon_id__).getAddonInfo('path')

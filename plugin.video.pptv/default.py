@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
 import urlparse
-import urllib
+from urllib import quote_plus
 import re
 import time
 from random import random
-import simplejson
+from json import loads
 from common import get_html
 from pptv import video_from_url
 
@@ -18,9 +18,6 @@ from pptv import video_from_url
 __addon__     = xbmcaddon.Addon()
 __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
-
-UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-UserAgent_IE = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 
 SEGSIZE = 900
 PPTV_LIST = 'http://list.pptv.com/'
@@ -294,7 +291,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
             tmp = re.sub('^\s*\(', '', tmp)
             tmp = re.sub('\)\s*$', '', tmp)
             try:
-                pptmp = simplejson.loads(tmp)
+                pptmp = loads(tmp)
             except:
                 continue
             channel = parseDOM(pptmp['html'], 'td', attrs={'class': 'show_channel'})
@@ -319,7 +316,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
         tmp = get_html(PPTV_SUBJECT_LIST + 'date=' + time.strftime('%Y-%m-%d', time.localtime()) + '&type=' + PPTV_LIVE_TYPES[url])
         tmp = re.sub('\s*\(', '', tmp)
         tmp = re.sub('\)\s*$', '', tmp)
-        pptmp = simplejson.loads(tmp)
+        pptmp = loads(tmp)
         stime = parseDOM(pptmp['html'], 'td', attrs={'class': 'show_time'})
         ssort = parseDOM(pptmp['html'], 'td', attrs={'class': 'show_sort'})
         stitle = parseDOM(pptmp['html'], 'div', attrs={'class': 'show_box'})
@@ -372,7 +369,7 @@ def GetPPTVEpisodesList(params):
 
     # check whether is VIP video
     if re.match('^http://.*vip\.pptv\.com/.*$', url):
-        xbmcgui.Dialog().ok(__addonname__, '暂时无法观看PPTV VIP视频!')
+        Dialog().ok(__addonname__, '暂时无法观看PPTV VIP视频!')
         return []
 
     data = get_html(url)
@@ -387,13 +384,13 @@ def GetPPTVEpisodesList(params):
     html = get_html(ppi_url)
     data = re.compile('\((.+)\)').findall(html)
     try:
-        jsdata = simplejson.loads(data[0])
+        jsdata = loads(data[0])
         ppi_cookie = jsdata['ppi']
         api_url = 'http://apis.web.pptv.com/show/videoList?from=web&version=1.0.0&format=jsonp&cb=videolist_request&pid=%s&cat_id=%s'
         html = get_html(api_url % (pid, cat_id),
                         headers={'Cookie': 'ppi=' + ppi_cookie})
         data = re.compile('\((.+)\)').findall(html)
-        jsdata = simplejson.loads(data[0])
+        jsdata = loads(data[0])
         ppvideos = jsdata['data']['list']
         video_list = []
         for video in ppvideos:
@@ -413,10 +410,10 @@ def GetPPTVEpisodesList(params):
 
         tmpid = (len(cid) > 0 and cid or channel_id)
         tmp = get_html(PPTV_META_JSON + '?cid=' + tmpid)
-        pptmp = simplejson.loads(tmp)
+        pptmp = loads(tmp)
         if pptmp['err'] != 0 or 'count' in pptmp['data']:
             tmp = get_html(PPTV_PLAYLIST_JSON + '?pindex=1&psize=' + str('count' in pptmp['data'] and pptmp['data']['count'] or 500) + '&sid=' + (int(pid) <= 0 and tmpid or pid))
-            ppvideos = simplejson.loads(tmp)
+            ppvideos = loads(tmp)
             for video in ppvideos['data']['videos']:
                 link = re.sub('\[URL\]', video['url'], ppvideos['data']['urlFormat'])
                 image = re.sub('\[SN\]', str(video['sn']), ppvideos['data']['picUrlFormat'])
@@ -532,7 +529,7 @@ def GetPPTVSearchList(url, matchnameonly=None):
 def listRoot():
     # show search entry
     u = sys.argv[0] + '?mode=search'
-    liz = xbmcgui.ListItem('[COLOR FF00FFFF]<按此进行搜索...>[/COLOR]')
+    liz = ListItem('[COLOR FF00FFFF]<按此进行搜索...>[/COLOR]')
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, False)
 
     links = [PPTV_TV_LIST]
@@ -552,7 +549,7 @@ def listRoot():
 
     for i, j in zip(links, names):
         u = sys.argv[0] + '?url=' + i + '&mode=videolist&name=' + j
-        liz = xbmcgui.ListItem(j)
+        liz = ListItem(j)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -593,7 +590,7 @@ def listVideo(params, list_ret):
         title += ' [' + '/'.join(tmp) + '] (按此选择)'
         u = sys.argv[0] + '?url=' + url + '&mode=filterlist&name=' + name
     # add first item
-    liz = xbmcgui.ListItem(title)
+    liz = ListItem(title)
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True, total_items)
 
     # show video list
@@ -611,9 +608,9 @@ def listVideo(params, list_ret):
             is_dir = True
         u = sys.argv[0] + '?url=' + i['link']
         u += '&mode=' + (is_dir and 'episodelist' or 'playvideo')
-        u += '&name=%d.' % number + urllib.quote_plus(title)
-        u += '&thumb=' + urllib.quote_plus(i['image'])
-        liz = xbmcgui.ListItem(title, thumbnailImage=i['image'])
+        u += '&name=%d.' % number + quote_plus(title)
+        u += '&thumb=' + quote_plus(i['image'])
+        liz = ListItem(title, thumbnailImage=i['image'])
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, is_dir)
         playlist.add(i['link'], liz)
         number += 1
@@ -622,9 +619,9 @@ def listVideo(params, list_ret):
     if pages_attr:
         for page_link, page_str in zip(page_links, page_strs):
             if len(page_link) > 0:
-                u = sys.argv[0] + '?url=' + urllib.quote_plus(page_link)
-                u += '&mode=videolist&name=' + urllib.quote_plus(name)
-                liz = xbmcgui.ListItem(page_str)
+                u = sys.argv[0] + '?url=' + quote_plus(page_link)
+                u += '&mode=videolist&name=' + quote_plus(name)
+                liz = ListItem(page_str)
                 xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'movies')
@@ -639,7 +636,7 @@ def playVideo(params):
     quality = int(__addon__.getSetting('movie_quality'))
     # if live page without video link, try to get video link from search result
     #if re.match('^http://live\.pptv\.com/list/tv_program/.*$', url):
-    #    url = GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(name), name)
+    #    url = GetPPTVSearchList(PPTV_SEARCH_URL + quote_plus(name), name)
     playmode = __addon__.getSetting('video_vplaycont')
 
     playlist = xbmc.PlayList(0)
@@ -662,11 +659,11 @@ def playVideo(params):
         if ppurls and len(ppurls) > 0:
             for i in range(0, len(ppurls)):
                 title = p_list + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
-                liz = xbmcgui.ListItem(title, thumbnailImage=thumb)
+                liz = ListItem(title, thumbnailImage=thumb)
                 liz.setInfo(type='Video', infoLabels={'Title': title})
                 playlist.add(ppurls[i], liz)
         else:
-            # xbmcgui.Dialog().ok(__addonname__, '无法获取视频地址!')
+            # Dialog().ok(__addonname__, '无法获取视频地址!')
             continue
 
         if x == v_pos:
@@ -679,7 +676,7 @@ def listFilter(params):
     url = params['url']
     page = params.get('page')
     level = 0
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     while True:
         filter_list = GetPPTVVideoList(url, page, True)
         # show last filter
@@ -699,6 +696,7 @@ def listFilter(params):
 
 def searchPPTV():
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
+
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         key = keyboard.getText()
@@ -724,7 +722,7 @@ def listEpisode(params):
 
 def searchResult(params):
     key = params['key']
-    video_list = GetPPTVSearchList(PPTV_SEARCH_URL + urllib.quote_plus(key))
+    video_list = GetPPTVSearchList(PPTV_SEARCH_URL + quote_plus(key))
     params['name'] = '搜索结果 - ' + params.get('key', '')
     listVideo(params, (None, video_list, None))
 

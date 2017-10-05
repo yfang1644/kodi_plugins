@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import simplejson
+from json import loads
 from random import random, randrange
 import base64
 import hashlib
@@ -16,7 +16,7 @@ def get_timestamp():
     tn = random()
     url = 'http://api.letv.com/time?tn={}'.format(tn)
     result = get_content(url)
-    return simplejson.loads(result)['stime']
+    return loads(result)['stime']
 
 
 #@DEPRECATED
@@ -60,7 +60,7 @@ class LeTV():
 
         url = 'http://player-pc.le.com/mms/out/video/playJson?id={}&platid=1&splatid=101&format=1&tkey={}&domain=www.le.com&region=cn&source=1000&accesyx=1'.format(vid, self.calcTimeKey(int(time.time())))
         r = get_html(url)
-        info = simplejson.loads(r)
+        info = loads(r)
         playurl = info['msgs']['playurl']
 
         stream_level = kwargs.get('level', 0)
@@ -78,7 +78,7 @@ class LeTV():
         url += '&m3v=1&termid=1&format=1&hwtype=un&ostype=MacOS10.12.4&p1=1&p2=10&p3=-&expect=3&tn={}&vid={}&uuid={}&sign=letv'.format(random(), vid, uuid)
 
         r2 = get_html(url.encode('utf-8'))
-        info2 = simplejson.loads(r2)
+        info2 = loads(r2)
 
         # hold on ! more things to do
         # to decode m3u8 (encoded)
@@ -106,7 +106,7 @@ class LeTV():
         request_info = urllib.request.Request('http://api.letvcloud.com/gpc.php?' + '&'.join([i + '=' + argumet_dict[i] for i in argumet_dict]) + '&sign={sign}'.format(sign=sign))
         response = urllib.request.urlopen(request_info)
         data = response.read()
-        info = simplejson.loads(data.decode('utf-8'))
+        info = loads(data.decode('utf-8'))
         type_available = []
         for video_type in info['data']['video_info']['media']:
             type_available.append({'video_url': info['data']['video_info']['media'][video_type]['play_url']['main_url'], 'video_quality': int(info['data']['video_info']['media'][video_type]['play_url']['vtype'])})

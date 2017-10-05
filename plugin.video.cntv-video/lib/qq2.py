@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import urllib
-import simplejson
+from urllib import urlencode
+from json import loads
 from random import random, randrange
-import base64
-import struct
 import uuid
-import os
 from common import get_html, match1
 
 PLAYER_PLATFORM = 1
@@ -42,11 +39,11 @@ class QQ():
 
     def qq_get_params(self, fmt_name, type_name, br, params):
     
-        form = urllib.urlencode(params)
+        form = urlencode(params)
         print ('http://vv.video.qq.com/getkey?' + form)
         html = get_html('http://vv.video.qq.com/getkey?' + form)
         json = html[html.find('=')+1:-1]
-        jsdata = simplejson.loads(json)
+        jsdata = loads(json)
         vkey = jsdata['key']
         level = jsdata['level']
         sp = jsdata['sp']
@@ -86,11 +83,11 @@ class QQ():
             # 'ckey' : ''
         }
 
-        form = urllib.urlencode(params)
+        form = urlencode(params)
         print ('http://vv.video.qq.com/getinfo?' + form)
         html = get_html('http://vv.video.qq.com/getinfo?' + form)
         json = html[html.find('=')+1:-1]
-        jsdata = simplejson.loads(json)
+        jsdata = loads(json)
         js = jsdata['vl']['vi'][0]
 
         videos = jsdata['fl']['fi']
@@ -144,7 +141,7 @@ class QQ():
             }
             clip_url = '%s%s' % (cdn_url, filename)
             params = self.qq_get_params(fmt_name, type_name, fmt_br, params)
-            form = urllib.urlencode(params)
+            form = urlencode(params)
             urls += [clip_url + '?' + form]
         return fmt_name, type_name, urls
 

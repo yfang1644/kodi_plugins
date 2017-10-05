@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
-import urlparse
-import urllib
+from urlparse import parse_qsl
+from urllib import quote_plus
 import re
 from bs4 import BeautifulSoup
-import simplejson
+from json import loads
 from lib.common import get_html
 
 # Plugin constants
@@ -51,7 +51,7 @@ def mainMenu():
         title = MAINLIST[channel][0]
         href = MAINLIST[channel][1]
         mode = MAINLIST[channel][2]
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         u = sys.argv[0] + '?url=' + href
         u += '&mode=' + mode + '&&name=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
@@ -79,7 +79,7 @@ def changeList(params):
     url = params['url']
     name = params['name']
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     filter = ''
     sel = dialog.select('类型', typelist)
     if sel >= 0:
@@ -107,8 +107,8 @@ def dramaList(params):
     page = params.get('page', '0')
     filter = filter.encode('utf-8')
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    li = ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
+    u = sys.argv[0] + '?url=' + quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -133,30 +133,30 @@ def dramaList(params):
         title = text.a.text
         info = text.p['title']
 
-        li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
+        li = ListItem(title, iconImage=thumb, thumbnailImage=thumb)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(href)
+        u = sys.argv[0] + '?url=' + quote_plus(href)
         u += '&mode=serieslist'
-        u += '&name=' + urllib.quote_plus(name)
-        u += '&thumb=' + urllib.quote_plus(thumb)
+        u += '&name=' + quote_plus(name)
+        u += '&thumb=' + quote_plus(thumb)
         u += '&title=' + title
 
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     # pagelist
     if page > 0:
-        li = xbmcgui.ListItem(BANNER_FMT % '上一页')
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+        li = ListItem(BANNER_FMT % '上一页')
+        u = sys.argv[0] + '?url=' + quote_plus(url)
         u += '&mode=dramalist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&page=%d' % (page - 1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if page < total_page:
-        li = xbmcgui.ListItem(BANNER_FMT % '下一页')
-        u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+        li = ListItem(BANNER_FMT % '下一页')
+        u = sys.argv[0] + '?url=' + quote_plus(url)
         u += '&mode=dramalist'
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&page=%d' % (page + 1)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -173,8 +173,8 @@ def movieList(params):
     year = params.get('year', '0')
     filter = params.get('filter', '')
 
-    li = xbmcgui.ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
-    u = sys.argv[0] + '?url=' + urllib.quote_plus(url)
+    li = ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
+    u = sys.argv[0] + '?url=' + quote_plus(url)
     u += '&mode=select&name=' + name
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
@@ -189,7 +189,7 @@ def movieList(params):
 
     html = get_html(mv_api + action + filter % (type, page))
     html = html.encode('utf-8')
-    jsdata = simplejson.loads(html)
+    jsdata = loads(html)
 
     items = jsdata['data']
     for item in items:
@@ -197,9 +197,9 @@ def movieList(params):
         p_thumb = item['localimgurl'].encode('utf-8')
         mid = item['mid'].encode('utf-8')
 
-        li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=p_thumb)
+        li = ListItem(title, iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=playmid' + '&url=' + url
-        u += '&name=' + urllib.quote_plus(name) + '&mid=' + mid
+        u += '&name=' + quote_plus(name) + '&mid=' + mid
         u += '&thumb=' + p_thumb + '&title=' + title
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
@@ -208,9 +208,9 @@ def movieList(params):
     page = int(page)
 
     if page > 1:
-        li = xbmcgui.ListItem(BANNER_FMT % '上一页')
+        li = ListItem(BANNER_FMT % '上一页')
         u = sys.argv[0] + '?mode=movielist&url=' + url
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         if area != '0':
             u += '&area=' + area
         if year != '0':
@@ -219,9 +219,9 @@ def movieList(params):
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     if page < totalpage:
-        li = xbmcgui.ListItem(BANNER_FMT % '下一页')
+        li = ListItem(BANNER_FMT % '下一页')
         u = sys.argv[0] + '?mode=movielist&url=' + url
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         if area != '0':
             u += '&area=' + area
         if year != '0':
@@ -237,7 +237,7 @@ def list_by_sid(params):
     sid = params['sid']
     api = 'http://tv.cntv.cn/api/video/getvideo/vsid_'
     html = get_html(api + sid)
-    jsdata = simplejson.loads(html)
+    jsdata = loads(html)
     items = jsdata['video']
 
     for item in items:
@@ -246,7 +246,7 @@ def list_by_sid(params):
         p_thumb = item['img']
         time = item['len']
 
-        li = xbmcgui.ListItem(title + '(' + time + ')',
+        li = ListItem(title + '(' + time + ')',
                               iconImage=p_thumb, thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=playvideo&url=' + p_url
         u += '&title=' + title
@@ -266,7 +266,7 @@ def list_by_jsondata(data):
         p_thumb = jsdata[i]['img']
         desc = jsdata[i].get('brief', '')
 
-        li = xbmcgui.ListItem(title,
+        li = ListItem(title,
                               iconImage=p_thumb, thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': desc})
 
@@ -312,7 +312,7 @@ def playVideo_by_mid(params):
     url = params['url']
     api = 'http://api.cntv.cn/dianyingku/movies/getMovieById?mid='
     html = get_html(api + mid)
-    jsdata = simplejson.loads(html)
+    jsdata = loads(html)
 
     play = jsdata['play']
     jl = len(play)
@@ -331,7 +331,7 @@ def playVideo_by_mid(params):
         thumb = params['thumb']
         PlayVideo(playurl, title, thumb)
     else:
-        xbmcgui.Dialog().ok(__addonname__, mid, '视频地址未解析')
+        Dialog().ok(__addonname__, mid, '视频地址未解析')
 
 def PlayVideo(playurl, title, thumb):
     print playurl
@@ -343,7 +343,7 @@ def PlayVideo(playurl, title, thumb):
         videourl = video.video_from_url(playurl,
                                         level=videoRes,
                                         m3u8=__m3u8__)
-        li = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        li = ListItem(title, thumbnailImage=thumb)
         li.setInfo(type="Video", infoLabels={"Title": title})
         xbmc.Player().play(__m3u8__, li)
         return
@@ -378,7 +378,7 @@ def PlayVideo(playurl, title, thumb):
         playlist.clear()
         for i in range(0, ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
-            li = xbmcgui.ListItem(name, thumbnailImage=thumb)
+            li = ListItem(name, thumbnailImage=thumb)
             li.setInfo(type="Video", infoLabels={"Title": name})
             playlist.add(videourl[i], li)
 
@@ -387,7 +387,7 @@ def PlayVideo(playurl, title, thumb):
 
 # main programs goes here #########################################
 params = sys.argv[2][1:]
-params = dict(urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 

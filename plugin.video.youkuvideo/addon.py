@@ -1,8 +1,9 @@
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
-import os
+
+from xbmcswift2 import xbmc, Plugin, xbmcgui
 import re
-import sys
-import json
+from json import loads
 import gzip
 import urllib
 import urllib2
@@ -10,11 +11,7 @@ import httplib
 import base64
 import time
 from StringIO import StringIO
-from xbmcswift2 import xbmc
-from xbmcswift2 import Plugin
-from xbmcswift2 import xbmcgui
 from collections_backport import OrderedDict
-from ChineseKeyboard import Keyboard
 
 plugin = Plugin()
 dialog = xbmcgui.Dialog()
@@ -56,7 +53,7 @@ def searchvideo(url):
               ('http://www.letv.com', 'letv'),
               ('http://v.pps.tv', 'pps'),
               ('http://www.tudou.com', 'tudou')]
-    kb = Keyboard('',u'请输入搜索关键字')
+    kb = xbmc.Keyboard('',u'请输入搜索关键字')
     kb.doModal()
     if not kb.isConfirmed(): return
     sstr = kb.getText()
@@ -320,7 +317,7 @@ class PlayUtil(object):
         moviesurl="http://v.youku.com/player/getPlayList/VideoIDS/{0}/ctype/12/ev/1".format(
             vid)
         result = _http(moviesurl)
-        movinfo = json.loads(result.replace('\r\n',''))
+        movinfo = loads(result.replace('\r\n',''))
         movdat = movinfo['data'][0]
         streamfids = movdat['streamfileids']
         stype = 'flv'
@@ -362,14 +359,14 @@ class PlayUtil(object):
     def sohu(self):
         html = _http(self.url)
         vid = re.search(r'\Wvid\s*[\:=]\s*[\'"]?(\d+)[\'"]?', html).group(1)
-        data = json.loads(_http(
+        data = loads(_http(
             'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s' % vid))
         qtyps = [('超清', 'superVid'), ('高清', 'highVid'), ('流畅', 'norVid')]
         sel = dialog.select('清晰度', [q[0] for q in qtyps])
         if sel is -1: return 'cancel'
         qtyp = data['data'][qtyps[sel][1]]
         if qtyp and qtyp != vid:
-            data = json.loads(_http(
+            data = loads(_http(
                 'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s' % qtyp))
         host = data['allot']
         prot = data['prot']
@@ -449,7 +446,7 @@ class PlayUtil(object):
         vid = re.compile(r'vid:"([^"]+)"').search(html).group(1)
         murl = 'http://vv.video.qq.com/'
         vinfo = _http('%sgetinfo?otype=json&vids=%s' % (murl, vid))
-        infoj = json.loads(vinfo.split('=')[1][:-1])
+        infoj = loads(vinfo.split('=')[1][:-1])
         qtyps = OrderedDict((
             ('1080P', 'fhd'), ('超清', 'shd'), ('高清', 'hd'), ('标清', 'sd')))
         #python 2.7 syntax
@@ -467,7 +464,7 @@ class PlayUtil(object):
             sinfo = _http(
                 '{0}getkey?format={1}&filename={2}&vid={3}&otype=json'.format(
                     murl, qtypid, fn, vid))
-            skey = json.loads(sinfo.split('=')[1][:-1])['key']
+            skey = loads(sinfo.split('=')[1][:-1])['key']
             surl = urllib2.urlopen(
                 '%s%s?vkey=%s' % (urlpre, fn, skey), timeout=30).geturl()
             if not surl: break

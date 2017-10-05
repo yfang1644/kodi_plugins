@@ -6,7 +6,6 @@
         <import addon="script.module.xbmcswift2" version="2.4.0" optional="false"/>
         <import addon="script.module.chardet" version="2.1.1" optional="false"/>
        <import addon="script.thunder.player"  version="0.1.10" optional="false"/>
-        <import addon="script.module.keyboard.chinese"  version="1.2.8" optional="false"/>
         <import addon="script.module.hdpparser"  version="0.1" optional="false"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">

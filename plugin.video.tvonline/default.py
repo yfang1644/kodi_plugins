@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import ListItem
 import xbmcplugin
 import xbmcaddon
 import urllib2
@@ -11,10 +11,9 @@ import urlparse
 import re
 import sys
 import os
-import gzip
-import StringIO
+from common import get_html
 import time
-import simplejson
+import json
 
 ########################################################################
 # 南京电视台 www.nbs.cn
@@ -28,7 +27,6 @@ __addonname__ = __addon__.getAddonInfo('name')
 __m3u8__      = __cwd__ + '/temp.m3u8'
 
 
-UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 UserAgent = 'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/5.0)'
 UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 
@@ -86,44 +84,20 @@ CHANNELS_SZ = {
     '苏州文化生活': 'http://livetv.2500city.com/live/sbs3hd/index.m3u8',
     '苏州生活资讯': 'http://livetv.2500city.com/live/sbs5hd/index.m3u8'}
 
-def getHttpData(url):
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    try:
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        response.close()
-        if response.headers.get('content-encoding') == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-    except:
-        print 'GetHttpData Error: %s' % url
-        return ''
-
-    match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(httpdata)
-    charset = ''
-    if len(match) > 0:
-        charset = match[0]
-    if charset:
-        charset = charset.lower()
-        if (charset != 'utf-8') and (charset != 'utf8'):
-            httpdata = httpdata.decode(charset, 'ignore').encode('utf-8', 'ignore')
-
-    return httpdata
-
 
 ############################################################################
 def PlayVideoNJTV(params):
     id = params['id']
     title = params['title']
     timeUrl = 'http://live-api.xwei.tv/api/getUnixTimestamp'
-    html = getHttpData(timeUrl)
-    timestamp = simplejson.loads(html)['time']
+    html = get_html(timeUrl)
+    timestamp = json.loads(html)['time']
     t = float(timestamp)
     timestamp = int(t)
 
     bitrateUrl = 'http://live-api.xwei.tv/api/getCDNByChannelId/' + id
-    html = getHttpData(bitrateUrl)
-    jsdata = simplejson.loads(html)
+    html = get_html(bitrateUrl)
+    jsdata = json.loads(html)
     rate = jsdata['streams'].keys()
     if (__addon__.getSetting('resolution') == '0'):
         rate = rate[0]
@@ -131,7 +105,7 @@ def PlayVideoNJTV(params):
         rate = rate[-1]
     channel = jsdata['channel_name']
     playurl = 'http://live.xwei.tv/channels/njtv/%s/flv:%s/live?%d'
-    li = xbmcgui.ListItem(title)
+    li = ListItem(title)
     xbmc.Player().play(playurl % (channel, rate, timestamp), li)
 
 
@@ -139,7 +113,7 @@ def PlayVideoNJTV(params):
 def PlayVideoSZTV(params):
     url = params['url']
     title = params['title']
-    li = xbmcgui.ListItem(title)
+    li = ListItem(title)
     xbmc.Player().play(url, li)
 
 
@@ -151,8 +125,8 @@ def PlayVideoLeTV(params):
     id = params['id']
     title = params['title']
     info_api = 'http://player.pc.letv.com/player/startup_by_channel_id/1001/%s?host=letv.com'
-    html = getHttpData(info_api % id)
-    jsdata = simplejson.loads(html)['streams']
+    html = get_html(info_api % id)
+    jsdata = json.loads(html)['streams']
 
     if (__addon__.getSetting('resolution') == '0'):
         url = jsdata[0]
@@ -161,10 +135,10 @@ def PlayVideoLeTV(params):
 
     url = url['streamUrl'] + '&format=1&expect=2&termid=1&platid=10&playid=1&sign=live_web&splatid=1001&p1=1&p2=10&uuid=D59417D1350531DC01E06CCF104E3A193004D0D4_0&vkit=20170302&station=' + id
 
-    html = getHttpData(url)
-    jsdata = simplejson.loads(html)
+    html = get_html(url)
+    jsdata = json.loads(html)
     playurl = jsdata['location']
-    li = xbmcgui.ListItem(title)
+    li = ListItem(title)
     xbmc.Player().play(playurl, li)
 
 
@@ -195,11 +169,11 @@ def PlayVideoPPTV(params):
     if quality > 0:
         quality = -1           # point to last item
 
-    html = getHttpData(url)
+    html = get_html(url)
 
     playcfg = re.compile('var webcfg\s*=\s*({.+?);\n').findall(html)
     if playcfg:
-        jsplay = simplejson.loads(playcfg[0])
+        jsplay = json.loads(playcfg[0])
     else:
         return []
 
@@ -208,23 +182,23 @@ def PlayVideoPPTV(params):
     ipadurl += '?' + ctx
 
     #ipadurl = getHttp(ipadurl)
-    li = xbmcgui.ListItem(title, iconImage=thumb, thumbnailImage=thumb)
+    li = ListItem(title, iconImage=thumb, thumbnailImage=thumb)
     xbmc.Player().play(ipadurl, li)
 
 
 def getProgramList(channelId):
     '''
     timeUrl = 'http://live-api.xwei.tv/api/getUnixTimestamp'
-    html = getHttpData(timeUrl)
-    timestamp = simplejson.loads(html)['time']
+    html = get_html(timeUrl)
+    timestamp = json.loads(html)['time']
     t = float(timestamp)
     timestamp = int(t/1000)
     '''
     epgAPI = 'http://live-api.xwei.tv/api/getEPGByChannelTime/%s/0/%d'
     info = ''
     try:
-        html = getHttpData(epgAPI % (channelId, int(time.time())))
-        results = simplejson.loads(html)['result'][0]
+        html = get_html(epgAPI % (channelId, int(time.time())))
+        results = json.loads(html)['result'][0]
 
         for prog in results:
             start = time.localtime(prog['start_time'])
@@ -241,45 +215,45 @@ def getProgramList(channelId):
 
 
 def listNJTV(title):
-    li = xbmcgui.ListItem(BANNER_FMT % title)
+    li = ListItem(BANNER_FMT % title)
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     channelAPI = 'http://live-api.xwei.tv/api/getChannels'
-    html = getHttpData(channelAPI)
+    html = get_html(channelAPI)
 
-    results = simplejson.loads(html)['result']
+    results = json.loads(html)['result']
     for channel in results:
         title = channel['display_name']
         channelId = channel['id']
         info = getProgramList(channelId)
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?mode=playnjtv&id=%s&title=%s' % (channelId, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
 
 def listLETV(title):
-    li = xbmcgui.ListItem(BANNER_FMT % title)
+    li = ListItem(BANNER_FMT % title)
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     info_api = 'http://player.pc.letv.com/player/startup_by_channel_id/1001/%s?host=letv.com'
 
     for id in range(973, 1013):
-        html = getHttpData(info_api % id)
-        jsdata = simplejson.loads(html)
+        html = get_html(info_api % id)
+        jsdata = json.loads(html)
         title = jsdata['channelName']
         logos = jsdata['defaultLogo']
         img = logos.items()[0][1]
 
-        li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
+        li = ListItem(title, iconImage=img, thumbnailImage=img)
         u = sys.argv[0] + '?mode=playletv&id=%d&title=%s' % (id, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
 
 def listSZTV(title):
-    li = xbmcgui.ListItem(BANNER_FMT % title)
+    li = ListItem(BANNER_FMT % title)
     # http://tv.cutv.com/
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
@@ -289,7 +263,7 @@ def listSZTV(title):
     for channel in CHANNELS_SZ:
         title = channel
         url = CHANNELS_SZ[channel]
-        li = xbmcgui.ListItem(title)
+        li = ListItem(title)
         li.setInfo(type='Video', infoLabels={'Title': title})
         u = sys.argv[0] + '?mode=playsztv&title=' + title
         u += '&url=' + url
@@ -297,24 +271,24 @@ def listSZTV(title):
 
 
 def listPPTV(title):
-    li = xbmcgui.ListItem(BANNER_FMT % title)
+    li = ListItem(BANNER_FMT % title)
     u = sys.argv[0]
     xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     info_api = 'http://top.pptv.com/section?type=8&sort=hot7&from=web&version=1.0.0&format=jsonp&cataIds=164%2C156&length=80&cb=live&plt=web'
     info_api = 'http://top.pptv.com/section?type=8&sort=hot7&length=90&cb=live'
 
-    html = getHttpData(info_api)
+    html = get_html(info_api)
     match1 = re.compile('\((.+)\)').findall(html)
-    jsdata = simplejson.loads(match1[0])
+    jsdata = json.loads(match1[0])
     jsdata = jsdata['videoList'][0]['videos']
 
     vids = [str(x['id']) for x in jsdata]
     prog_api = 'http://v.pptv.com/api/live/tvProgramList/%s?from=web&version=1.0.0&format=jsonp&cb=pplive_callback'
-    html = getHttpData(prog_api % (','.join(vids)))
+    html = get_html(prog_api % (','.join(vids)))
     print(html)
     match1 = re.compile('\((.+)\)').findall(html)
-    prog_info = simplejson.loads(match1[0])
+    prog_info = json.loads(match1[0])
 
     jl = len(jsdata)
 
@@ -331,7 +305,7 @@ def listPPTV(title):
         for x in lists:
             info = info + x['playTime'] + ' ' + x['title'] + '\n'
 
-        li = xbmcgui.ListItem(title, iconImage=icon, thumbnailImage=thumb)
+        li = ListItem(title, iconImage=icon, thumbnailImage=thumb)
         li.setInfo(type='Video',
                    infoLabels={'Title': title, 'Plot': info})
         u = sys.argv[0] + '?mode=playpptv&title=' + title

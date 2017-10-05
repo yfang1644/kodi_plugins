@@ -5,19 +5,16 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urlparse
-import urllib
+from urlparse import parse_qsl
+from urllib import quote_plus
 import re
 import sys
 from random import randrange
 from bs4 import BeautifulSoup
-import simplejson
+from json import loads
 from common import get_html, r1
 from funshion import videos_from_url
 
-UserAgent_IPAD = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
-UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
-UserAgent = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:43.0) Gecko/20100101 Firefox/43.0'
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 
 HOST_URL = 'http://www.fun.tv'
@@ -40,9 +37,6 @@ usableIP = ("112.25.81.203",
 ########################################################################
 # 风行视频(Funshion)"
 ########################################################################
-# v1.1.1 2015.12.04 (taxigps)
-# - Update video list fetching for site change
-# - Add requires of simplejson
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -173,7 +167,7 @@ def playList(params, playlist, j):
         li = xbmcgui.ListItem(p_name + '(' + time + ')',
                               iconImage='', thumbnailImage=p_thumb)
         u = sys.argv[0] + '?mode=movielist&url=' + href
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&title=%d.%s' %(j, p_name)
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
@@ -235,7 +229,7 @@ def relatedList(params, playlist, j):
         li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
         u = sys.argv[0] + '?mode=albumlist&url=' + href
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&title=%d.%s' % (j, p_name)
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
@@ -255,8 +249,8 @@ def singleVideo(params):
     j = 0
     u = sys.argv[0] + '?mode=movielist&url=' + url
     u += '&title=%d.%s' % (j, title)
-    u += '&name=' + urllib.quote_plus(name)
-    u += '&thumb=' + urllib.quote_plus(thumb)
+    u += '&name=' + quote_plus(name)
+    u += '&thumb=' + quote_plus(thumb)
     li = xbmcgui.ListItem(BANNER_FMT % title, thumbnailImage=thumb)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
     playlist.add(url, li)
@@ -281,7 +275,7 @@ def seriesList(params):
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
     url = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
     link = get_html(url % id)
-    json_response = simplejson.loads(link)
+    json_response = loads(link)
     if json_response['status'] == 404:
         ok = xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
         return
@@ -308,7 +302,7 @@ def seriesList(params):
             time = '%d:%s' % (h, time)
 
         u = sys.argv[0] + '?mode=movielist&title=%d.%s' % (j, p_name)
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&thumb=' + p_thumb + '&url=' + p_url
         if item['dtype'] == 'prevue':
             extra = '|预'
@@ -411,7 +405,7 @@ def PlayVideo(params):
 
             link = get_html(url)
             try:
-                json_response = simplejson.loads(link)
+                json_response = loads(link)
                 hashid = json_response['data']['hashid'].encode('utf-8')
                 filename = json_response['data']['filename'].encode('utf-8')
             except:
@@ -421,7 +415,7 @@ def PlayVideo(params):
 
             link = get_html(url)
             try:   # prevent system occassion throw error
-                json_response = simplejson.loads(link)
+                json_response = loads(link)
                 status = json_response['return'].encode('utf-8')
             except:
                 errcnt += 1   # increment consequetive unsuccessful access
@@ -514,7 +508,7 @@ def mainList(params):
         li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
         u = sys.argv[0] + '?mode=albumlist&url=' + href
-        u += '&name=' + urllib.quote_plus(name)
+        u += '&name=' + quote_plus(name)
         u += '&title=' + p_name + '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
@@ -532,7 +526,7 @@ def mainList(params):
                 title = page.text
                 li = xbmcgui.ListItem(title)
                 u = sys.argv[0] + '?mode=mainlist'
-                u += '&name=' + urllib.quote_plus(name)
+                u += '&name=' + quote_plus(name)
                 u += '&url=' + href
                 xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
@@ -552,8 +546,8 @@ def rootList():
         url = httphead(item.a['href'])
         li = xbmcgui.ListItem(name)
         u = sys.argv[0] + '?mode=mainlist'
-        u += '&name=' + urllib.quote_plus(name)
-        u += '&url=' + urllib.quote_plus(url)
+        u += '&name=' + quote_plus(name)
+        u += '&url=' + quote_plus(url)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
 
     xbmcplugin.endOfDirectory(pluginhandle)
@@ -562,7 +556,7 @@ def rootList():
 #  main program goes here #
 pluginhandle = int(sys.argv[1])
 params = sys.argv[2][1:]
-params = dict(urlparse.parse_qsl(params))
+params = dict(parse_qsl(params))
 
 mode = params.get('mode')
 

@@ -3,10 +3,6 @@
     name="酷我音乐盒(KuwoBox)"
     version="1.1.5"
     provider-name="Robinttt, D744000, Osfans,yfang1644">
-    <requires>
-        <import addon="xbmc.python" version="2.1.0"/>
-        <import addon="script.module.keyboard.chinese" version="1.0.0"/>
-    </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import simplejson
+from json import loads
 from common import get_html, r1
 
 
@@ -12,7 +12,7 @@ class Funshion():
         """vid->str
         Single video vid to title."""
         html = get_html('http://pv.funshion.com/v5/video/profile?id={vid}&cl=aphone&uc=5'.format(vid=vid))
-        c = simplejson.loads(html)
+        c = loads(html)
         return c['name']
 
     #----------------------------------------------------------------------
@@ -21,7 +21,7 @@ class Funshion():
         This is for full drama.
         Get title for single drama video."""
         html = get_html('http://pm.funshion.com/v5/media/episode?id={id}&cl=aphone&uc=5'.format(id=drama_id))
-        c = simplejson.loads(html)
+        c = loads(html)
 
         for i in c['episodes']:
             if i['id'] == str(single_episode_id):
@@ -37,7 +37,7 @@ class Funshion():
         **THIS VID IS NOT THE SAME WITH THE ONES USED IN SINGLE VIDEO!!**
         """
         html = get_html('http://pm.funshion.com/v5/media/episode?id={episode_id}&cl=aphone&uc=5'.format(episode_id=episode_id))
-        c = simplejson.loads(html.encode('utf-8'))
+        c = loads(html.encode('utf-8'))
 
         #{'definition': [{'name': '流畅', 'code': 'tv'}, {'name': '标清', 'code': 'dvd'}, {'name': '高清', 'code': 'hd'}], 'retmsg': 'ok', 'total': '32', 'sort': '1', 'prevues': [], 'retcode': '200', 'cid': '2', 'template': 'grid', 'episodes': [{'num': '1', 'id': '624728', 'still': None, 'name': '第1集', 'duration': '45:55'}, ], 'name': '太行山上', 'share': 'http://pm.funshion.com/v5/media/share?id=201554&num=', 'media': '201554'}
 
@@ -57,7 +57,7 @@ class Funshion():
          'dvd': 'biaoqing',
          'hd': 'gaoqing',
          'sdvd': 'chaoqing'}"""
-        c = simplejson.loads(html)
+        c = loads(html)
         #{'retmsg': 'ok', 'retcode': '200', 'selected': 'tv', 'mp4': [{'filename': '', 'http': 'http://jobsfe.funshion.com/query/v1/mp4/7FCD71C58EBD4336DF99787A63045A8F3016EC51.json', 'filesize': '96748671', 'code': 'tv', 'name': '流畅', 'infohash': '7FCD71C58EBD4336DF99787A63045A8F3016EC51'}...], 'episode': '626464'}
         video_dic = {}
         for i in c['mp4']:
@@ -69,7 +69,7 @@ class Funshion():
 
         url = video_dic[quality]
         html = get_html(url)
-        c = simplejson.loads(html)
+        c = loads(html)
         #'{"return":"succ","client":{"ip":"107.191.**.**","sp":"0","loc":"0"},"playlist":[{"bits":"1638400","tname":"dvd","size":"555811243","urls":["http:\\/\\/61.155.217.4:80\\/play\\/1E070CE31DAA1373B667FD23AA5397C192CA6F7F.mp4",...]}]}'
         return [i['urls'][0] for i in c['playlist']]
 

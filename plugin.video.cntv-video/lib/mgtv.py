@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import simplejson
+from json import loads
 from os.path import dirname
 from random import randrange
 import urlparse
@@ -43,7 +43,7 @@ class MGTV():
     def video_from_vid(self, vid, **kwargs):
         api_endpoint = 'http://pcweb.api.mgtv.com/player/video?video_id='
         html = get_html(api_endpoint + vid)
-        content = simplejson.loads(html)
+        content = loads(html)
 
         # title = content['data']['info']['title']
         streams = content['data']['stream']
@@ -58,7 +58,7 @@ class MGTV():
         url = streams[level]['url']
 
         url = domain + re.sub(r'(\&arange\=\d+)', '', url)  # Un-Hum
-        content = simplejson.loads(get_html(url))
+        content = loads(get_html(url))
         url = content['info']
 
         return url

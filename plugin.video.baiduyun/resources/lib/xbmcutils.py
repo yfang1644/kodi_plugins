@@ -10,11 +10,7 @@ def keyboard(default='', heading='', hidden=False):
     if hidden:
         kb = _xbmc.Keyboard(default, heading, hidden)
     else:
-        try:
-            import ChineseKeyboard
-            kb = ChineseKeyboard.Keyboard(default, heading)
-        except:
-            kb = xbmc.Keyboard(default, heading)
+        kb = xbmc.Keyboard(default, heading)
 
     xbmc.sleep(1000)
     kb.doModal()

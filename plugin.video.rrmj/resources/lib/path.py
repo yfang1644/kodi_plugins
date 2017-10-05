@@ -5,8 +5,8 @@ from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbm
 import os
 import sys
 from rrmj import *
-import urlparse
-import json
+from urlparse import parse_qsl
+from json import loads
 
 CATE = ['喜剧',
         '科幻',
@@ -53,7 +53,7 @@ def setSettingByRPC(key, value):
         TYPE: Description
     """
     result = xbmc.executeJSONRPC('{"jsonrpc":"2.0", "method":"Settings.SetSettingValue", "params":{"setting":"%s", "value":%s}, "id":1}' % (key, value))
-    result = json.loads(result)
+    result = loads(result)
     return result
 
 
@@ -67,7 +67,7 @@ def getSettingByRPC(key):
         TYPE: Description
     """
     result = xbmc.executeJSONRPC('{"jsonrpc":"2.0","method":"Settings.GetSettingValue","params":{"setting":"%s"},"id":1}' % key)
-    result = json.loads(result)
+    result = loads(result)
     return result["result"]["value"]
 
 
@@ -77,7 +77,7 @@ def colorize(label, color):
 
 def remap_url(req_url):
     array = req_url.split("?")
-    params = dict(urlparse.parse_qsl(array[1]))
+    params = dict(parse_qsl(array[1]))
     if array[0] == "/video/search":
         endpoint = "search"
         if "cat" in params:

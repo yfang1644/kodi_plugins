@@ -11,10 +11,7 @@ import cookielib
 from random import random
 import base64
 import time
-try:
-    import simplejson
-except ImportError:
-    import json as simplejson
+from json import loads
 
 UserAgent = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.0.3) Gecko/2008092417 Firefox/3.0.3'
 
@@ -137,13 +134,13 @@ class YOUKU_DR:
         urls = []
         stypes = ['mp4hd2', 'mp4hd', 'flvhd']
         url  = 'http://play.youku.com/play/get.json?vid=%s&ct=12' % vid
-        json_response = simplejson.loads(GetHttpData(url))
+        json_response = loads(GetHttpData(url))
         movdat = json_response['data']
         oip = movdat['security']['ip']
         ep  = movdat['security']['encrypt_string']
         sid, token = self.get_sid(ep)
         url = 'http://play.youku.com/play/get.json?vid=%s&ct=10' % vid
-        json_response = simplejson.loads(GetHttpData(url))
+        json_response = loads(GetHttpData(url))
         movdat = json_response['data']
         stream=movdat['stream'][0]
         for t in stypes:
@@ -167,7 +164,7 @@ class YOUKU_DR:
                     q         = query
             )
 #            urls.append(u)
-            urls += [i['server'] for i in simplejson.loads(GetHttpData(u))]
+            urls += [i['server'] for i in loads(GetHttpData(u))]
         return 'MULTI', urls
 
 
@@ -179,7 +176,7 @@ class SOHU_DR:
     def real_url(self, host, vid, tvid, new, clipURL, ck):
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
         link = GetHttpData(url)
-        return simplejson.loads(link)['url']
+        return loads(link)['url']
 
     def get_hqvid(self, ppage):
         match = re.compile('"norVid":(.+?),"highVid":(.+?),"superVid":(.+?),"oriVid":(.+?), ').search(ppage)
@@ -202,7 +199,7 @@ class SOHU_DR:
             return 'ERROR', ''
         if hqvid != pvid:
             link = GetHttpData('http://hot.vrs.sohu.com/vrs_flash.action?vid='+hqvid)
-        info = simplejson.loads(link)
+        info = loads(link)
         host = info['allot']
         tvid = info['tvid']
         urls = []

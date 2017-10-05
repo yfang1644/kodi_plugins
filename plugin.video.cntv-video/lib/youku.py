@@ -4,7 +4,7 @@
 import ssl
 import time
 import urllib2 as request
-import simplejson
+from json import loads
 from common import get_html, match1
 
 ####################
@@ -68,7 +68,7 @@ class Youku():
             exit(0)
 
         api_url = 'https://ups.youku.com/ups/get.json?vid={}&ccode={}&client_ip=192.168.1.1&utid={}&client_ts={}'.format(self.vid, self.ccode, fetch_cna(), int(time.time()))
-        data = simplejson.loads(get_html(
+        data = loads(get_html(
             api_url,
             headers={'Referer': 'http://static.youku.com/'}
             ))

@@ -2,10 +2,6 @@
 <addon id="plugin.video.cntv-live"
     name="中国网络电视台 CNTV" version="2.0.10"
     provider-name="yfang1644">
-	<requires>
-		<import addon="xbmc.python" version="2.1.0" />
-	</requires>
-	
 	<extension point="xbmc.python.pluginsource" library="addon.py">
 		<provides>video</provides>
 	</extension>

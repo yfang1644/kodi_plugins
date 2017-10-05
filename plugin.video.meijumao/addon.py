@@ -9,10 +9,10 @@
 # https://github.com/romanvm/plugin.video.example/blob/master/main.py
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
-import urlparse
+from urlparse import parse_qsl
 import urllib2
 import urllib
 import sys
@@ -32,9 +32,6 @@ __addonid__   = __addon__.getAddonInfo('id')
 __addonname__ = __addon__.getAddonInfo('name')
 
 _meijumao = "http://www.meijumao.net"
-
-dialog = xbmcgui.Dialog()
-pDialog = xbmcgui.DialogProgress()
 
 __index__ = [
     ("/search", GREENBANNER % u'搜索'),
@@ -58,7 +55,7 @@ def index():
     listing = []
     is_folder=True
     for i in __index__:
-        list_item = xbmcgui.ListItem(label=i[1])
+        list_item = ListItem(label=i[1])
         url='{0}?action=index_router&article={1}'.format(_url,i[0])
         listing.append((url, list_item, is_folder))
     xbmcplugin.addDirectoryItems(_handle,listing,len(listing))
@@ -72,7 +69,7 @@ def list_categories(article):
     is_folder=True
     listing = []
     for urls in soup.find_all("a",attrs={"data-remote":"true"}):
-        list_item = xbmcgui.ListItem(label=urls.div.get_text())
+        list_item = ListItem(label=urls.div.get_text())
         url='{0}?action=list_sections&section={1}'.format(_url, urls.get("href").replace(_meijumao,""))
         listing.append((url, list_item, is_folder))
 
@@ -94,7 +91,7 @@ def list_sections(section):
     for section in soup.find_all("article"):
         p_title = section.img.get("alt")
         p_thumb = section.img.get("src")
-        list_item = xbmcgui.ListItem(label=p_title, thumbnailImage=p_thumb)
+        list_item = ListItem(label=p_title, thumbnailImage=p_thumb)
         list_item.setProperty('fanart_image', p_thumb)
         url = '{0}?action=list_series&series={1}&seriesname={2}&fanart_image={3}'.format(_url, section.a.get("href"),p_title.encode("utf-8"),p_thumb)
         listing.append((url, list_item, is_folder))
@@ -103,10 +100,10 @@ def list_sections(section):
     will_page = soup.find("ul",attrs={"id":"will_page"}).find_all("li")
     if len(will_page) > 0:
         # print will_page[0].get("class"),will_page[0].find("a").get("href")
-        list_item = xbmcgui.ListItem(label="上一页")
+        list_item = ListItem(label="上一页")
         url='{0}?action=list_sections&section={1}'.format(_url, will_page[0].find("a").get("href"))
         listing.append((url, list_item, is_folder))
-        list_item = xbmcgui.ListItem(label="下一页")
+        list_item = ListItem(label="下一页")
         url='{0}?action=list_sections&section={1}'.format(_url, will_page[-1].find("a").get("href"))
         listing.append((url, list_item, is_folder))
     xbmcplugin.addDirectoryItems(_handle,listing,len(listing))
@@ -132,7 +129,7 @@ def list_series(series, seriesname, fanart_image):
         if not serie.a.get("href").startswith("/"):
             continue
         title = serie.a.get_text().replace(" ", "").replace("\n", "")
-        list_item = xbmcgui.ListItem(label=title)
+        list_item = ListItem(label=title)
         list_item.setInfo(type='Video', infoLabels={'Title': title,
                                                     'Plot': info})
         url = '{0}?action=play_video&episode={1}'.format(_url, serie.a.get("href"))
@@ -149,13 +146,13 @@ def list_playsource(episode, name):
     soup_source = BeautifulSoup(html, "html.parser")
     listing = []
     for source in soup_source.find_all("a",attrs={"class":"button button-small button-rounded"}):
-        list_item = xbmcgui.ListItem(label=source.get_text())
+        list_item = ListItem(label=source.get_text())
         if source.get("href").startswith("http"):
             continue
         # url = '{0}?action=play_video&episode={1}&name={2}'.format(_url, source.get("href"),name)
         listing.append((source.get("href"),name))
     if len(listing) == 0:
-        dialog.ok(__addonname__, '没有找到视频源')
+        Dialog().ok(__addonname__, '没有找到视频源')
         return
     else:
         play_video(listing[0])
@@ -216,7 +213,7 @@ def play_video(episode, name):
             break
 
     if (urls is None) or (len(urls) < 1):
-        dialog.ok(__addonname__, '没有找到视频源')
+        Dialog().ok(__addonname__, '没有找到视频源')
         return
 
     for source in urls:
@@ -228,9 +225,9 @@ def play_video(episode, name):
             break
         
     if play_url is None:
-        dialog.ok(__addonname__, '视频源不能解析')
+        Dialog().ok(__addonname__, '视频源不能解析')
         return
-    play_item = xbmcgui.ListItem(name)
+    play_item = ListItem(name)
     play_item.setInfo(type="Video",infoLabels={"Title":name})
     # Pass the item to the Kodi player.
     xbmcplugin.setResolvedUrl(_handle, True, listitem=play_item)
@@ -258,7 +255,7 @@ def router(paramstring):
     """
     # Parse a URL-encoded paramstring to the dictionary of
     # {<parameter>: <value>} elements
-    params = dict(urlparse.parse_qsl(paramstring))
+    params = dict(parse_qsl(paramstring))
     # Check the parameters passed to the plugin
     if params:
         if params['action'] == 'index_router':
