@@ -38,6 +38,9 @@ EXTRA = '[COLOR FF8080FF] %s[/COLOR]'
 
 
 def PlayVideo(params):
+    level = int(__addon__.getSetting('resolution'))
+    site = int(__addon__.getSetting('videosite'))
+
     vid = params.get('vid')
     tvId = params.get('tvId')
     if vid is None or tvId is None:
@@ -48,9 +51,6 @@ def PlayVideo(params):
 
     thumb = params.get('thumb', '')
     name = params['title']
-    level = int(__addon__.getSetting('resolution'))
-    site = int(__addon__.getSetting('videosite'))
-
 
     ulen = len(urls)
     if ulen < 1:

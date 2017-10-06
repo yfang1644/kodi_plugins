@@ -62,7 +62,7 @@ class Sohu():
             vid = r1(r'\Wvid\s*[\:=]\s*[\'"]?(\d+)[\'"]?', html)
         assert vid
 
-        return video_from_vid(self, vid, **kwargs)
+        return self.video_from_vid(vid, **kwargs)
 
     def video_from_vid(self, vid, **kwargs):
         vidlist = ['oriVid', 'superVid', 'highVid', 'norVid', 'relativeId']

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-from xbmcgui import Dialog, ListItem
+from xbmcgui import Dialog, DialogProgress, ListItem
 import xbmcplugin
 import xbmcaddon
-from urlparse import import parse_qsl
+from urlparse import parse_qsl
 from urllib import quote_plus
 import re
 import sys
@@ -149,13 +149,13 @@ def playList(params, playlist, j):
     lists = tree.find_all('a', {'class': 'vd-list-item'})
 
     if len(lists) < 1:
-        return
+        return 0
 
     u = sys.argv[0]
     li = ListItem(BANNER_FMT % '播放列表')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
-    for item in lists:
+    for (k, item) in enumerate(lists):
         href = httphead(item['href'])
         p_name = item['title']
         p_thumb = item.img.get('src')
@@ -163,17 +163,23 @@ def playList(params, playlist, j):
             p_thumb = item.img.get('_lazysrc')
         if p_thumb is None:
             p_thumb = ''
-        t = item.find('i', {'class': 'vtime'})
-        time = t.text
-        li = xbmcgui.ListItem(p_name + '(' + time + ')',
-                              iconImage='', thumbnailImage=p_thumb)
+        d = item.find('i', {'class': 'vtime'})
+        duration = 0
+        for t in d.text.split(':'):
+            duration = duration * 60 + int(t)
+        info = {
+            'label': p_name,
+            'duration': duration
+        }
+        li = ListItem(p_name, iconImage='', thumbnailImage=p_thumb)
+        li.setInfo(type='Video', infoLabels=info)
         u = sys.argv[0] + '?mode=movielist&url=' + href
         u += '&name=' + quote_plus(name)
-        u += '&title=%d.%s' %(j, p_name)
+        u += '&title=%d.%s' %(k+j, p_name)
         u += '&thumb=' + p_thumb
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
         playlist.add(href, li)
-        j += 1
+    return k
 
 
 def relatedList(params, playlist, j):
@@ -193,7 +199,7 @@ def relatedList(params, playlist, j):
     li = ListItem(BANNER_FMT % '相关推荐')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
-    for item in items:
+    for (k, item) in enumerate(items):
         pic = item.find('div', {'class': 'pic'})
         inf = item.find('div', {'class': 'info'})
         try:
@@ -206,9 +212,6 @@ def relatedList(params, playlist, j):
         p_name = pic.img['alt']
 
         p_name1 = p_name + ' '
-        span = pic.find('span')
-        if span and len(span.text) > 0:
-            p_name1 += '[COLOR FF00FFFF](' + span.text + ')[/COLOR] '
 
         score = inf.find('b', {'class': 'score'})
         if score:
@@ -219,23 +222,28 @@ def relatedList(params, playlist, j):
         elif item.find("class='ico-dvd hdvd'") > 0:
             p_name1 += ' [COLOR FF00FFFF][高清][/COLOR]'
 
-        p_duration = item.find('i', {'class': 'tip'})
-        if p_duration:
-            p_name1 += ' [COLOR FF00FF00][' + p_duration.text + '][/COLOR]'
+        info = {
+            'label': p_name,
+        }
+        span = pic.find('span')
+        if span and len(span.text) > 0:
+            duration = 0
+            for t in span.text.split(':'):
+                duration = duration*60 + int(t)
+            info['duration'] = duration
 
         desc = inf.find('p', {'class', 'desc'})
         if desc:
             p_name1 += ' (' + desc.text + ')'
 
         li = ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
-        li.setInfo(type="Video", infoLabels={"Title": p_name})
+        li.setInfo(type="Video", infoLabels=info)
         u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + quote_plus(name)
-        u += '&title=%d.%s' % (j, p_name)
+        u += '&title=%d.%s' % (k+j, p_name)
         u += '&thumb=' + p_thumb
-        xbmcplugin.addDirectoryItem(pluginhandle, u, li, True)
+        addDirectoryItem(pluginhandle, u, li, False)
         playlist.add(href, li)
-        j += 1
 
 
 ##################################################################################
@@ -248,19 +256,21 @@ def singleVideo(params):
     playlist = xbmc.PlayList(1)
     playlist.clear()
 
+    j = 0
     u = sys.argv[0] + '?mode=movielist&url=' + url
     u += '&title=%d.%s' % (j, title)
     u += '&name=' + quote_plus(name)
     u += '&thumb=' + quote_plus(thumb)
-    li = xbmcgui.ListItem(BANNER_FMT % title, thumbnailImage=thumb)
+    li = ListItem(BANNER_FMT % title, thumbnailImage=thumb)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
     playlist.add(url, li)
 
     # playlist
     j = 1
-    playList(params, playlist, j)
+    k = playList(params, playlist, j)
 
     # related
+    j += k
     relatedList(params, playlist, j)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
@@ -310,13 +320,15 @@ def seriesList(params):
         }
         li = ListItem(p_name + extra,
                               iconImage='', thumbnailImage=p_thumb)
+        li.setInfo(type='Video', infoLabels=info)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
         playlist.add(p_url, li)
 
     # playlist
-    playList(params, playlist, j)
+    k = playList(params, playlist, j)
 
     # related
+    j += k
     relatedList(params, playlist, j)
 
     xbmcplugin.setContent(pluginhandle, 'episodes')
@@ -329,6 +341,8 @@ def selResolution():
     if resolution == 4:
         list = [x[1] for x in RES_LIST]
         sel = Dialog().select('清晰度', list)
+        if sel == -1:
+            sel = 2          # set default
         return sel
     else:
         return resolution
@@ -340,8 +354,6 @@ def PlayVideo_test(params):
     thumb = params.get('thumb')
 
     resolution = selResolution()
-    if resolution < 0:
-        return
 
     v_urls = videos_from_url(url, level=resolution)
     if len(v_urls) > 0:
@@ -372,7 +384,7 @@ def PlayVideo(params):
     errcnt = 0
     k = 0
 
-    pDialog = xbmcgui.DialogProgress()
+    pDialog = DialogProgress()
     ret = pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
     pDialog.update(0)
 
@@ -380,8 +392,7 @@ def PlayVideo(params):
         # abort if ERR_MAX or more access failures and no video playback
         if (errcnt >= ERR_MAX and k == 0):
             pDialog.close()
-            dialog = xbmcgui.Dialog()
-            ok = dialog.ok(__addonname__, '无法播放：未匹配到视频文件')
+            Dialog().ok(__addonname__, '无法播放：未匹配到视频文件')
             break
 
         p_item = playlistA.__getitem__(x)
@@ -500,11 +511,15 @@ def mainList(params):
             'label': p_name,
         }
         if p_duration:
-            info['duration'] = int(p_duration.text)
+            duration = 0
+            for t in str(p_duration.text).split(':'):
+                duration = duration*60 + int(t)
+
+            info['duration'] = duration
 
         desc = inf.find('p', {'class', 'desc'})
         if desc:
-            p_name1 += ' (' + desc.text + ')'
+            info['plot'] = desc.text
 
         li = ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels=info)
