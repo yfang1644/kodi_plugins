@@ -5,7 +5,7 @@
     provider-name="BirdZhang">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"

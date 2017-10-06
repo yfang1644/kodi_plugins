@@ -4,7 +4,7 @@
     version="1.2.13"
     provider-name="Uranus Zhou,yfang1644">
     <requires>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
 	</requires>
 	<extension
         point="xbmc.python.pluginsource"

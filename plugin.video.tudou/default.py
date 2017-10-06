@@ -10,7 +10,6 @@ from urllib import quote_plus
 import re
 import sys
 import os
-import cookielib
 import json
 from bs4 import BeautifulSoup
 from common import get_html, r1

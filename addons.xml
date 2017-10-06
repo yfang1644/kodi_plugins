@@ -6,7 +6,7 @@
     provider-name="yfang1644">
   	<requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -30,7 +30,7 @@
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -74,7 +74,7 @@
     version="1.2.13"
     provider-name="Uranus Zhou,yfang1644">
     <requires>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -145,7 +145,7 @@
     provider-name="Taxigps,yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -311,7 +311,7 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -380,7 +380,7 @@
     provider-name="catro, yfang1644">
     <requires>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.script" library="addon.py">
         <provides>video</provides>
@@ -395,23 +395,23 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.qiyi"
-    name="奇艺视频(QIYI)"
+<addon id="plugin.video.iqiyi"
+    name="爱奇艺视频(IQIYI)"
     version="2.2.9"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">QIYI Video plugin</summary>
-        <summary lang="zh">奇艺视频插件</summary>
-        <description lang="en">QIYI (QIYI.COM) was founded by Baidu- world's the largest Chinese search engine, invested by Providence Equity Partners-U.S. private equity, QIYI is the first professional website dedicated to providing free, high-definition network video services.</description>
-        <description lang="zh">奇艺（QIYI.COM）是由百度创立的大型专业网站，专注于提供免费、高清网络视频服务。奇艺的优质版权视频丰富多元，涵盖了电影、电视剧、综艺、纪录片、动漫、旅游等众多内容形态。</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.qiyi</source>
+        <summary lang="en">IQIYI Video plugin</summary>
+        <summary lang="zh">爱奇艺视频插件</summary>
+        <description lang="en">IQIYI (iqiyi.com) was founded by Baidu- world's the largest Chinese search engine, invested by Providence Equity Partners-U.S. private equity, QIYI is the first professional website dedicated to providing free, high-definition network video services.</description>
+        <description lang="zh">爱奇艺(iqiyi.com)是由百度创立的大型专业网站，专注于提供免费、高清网络视频服务。奇艺的优质版权视频丰富多元，涵盖了电影、电视剧、综艺、纪录片、动漫、旅游等众多内容形态。</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.iqiyi</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
@@ -481,7 +481,7 @@
     provider-name="taxigps,yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -503,7 +503,7 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -585,7 +585,7 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -642,7 +642,7 @@
 
 <addon id="plugin.video.cntv-video"
     name="CNTV 视频"
-    version="1.0.5"
+    version="1.0.6"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
@@ -730,7 +730,7 @@
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.1"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>

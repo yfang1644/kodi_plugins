@@ -267,7 +267,7 @@ def list_by_jsondata(data):
         desc = jsdata[i].get('brief', '')
 
         li = ListItem(title,
-                              iconImage=p_thumb, thumbnailImage=p_thumb)
+                      iconImage=p_thumb, thumbnailImage=p_thumb)
         li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': desc})
 
         u = sys.argv[0] + '?mode=playvideo&url=' + p_url

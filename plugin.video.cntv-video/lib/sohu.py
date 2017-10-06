@@ -47,9 +47,12 @@ class Sohu():
     v_api1 = 'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s'
     v_api2 = 'http://my.tv.sohu.com/play/videonew.do?vid=%s&referer=http://my.tv.sohu.com'
 
-    def real_url(self, host, vid, tvid, new, clipURL, ck):
-        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
-        return loads(get_html(url))['url']
+    def real_url(self, host, vid, new, clipURL, ck):
+        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
+        try:
+            return loads(get_html(url))['url']
+        except:
+            return ''
 
     def video_from_url(self, url, **kwargs):
         if re.match(r'http://share.vrs.sohu.com', url):
@@ -59,18 +62,19 @@ class Sohu():
             vid = r1(r'\Wvid\s*[\:=]\s*[\'"]?(\d+)[\'"]?', html)
         assert vid
 
-        if re.match(r'http://tv.sohu.com/', url):
+        return video_from_vid(self, vid, **kwargs)
+
+    def video_from_vid(self, vid, **kwargs):
+        vidlist = ['oriVid', 'superVid', 'highVid', 'norVid', 'relativeId']
+        level = kwargs.get('level', 0)
+        qtyp = vidlist[level]
+
+        #if re.match(r'http://tv.sohu.com/', url):
             # if extractor_proxy:
             #     set_proxy(tuple(extractor_proxy.split(":")))
+        try:
             info = loads(get_html(self.v_api1 % vid))
 
-            vidlist = ['oriVid',
-                       'superVid',
-                       'highVid',
-                       'norVid',
-                       'relativeId']
-            level = kwargs.get('level', 0)
-            qtyp = vidlist[level]
             if 'data' in info:
                 hqvid = info['data'][qtyp]
             else:
@@ -79,26 +83,26 @@ class Sohu():
                 info = loads(get_html(self.v_api1 % hqvid))
             # if extractor_proxy:
             #     unset_proxy()
-
-        else:
+        except:
             info = loads(get_html(self.v_api2 % vid))
 
         host = info['allot']
         prot = info['prot']
-        tvid = info['tvid']
-        urls = []
+        tvId = info['tvid']
         data = info['data']
         title = data['tvName']
         size = sum(map(int, data['clipsBytes']))
+        urls = []
         assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
         for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
             clipURL = urlparse.urlparse(clip).path
-            url = self.real_url(host, vid, tvid, new, clipURL, ck)
-            url += '|RANGE='
-            urls.append(url)
+            url = self.real_url(host, vid, new, clipURL, ck)
+            if url:
+                urls.append(url + '|RANGE=')
             # assert data['clipsURL'][0].endswith('.mp4')
 
         return urls
 
 site = Sohu()
 video_from_url = site.video_from_url
+video_from_vid = site.video_from_vid

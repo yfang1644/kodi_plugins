@@ -6,7 +6,7 @@
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.1"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>

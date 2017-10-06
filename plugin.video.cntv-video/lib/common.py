@@ -4,6 +4,7 @@
 import urllib2
 import re
 import gzip
+import zlib
 import StringIO
 import socket
 cookies = None
@@ -79,6 +80,8 @@ def get_html(url,
         if data[-1] == '\n':
             data = data[:-1]
         data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
+    elif content_encoding == 'deflate':
+        data = zlib.decompressobj(-zlib.MAX_WBITS).decompress(data)
 
     # Decode the response body
     if decoded:

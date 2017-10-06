@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-from xbmcgui import Dialog, DialogProgress, ListItem
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
 from urlparse import parse_qsl
@@ -301,17 +301,15 @@ def listType2(albumId, page, thumb, title):
         p_name = item['vn']
         desc = item['desc']
         seconds = item['timeLength']
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        time = '%02d:%02d' % (m, s)
-        if h != 0:
-            time = '%d:%s' % (h, time)
+        info = {
+            'label': p_name,
+            'duration': seconds,
+            'plot': desc
+        }
         if item['vt']:
             p_name = p_name + ' ' + item['vt']
-        li = ListItem(p_name + '(' + time + ')',
-                              iconImage=p_thumb, thumbnailImage=p_thumb)
-        li.setInfo(type='Video', infoLabels={'Title': p_name,
-                                             'Plot': desc})
+        li = ListItem(p_name, iconImage=p_thumb, thumbnailImage=p_thumb)
+        li.setInfo(type='Video', infoLabels=info)
         u = sys.argv[0] + '?mode=playvideo&title=' + p_name
         u += '&tvId=%d&vid=%s' % (tvId, videoId.encode('utf-8'))
         u += '&thumb=' + p_thumb
@@ -337,7 +335,6 @@ def episodesList(params):
     thumb = params['thumb']
 
     url = 'http://cache.video.qiyi.com/a/%s' % albumId
-    print '==========================', url
 
     link = get_html(url)
     data = link[link.find('=')+1:]
@@ -510,9 +507,6 @@ def searchiQiyi(params):
 
 
 # main programs goes here #########################################
-dialog = Dialog()
-pDialog = DialogProgress()
-
 params = sys.argv[2][1:]
 params = dict(parse_qsl(params))
 

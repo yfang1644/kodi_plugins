@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-import xbmcgui
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
-from urlparse import parse_qsl
+from urlparse import import parse_qsl
 from urllib import quote_plus
 import re
 import sys
@@ -16,6 +16,7 @@ from common import get_html, r1
 from funshion import videos_from_url
 
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
+EXTRA = '[COLOR FF8080FF] %s[/COLOR]'
 
 HOST_URL = 'http://www.fun.tv'
 
@@ -108,7 +109,7 @@ def updateListSEL(params):
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'ls-nav-bar'})
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     filter = ''
     for iclass in soup[1:]:
@@ -151,7 +152,7 @@ def playList(params, playlist, j):
         return
 
     u = sys.argv[0]
-    li = xbmcgui.ListItem(BANNER_FMT % '播放列表')
+    li = ListItem(BANNER_FMT % '播放列表')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
     for item in lists:
@@ -189,7 +190,7 @@ def relatedList(params, playlist, j):
         return
 
     u = sys.argv[0]
-    li = xbmcgui.ListItem(BANNER_FMT % '相关推荐')
+    li = ListItem(BANNER_FMT % '相关推荐')
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
 
     for item in items:
@@ -226,7 +227,7 @@ def relatedList(params, playlist, j):
         if desc:
             p_name1 += ' (' + desc.text + ')'
 
-        li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
+        li = ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
         li.setInfo(type="Video", infoLabels={"Title": p_name})
         u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + quote_plus(name)
@@ -246,7 +247,7 @@ def singleVideo(params):
 
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    j = 0
+
     u = sys.argv[0] + '?mode=movielist&url=' + url
     u += '&title=%d.%s' % (j, title)
     u += '&name=' + quote_plus(name)
@@ -254,9 +255,9 @@ def singleVideo(params):
     li = xbmcgui.ListItem(BANNER_FMT % title, thumbnailImage=thumb)
     xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
     playlist.add(url, li)
-    j += 1
 
     # playlist
+    j = 1
     playList(params, playlist, j)
 
     # related
@@ -277,15 +278,15 @@ def seriesList(params):
     link = get_html(url % id)
     json_response = loads(link)
     if json_response['status'] == 404:
-        ok = xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
+        Dialog().ok(__addonname__, '本片暂不支持网页播放')
         return
 
     items = json_response['data']['videos']
     # name = json_response['data']['name'].encode('utf-8')
     playlist = xbmc.PlayList(1)
     playlist.clear()
-    j = 0
-    for item in items:
+
+    for (j, item) in enumerate(items):
         p_name = item['name'].encode('utf-8')
         p_url = httphead(item['url'].encode('utf-8'))
         # p_number = str(item['number'])
@@ -295,25 +296,22 @@ def seriesList(params):
             p_thumb = thumb
 
         seconds = item['duration']
-        m, s = divmod(seconds, 60)
-        h, m = divmod(m, 60)
-        time = '%02d:%02d' % (m, s)
-        if h != 0:
-            time = '%d:%s' % (h, time)
 
         u = sys.argv[0] + '?mode=movielist&title=%d.%s' % (j, p_name)
         u += '&name=' + quote_plus(name)
         u += '&thumb=' + p_thumb + '&url=' + p_url
         if item['dtype'] == 'prevue':
-            extra = '|预'
+            extra = EXTRA % '|预'
         else:
             extra = ''
-
-        li = xbmcgui.ListItem(p_name + '(' + time + extra + ')',
+        info = {
+            'label': p_name,
+            'duration': seconds
+        }
+        li = ListItem(p_name + extra,
                               iconImage='', thumbnailImage=p_thumb)
         xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
         playlist.add(p_url, li)
-        j += 1
 
     # playlist
     playList(params, playlist, j)
@@ -330,7 +328,7 @@ def selResolution():
     resolution = int(__addon__.getSetting('resolution'))
     if resolution == 4:
         list = [x[1] for x in RES_LIST]
-        sel = xbmcgui.Dialog().select('清晰度', list)
+        sel = Dialog().select('清晰度', list)
         return sel
     else:
         return resolution
@@ -348,10 +346,10 @@ def PlayVideo_test(params):
     v_urls = videos_from_url(url, level=resolution)
     if len(v_urls) > 0:
         v_url = replaceServer(v_urls[0])
-        listitem = xbmcgui.ListItem(title, thumbnailImage=thumb)
+        listitem = ListItem(title, thumbnailImage=thumb)
         xbmc.Player().play(v_url, listitem)
     else:
-        ok = xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
+        Dialog().ok(__addonname__, '没有可播放的视频')
 
 
 ##################################################################################
@@ -451,7 +449,7 @@ def albumList(params):
     elif vid:
         seriesList(params)     # list series
     else:
-        xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
+        Dialog().ok(__addonname__, '本片暂不支持网页播放')
         return
 
 
@@ -469,7 +467,7 @@ def mainList(params):
     items = soup[0].find_all('div', {'class': 'mod-vd-i'})
     items = tree.find_all('div', {'class': 'mod-vd-i'})
 
-    li = xbmcgui.ListItem(name + '【选择过滤】' + filtrs)
+    li = ListItem(name + '【选择过滤】' + filtrs)
     u = sys.argv[0] + '?mode=filter&name=' + name
     u += '&url=' + url
     u += '&filtrs=' + filtrs
@@ -498,15 +496,18 @@ def mainList(params):
             p_name1 += ' [COLOR FF00FFFF][高清][/COLOR]'
 
         p_duration = item.find('i', {'class': 'tip'})
+        info = {
+            'label': p_name,
+        }
         if p_duration:
-            p_name1 += ' [COLOR FF00FF00][' + p_duration.text + '][/COLOR]'
+            info['duration'] = int(p_duration.text)
 
         desc = inf.find('p', {'class', 'desc'})
         if desc:
             p_name1 += ' (' + desc.text + ')'
 
-        li = xbmcgui.ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
-        li.setInfo(type="Video", infoLabels={"Title": p_name})
+        li = ListItem(p_name1, iconImage='', thumbnailImage=p_thumb)
+        li.setInfo(type="Video", infoLabels=info)
         u = sys.argv[0] + '?mode=albumlist&url=' + href
         u += '&name=' + quote_plus(name)
         u += '&title=' + p_name + '&thumb=' + p_thumb
@@ -524,7 +525,7 @@ def mainList(params):
             else:
                 href = httphead(href)
                 title = page.text
-                li = xbmcgui.ListItem(title)
+                li = ListItem(title)
                 u = sys.argv[0] + '?mode=mainlist'
                 u += '&name=' + quote_plus(name)
                 u += '&url=' + href
@@ -544,7 +545,7 @@ def rootList():
     for item in items:
         name = item.a.text.encode('utf-8')
         url = httphead(item.a['href'])
-        li = xbmcgui.ListItem(name)
+        li = ListItem(name)
         u = sys.argv[0] + '?mode=mainlist'
         u += '&name=' + quote_plus(name)
         u += '&url=' + quote_plus(url)

@@ -5,7 +5,7 @@
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
-        <import addon="plugin.video.cntv-video" version="1.0.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension point="xbmc.python.script" library="addon.py">
         <provides>video</provides>
