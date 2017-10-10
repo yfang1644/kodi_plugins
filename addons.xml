@@ -49,8 +49,8 @@
 
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
-    version="1.7.9"
-    provider-name="cmeng (originator: Skyemperor),yfang1644">
+    version="1.7.10"
+    provider-name="yfang1644">
     <requires>
     </requires>
     <extension
