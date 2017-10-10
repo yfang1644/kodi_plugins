@@ -20,6 +20,6 @@
         <platform>all</platform>
         <website><![CDATA[https://github.com/0312birdzhang/plugin.video.meijumao]]></website>
         <forum></forum>
-        <source><![CDATA[https://github.com/0312birdzhang/plugin.video.meijumao]]></source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.meijumao</source>
         </extension>
 </addon>
