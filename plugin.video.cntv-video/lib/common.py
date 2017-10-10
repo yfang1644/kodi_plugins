@@ -49,7 +49,7 @@ def urlopen_with_retry(*args, **kwargs):
 
 def get_html(url,
              data=None,
-             headers=None,
+             headers=fake_headers,
              decoded=True):
     """Gets the content of a URL via sending a HTTP GET request.
 
@@ -67,9 +67,9 @@ def get_html(url,
     if cookies:
         cookies.add_cookie_header(req)
         req.headers.update(req.unredirected_hdrs)
-    if headers is not None:
-        for item in headers:
-            req.add_header(item, headers[item])
+
+    for item in headers:
+        req.add_header(item, headers[item])
 
     response = urlopen_with_retry(req)
     data = response.read()

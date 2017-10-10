@@ -2,7 +2,8 @@
 
 from xbmcswift2 import Plugin, ListItem
 from urllib import urlencode
-from json import loads
+import urllib2
+from json import load
 from common import get_html
 
 
@@ -10,19 +11,70 @@ LIST = ['为你推荐', '最热', '流行', '摇滚', '民谣', '原声',
         '轻音乐', '古典', '电子', '华语', '欧美', '日语',
         '粤语', '独立', '动漫', '新世纪', '中国摇滚', 'R&B']
 
-plugin = Plugin()
+__UserAgent = 'Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'
+# songAPI = 'https://douban.fm/j/mine/playlist?type=n&from=mainsite&channel='
 
+plugin = Plugin()
+HOST = 'https://douban.fm/j/v2/'
+
+def GetInfo(url):
+    req = urllib2.Request(url)
+    req.add_header('User-Agent', __UserAgent)
+    response = urllib2.urlopen(req)
+    info = load(response)
+    return info
 
 @plugin.route('/play/<url>')
 def play(url):
-    plugin.set_content('videos')
+    plugin.set_content('episode')
     plugin.set_resolved_url(url)
+
+
+@plugin.route('/list_in_channel/<channel_id>')
+def list_in_channel(channel_id):
+    songAPI = HOST + 'playlist'
+    req = {
+        'kbps': 128,
+        'channel': channel_id,
+        'app_name': 'radio_website',
+        'version': 100,
+        'type': 'n'
+    }
+    data = urlencode(req)
+    results = GetInfo(songAPI + '?' + data)
+    song = results.get('song', [])
+    if len(song) > 0:
+        song = song[0]
+        print song
+        item = {
+            'label': song['title'],
+            'path': plugin.url_for('play', url=song['url']),
+            'thumbnail': song['picture'],
+            'icon': song['singers'][0]['avatar'],
+            'is_playable': True,
+            'info': {'duration': song['length']}
+        }
+        return [item]
+    else:
+        return []
+
+
+@plugin.route('/channels')
+def channels():
+    channelurl = 'http://www.douban.com/j/app/radio/channels'
+    results = GetInfo(channelurl)
+
+    items = [{
+        'label': item['name'],
+        'path': plugin.url_for('list_in_channel', channel_id=item['channel_id'])
+    } for item in results['channels']]
+    return items
 
 
 @plugin.route('/albumlist/<albumid>')
 def albumlist(albumid):
-    playlistAPI = 'https://douban.fm/j/v2/songlist/{}/?kbps=128'
-    results = loads(get_html(playlistAPI.format(albumid)))
+    playlistAPI = HOST + 'songlist/{}/?kbps=128'
+    results = GetInfo(playlistAPI.format(albumid))
 
     items = [{
         'label': item['title'],
@@ -40,7 +92,7 @@ def albumlist(albumid):
 
 @plugin.route('/catalog/<cid>')
 def catalog(cid):
-    albumAPI = 'https://douban.fm/j/v2/songlist/explore'
+    albumAPI = HOST + 'songlist/explore'
 
     req = {
         'type': 'hot',
@@ -49,13 +101,13 @@ def catalog(cid):
         'genre': cid
     }
     data = urlencode(req)
-    results = loads(get_html(albumAPI + '?' + data))
+    results = GetInfo(albumAPI + '?' + data)
 
     items = [{
         'label': item['title'].encode('utf-8'),
         'path': plugin.url_for('albumlist', albumid=item['id']),
-        'thumbnail': item['creator']['picture'],
-        'icon': item['cover'],
+        'icon': item['creator']['picture'],
+        'thumbnail': item['cover'],
         'info': {
             'plot': item['description'],
             'genre': LIST[int(cid)],
@@ -67,10 +119,13 @@ def catalog(cid):
 
 @plugin.route('/')
 def root():
-    items = [{
-            'label': title,
-            'path': plugin.url_for('catalog', cid=i),
-        } for (i, title) in enumerate(LIST)]
+    items = [{'label': '频道列表',
+              'path': plugin.url_for('channels'),
+             }]
+    items += [{
+        'label': title,
+        'path': plugin.url_for('catalog', cid=i),
+    } for (i, title) in enumerate(LIST)]
 
     return items
 
