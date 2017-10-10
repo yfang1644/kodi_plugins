@@ -10,7 +10,7 @@ from urllib import quote_plus
 import re
 import sys
 import os
-import json
+from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
 from youku import video_from_vid
@@ -479,7 +479,7 @@ def listSubMenu1(params):
 
     list_api = 'http://www.tudou.com/s3portal/service/pianku/data.action'
     html = get_html(list_api + strparam)
-    jsdata = json.loads(html)
+    jsdata = loads(html)
     items = jsdata['items']
     total = jsdata['total']
 
@@ -617,7 +617,7 @@ def listSubMenu2(params):
         u += '&name=' + quote_plus(name)
         u += '&mode=%s&title=%s' % (mode, title)
         xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-    jsdata = json.loads(html)
+    jsdata = loads(html)
     items = jsdata['data']
 
     for item in items:
@@ -731,7 +731,7 @@ def relatedAlbumList(params):
     album_api = 'http://www.tudou.com/crp/alist.action?a=%s'
     jspage = get_html(album_api % aid, decoded=True)
 
-    jsdata = json.loads(jspage.encode('utf-8'))
+    jsdata = loads(jspage.encode('utf-8'))
     jsdata = jsdata['items']
 
     for item in jsdata:
@@ -760,7 +760,7 @@ def relatedAlbumList(params):
     rel_list = 'http://www.tudou.com/crp/getRelativeContent.action?a=%s'
 
     jspage = get_html(rel_list % aid)
-    jsdata = json.loads(jspage)
+    jsdata = loads(jspage)
     headings = jsdata['data']['catList']
     heading = [x['name'] for x in headings]
     title = '|'.join(heading).encode('utf-8')
@@ -810,7 +810,7 @@ def relatedPlayList(params):
     rel_list = 'http://www.tudou.com/crp/getRelatedPlaylists.action?iid=%s'
 
     jspage = get_html(rel_list % iid[0])
-    jsdata = json.loads(jspage)
+    jsdata = loads(jspage)
     items = jsdata['data']['pList']
 
     u = sys.argv[0] + '?mode=codelist&iid=%s' % iid[0]
@@ -834,7 +834,7 @@ def relatedPlayList(params):
     rel_list = 'http://www.tudou.com/crp/plist.action?lcode=%s'
 
     jspage = get_html(rel_list % code)
-    jsdata = json.loads(jspage)
+    jsdata = loads(jspage)
     items = jsdata['items']
 
     u = sys.argv[0] + '?mode=codelist&iid=%s' % iid

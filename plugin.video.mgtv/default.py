@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import xbmc
-frmo xbmcgui import Dialog, ListItem
+from xbmcgui import Dialog, ListItem
 import xbmcplugin
 import xbmcaddon
 from urlparse import parse_qsl

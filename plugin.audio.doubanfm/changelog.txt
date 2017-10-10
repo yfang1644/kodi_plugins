@@ -1,3 +1,5 @@
+1.0.1 (2017.10.9)
+重写豆瓣
 [B]1.0.1[/B] (2015/11/09 Benyjuice)
 - 豆瓣返回JSON取消了rating_avg，public_time两个字段
 
