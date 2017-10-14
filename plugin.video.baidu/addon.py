@@ -13,38 +13,7 @@ from common import get_html
 from json import loads
 from bs4 import BeautifulSoup
 
-try:
-    from resources.lib.login_dialog import LoginDialog
-except:
-    #Debug for xbmcswift2 run from cli
-    pass
-
 plugin = Plugin()
-bilibili = Bilibili()
-tempdir = xbmc.translatePath('special://home/temp')
-
-class BiliPlayer(xbmc.Player):
-    def __init__(self):
-        self.subtitle = ""
-        self.show_subtitle = False
-
-    def setSubtitle(self, subtitle):
-        if len(subtitle) > 0:
-            self.show_subtitle = True
-        else:
-            self.show_subtitle = False
-        self.subtitle = subtitle
-
-    def onPlayBackStarted(self):
-        time = float(self.getTime())
-        if self.show_subtitle:
-            if time > 1:
-                self.setSubtitles(subtitle_offset(self.subtitle, -time))
-            else:
-                self.setSubtitles(self.subtitle)
-        else:
-            self.showSubtitles(False)
-
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -78,7 +47,7 @@ def get_av_item(aid, **kwargs):
 
 
 @plugin.route('/playmovie/<cid>/<vid>')
-def playmovie(cid, vid):
+def playmovie(cid, vid='0'):
     if vid != '0':
         urls = video_from_vid(vid)
     else:
@@ -164,13 +133,12 @@ def searchResult(page, keyword):
 
 @plugin.route('/search')
 def search():
-    keyboard = xbmc.Keyboard('', '请输入关键字 (片名/AV)')
+    keyboard = xbmc.Keyboard('', '请输入AV号(仅数字)')
     xbmc.sleep(1500)
     keyboard.doModal()
     if keyboard.isConfirmed():
         keyword = keyboard.getText()
         return searchResult(page=1, keyword=keyword)
-
 
 @plugin.route('/dynamic/<page>')
 def dynamic(page):

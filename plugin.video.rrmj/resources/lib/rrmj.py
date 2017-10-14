@@ -15,16 +15,26 @@ SERVER = "https://api.rr.tv"
 __ADDON__ = xbmcaddon.Addon()
 
 SECRET_KEY = "clientSecret=08a30ffbc8004c9a916110683aab0060"
+TOKEN = [
+    '5028f46f37d2414a9c61e8e3a24a4b8b',
+    '485f80c4ce6b4d65a221aedbf55a413f',
+    'b5d8b8790e1145d6bdffdcb9d9286351',
+    '8237122af9a24fc696f1d286e63e3784',
+    '0cd2626c822d49d5a27c4424a299dbaa',
+    'a65cb45354614c23bf3e30ca12e043d3',
+    '8e575ee9b50643368d1c0792eb1a3f22',
+    '1d71c7d377bc4b81b0c607b622b84b4b',
+    '6b6cfdd3e90843c0a0914425638db7ef',
+]
 
 FAKE_HEADERS = {
-    "a": "cf2ecd4d-dea3-40ca-814f-3f0462623b1c",
-    "b": "",
-    "clientType": "android_%E5%B0%8F%E7%B1%B3",
-    "clientVersion": "3.5.8",
-    "c": "5a1fb134-9384-4fc8-a5ae-6e711e24afc1",
-    "d": "",
-    "e": "d4dd075d894dd2b8c81f96062dbe7dcbf7d467fd",
-    "token": 'e4c636f879274746a4ae3a544a6926d2'
+    "clientType": "Android_rrmj",
+    "clientVersion": "3.6.3",
+    "deviceId": "861134030056129",
+    "token": TOKEN[0],
+    "signature": '',
+    "t": '',
+    "Authentication": "RRTV 470164b995ea4aa5a53f9e5cbceded472:IxIYBj:LPWfRb:I9gvePR5R2N8muXD7NWPCj"
 }
 
 
@@ -64,8 +74,7 @@ class RenRenMeiJu(object):
 
     def __init__(self):
         self._header = FAKE_HEADERS
-        self.get_token()
-        self._header['token'] = FAKE_HEADERS['token']
+        #self.get_token()
         key_id = getGUID()
         self._header.update(a=key_id)
         self.get_ticket()
