@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<addon id="plugin.audio.baidumusic"
+<addon id="plugin.audio.baidu"
     name="百度音乐"
     version="1.0.0"
     provider-name="yfang1644">
@@ -14,9 +14,9 @@
     <extension point="xbmc.addon.metadata">
         <summary>BaiduRadio audio plugin</summary>
         <summary lang="zh">百度音乐插件</summary>
-        <description>BaiduRadio audio plugin</description>
+        <description>Baidu Music Kodi Plugin</description>
         <description lang="zh">百度音乐插件</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.baidumusic</source>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.baidu</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
