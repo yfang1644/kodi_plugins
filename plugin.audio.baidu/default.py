@@ -11,23 +11,18 @@ from bs4 import BeautifulSoup
 import re
 
 __UserAgent = 'Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'
-# songAPI = 'https://douban.fm/j/mine/playlist?type=n&from=mainsite&channel='
 
 plugin = Plugin()
 HOST = 'http://music.baidu.com'
+BANNER_FMT = '[COLOR gold][%s][/COLOR]'
+
 
 def pageList(tree, endpoint):
-    items = []
     pages = tree.find_all('a', {'class': 'page-navigator-number'})
-    for page in pages:
-        title = page.text
-        url = page['href'].encode('utf-8')
-        url = re.sub(' |\t', '', url)
-
-        items.append({
-            'label': title,
-            'path': plugin.url_for(endpoint, url=quote_plus(url))
-        })
+    items = [{
+        'label': page.text.strip(),
+        'path': plugin.url_for(endpoint, url=page['href'].encode('utf-8'))
+        } for page in pages]
 
     return items
 
@@ -90,13 +85,11 @@ def musiclist(url):
     tree = BeautifulSoup(page, 'html.parser')
     soup = tree.find_all('li', {'class': 'mv-item'})
 
-    items = []
-    for item in soup:
-        items.append({
-            'label': item.a['title'],
-            'thumbnail': item.img['org_src'],
-            'path': plugin.url_for('MVList', url=item.a['href']),
-        })
+    items = [{
+        'label': item.a['title'],
+        'thumbnail': item.img['org_src'],
+        'path': plugin.url_for('MVList', url=item.a['href']),
+    } for item in soup]
 
     items += pageList(tree, 'musiclist')
 
@@ -114,7 +107,7 @@ def mv():
         p = soup.find_all('li')
         for item in p:
             items.append({
-                'label': item.text,
+                'label': item.text.strip(),
                 'path': plugin.url_for('musiclist', url=item.a['href'])
             })
 
@@ -123,7 +116,7 @@ def mv():
 @plugin.route('/playBD/<sid>')
 def playBD(sid):
     data = loads(get_html(
-        'http://music.baidu.com/data/music/fmlink?songIds=%s' % sid
+        HOST + '/data/music/fmlink?songIds=%s' % sid
         ))['data']
 
     if data['xcode'] != '':        # inside china mainland
@@ -160,14 +153,15 @@ def taglist(url):
 def tag():
     page = get_html(HOST + '/tag')
     tree = BeautifulSoup(page, 'html.parser')
-    soups = tree.find_all('dd', {'class': 'tag-items clearfix'})
-
     items = []
+    soups = tree.find_all('dl', {'class': 'tag-mod'})
+
     for soup in soups:
+        items += [{'label': BANNER_FMT % soup.dt.text}]
         p = soup.find_all('span', {'class': 'tag-list clearfix'})
         for item in p:
             items.append({
-                'label': item.text,
+                'label': item.text.strip(),
                 'path': plugin.url_for('taglist', url=item.a['href'])
             })
 
@@ -242,7 +236,7 @@ def artistName(url):
         for item in p:
             try:
                 items.append({
-                    'label': item.text,
+                    'label': item.text.strip(),
                     'path': plugin.url_for('artistAlbum', url=item.a['href'])
                 })
             except:
@@ -261,7 +255,7 @@ def artist():
         p = soup.find_all('dd')
         for item in p:
             items.append({
-                'label': item.text,
+                'label': item.text.strip(),
                 'path': plugin.url_for('artistName', url=item.a['href'])
             })
 
@@ -293,27 +287,27 @@ def albumlist(url):
 
 @plugin.route('/songlist')
 def songlist():
-    page = get_html(HOST + '/songlist', decoded=True) 
+    page = get_html(HOST + '/songlist')
     tree = BeautifulSoup(page, 'html.parser')
     soup = tree.find_all('div', {'class': 'songlist-tag'})
-    soups = soup[0].find_all('dd')
+    soups = soup[0].find_all('dl')
 
-    print soups
     items = []
-    for item in soups:
-        u = item.a['href'].encode('utf-8')
-        items.append({
-            'label': item.text,
-            'path': plugin.url_for('albumlist', url=u)
-        })
+    for soup in soups:
+	items += [{'label': BANNER_FMT % soup.dt.text}]
+	p = soup.find_all('dd')
+	for item in p:
+            items.append({
+                'label': item.text.strip(),
+                'path': plugin.url_for('albumlist', url=item.a['href'].encode('utf-8'))
+            })
 
     return items
 
 
 @plugin.route('/')
 def root():
-    list = {'歌单': 'songlist', 'MV': 'mv', '分类': 'tag', '歌手': 'artist'}
-    LIST = {
+    mainlist = {
         '歌单': 'songlist',
         '歌手': 'artist',
         '分类': 'tag',
@@ -321,8 +315,8 @@ def root():
 
     items = [{
         'label': item,
-        'path': plugin.url_for(list[item]),
-    } for item in list]
+        'path': plugin.url_for(mainlist[item]),
+    } for item in mainlist]
 
     return items
 

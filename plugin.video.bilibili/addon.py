@@ -19,9 +19,13 @@ except:
     #Debug for xbmcswift2 run from cli
     pass
 
+#hotapi = 'https://www.bilibili.com/index/tag/145/17046/rank.json'
+# 分页标签热门
+
 plugin = Plugin()
 bilibili = Bilibili()
 tempdir = xbmc.translatePath('special://home/temp')
+
 
 class BiliPlayer(xbmc.Player):
     def __init__(self):
@@ -201,8 +205,8 @@ def dynamic(page):
 def fav_box():
     items = [{
         'label': item['name'], 
-        'path': plugin.url_for('fav', fav_box = item['fav_box'], page = '1')
-        } for item in bilibili.get_fav_box()]
+        'path': plugin.url_for('fav', fav_box=item['fav_box'], page='1')
+    } for item in bilibili.get_fav_box()]
     if len(items) == 1:
         plugin.redirect(items[0]['path'])
     else:
@@ -212,21 +216,22 @@ def fav_box():
 def fav(fav_box, page):
     plugin.set_content('videos')
     result, total_page = bilibili.get_fav(fav_box, page)
-    items = previous_page('fav', page, total_page, fav_box = fav_box)
+    items = previous_page('fav', page, total_page, fav_box=fav_box)
     for item in result:
         info = {
             'genre': item['tname'],
             'writer': item['owner']['name'],
             'plot': item['desc'],
             'duration': item['duration']
-            }
+        }
         try:
             info['year'] = int(time.strftime('%Y',time.localtime(item['ctime'])))
         except:
             pass
         items.append(get_av_item(item['aid'], label=item['title'], thumbnail=item['pic'], info=info))
-    items += next_page('fav', page, total_page, fav_box = fav_box)
+    items += next_page('fav', page, total_page, fav_box=fav_box)
     return items
+
 
 @plugin.route('/season/<season_id>')
 def season(season_id):
@@ -239,7 +244,7 @@ def season(season_id):
         'castandrole': [u'{}|{}'.format(actor['actor'], actor['role']) for actor in result['actor']],
         'director': result['staff'],
         'plot': result['evaluate'],
-        }
+    }
     for item in result['episodes']:
         info = dict(bangumi_info)
         try:
@@ -250,7 +255,7 @@ def season(season_id):
         title += item['index_title']
         if item.get('is_new', '0') == '1':
             title += u'【新】'
-        items.append(get_av_item(item['av_id'], label=title, thumbnail=item['cover'], info=info))
+        items.insert(0, (get_av_item(item['av_id'], label=title, thumbnail=item['cover'], info=info)))
     return items
 
 
@@ -260,20 +265,16 @@ def bangumi_chase(page):
     result, total_page = bilibili.get_bangumi_chase(page)
     items = previous_page('bangumi_chase', page, total_page)
     for item in result:
-        info = {
-            'plot': item['brief'],  
-            }
-        title = item['title']
-        if item['is_finish'] == 0:
-            title += u'【更新至第{0}集】'.format(item['newest_ep_index'])
+        if item['is_finish']:
+            title = u'【已完结】'
         else:
-            title += u'【已完结】'
+            title = u'【更新至第{}集】'.format(item['newest_ep_index'])
         items.append({
-            'label': title,
+            'label': item['title']+title,
             'path': plugin.url_for('season', season_id = item['season_id']),
             'thumbnail': item['cover'],
-            'info': info,
-            })
+            'info': {'plot': item['brief']}
+        })
     items += next_page('bangumi_chase', page, total_page)
     return items
 
@@ -281,7 +282,8 @@ def bangumi_chase(page):
 def attention_video(mid, tid, page):
     plugin.set_content('videos')
     result, total_page = bilibili.get_attention_video(mid, tid, page)
-    items = []
+    items = previous_page('attention_video', page, total_page, mid=mid, tid=tid)
+
     for item in result['vlist']:
         duration = 0
         for t in item['length'].split(':'):
@@ -299,17 +301,20 @@ def attention_video(mid, tid, page):
             info['genre'] = bilibili.get_category_name(item['typeid'])
         except:
             pass
-        items.append(get_av_item(item['aid'], label=item['title'], thumbnail=item['pic'], info=info))
-    items += next_page('attention_video', page, total_page, mid = mid, tid = tid)
+        pic = item['pic']
+        if pic[:2] == '//':
+            pic = 'http:' + pic
+        items.append(get_av_item(item['aid'], label=item['title'], thumbnail=pic, info=info))
+    items += next_page('attention_video', page, total_page, mid=mid, tid=tid)
     return items 
 
 @plugin.route('/attention_channel_list/<mid>/<cid>/<page>')
 def attention_channel_list(mid, cid, page):
     plugin.set_content('videos')
-    result, total_page = bilibili.get_attention_channel_list(mid, cid, page)
+    result = bilibili.get_attention_channel(mid)
+    result = result[int(cid)]['video_list']
     items = []
-    for item1 in result_info:
-        item = item1['info']
+    for item in result:
         info = {
             'genre': item['tname'],
             'plot': item['desc'],
@@ -320,54 +325,55 @@ def attention_channel_list(mid, cid, page):
         except:
             pass
         items.append(get_av_item(item['aid'], label=item['title'], thumbnail=item['pic'], info = info))
-    items += next_page('attention_channel_list', page, total_page, mid = mid, cid = cid)
+    #items += next_page('attention_channel_list', page, total_page, mid=mid, cid=cid)
     return items 
 
 @plugin.route('/attention_channel/<mid>')
 def attention_channel(mid):
     result = bilibili.get_attention_channel(mid)
     items = []
-    for item in result:
-        title = u'{} ({}个视频) ({}更新)'.format(item['name'], str(item['count']), item['modify_time'][:10])
+    for i, item in enumerate(result):
+        title = u'{} ({}个视频) ({}更新)'.format(item['name'], str(item['count']), item['modify_time'])
         items.append({
             'label': title,
-            'path': plugin.url_for('attention_channel_list', mid = mid, cid = item['id'], page = '1'),
+            'path': plugin.url_for('attention_channel_list', mid=mid, cid=i, page='1'),
+            'info': {'plot': item['intro']}
             })
     return items
 
 @plugin.route('/user_info/<mid>')
 def user_info(mid):
     result, total_page = bilibili.get_attention_video(mid, 0, 1, 1)
-    items = []
-    items.append({
-        'label': u'频道',
-        'path': plugin.url_for('attention_channel', mid = mid),
-        })
-    title = u'{} ({}个视频)'.format(u'全部', str(result['count']))
-    items.append({
-        'label': title,
-        'path': plugin.url_for('attention_video', mid = mid, tid = '0', page = '1'),
-        })
+    items = [
+        {
+            'label': u'频道',
+            'path': plugin.url_for('attention_channel', mid=mid),
+        },
+        {
+            'label': u'全部({}个视频)'.format(result['count']),
+            'path': plugin.url_for('attention_video', mid=mid, tid='0', page='1'),
+        }
+    ]
+
     for item in result['tlist'].values():
-        title = u'{} ({}个视频)'.format(item['name'], str(item['count']))
+        title = u'{} ({}个视频)'.format(item['name'], item['count'])
         items.append({
             'label': title,
-            'path': plugin.url_for('attention_video', mid = mid, tid = item['tid'], page = '1'),
+            'path': plugin.url_for('attention_video', mid=mid, tid=item['tid'], page='1'),
             })
     return items
 
 @plugin.route('/attention/<page>/')
 def attention(page):
-    result, total_page = bilibili.get_attention(page)
-    items = []
-    for item in result:
-        items.append({
-            'label': item['uname'],
-            'path': plugin.url_for('user_info', mid = item['fid']),
-            'thumbnail': item['face'],
-            })
-    items += next_page('attention', page, total_page)
+    result = bilibili.get_attention(page)
+    items = [{
+        'label': item['uname'],
+        'path': plugin.url_for('user_info', mid = item['mid']),
+        'thumbnail': item['face'],
+    } for item in result]
+
     return items
+
 
 @plugin.route('/login/')
 def login():
@@ -469,7 +475,6 @@ def category_list(tid, tag, page):
         api = listAll.format(tid, page_size, page)
     html = get_html(api)
     lists = loads(html)
-    print lists
     archives = lists['data']['archives']
     size = lists['data']['page']['size']
     count = lists['data']['page']['count']
@@ -497,6 +502,7 @@ def category_list(tid, tag, page):
     items += next_page('category_list', page, total_page, tid=tid, tag=tag)
     return items
 
+
 @plugin.route('/')
 def root():
     items = [
@@ -511,11 +517,11 @@ def root():
             {'label': u'我的追番', 'path': plugin.url_for('bangumi_chase', page = '1')},
             {'label': u'我的关注', 'path': plugin.url_for('attention', page = '1')},
             {'label': u'退出登陆', 'path': plugin.url_for('logout')},
-            ]
+        ]
     else:
         items += [
             {'label': u'登陆账号', 'path': plugin.url_for('login')},
-            ]
+        ]
     return items
 
 

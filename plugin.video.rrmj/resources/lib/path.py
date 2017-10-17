@@ -1,38 +1,37 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
 
-from xbmcswift2 import Plugin, CLI_MODE, xbmcaddon, ListItem, xbmc, xbmcgui, xbmcplugin
-import os
-import sys
+from xbmcswift2 import Plugin, ListItem, xbmc
 from rrmj import *
 from urlparse import parse_qsl
 from json import loads
 
-CATE = ['喜剧',
-        '科幻',
-        '奇幻',
-        '魔幻',
-        '剧情',
-        '犯罪',
-        '罪案',
-        '警匪',
-        '恐怖',
-        '惊悚',
-        '冒险',
-        '悬疑',
-        '爱情',
-        '都市',
-        '家庭',
-        '伦理',
-        '动作',
-        '战争',
-        '历史',
-        '青春',
-        '搞笑',
-        '纪录片',
-        '时装',
-        '动画',
-        '音乐']
+CATE = [
+    '爱情',
+    '剧情',
+    '喜剧',
+    '科幻',
+    '动作',
+    '犯罪',
+    '冒险',
+    '家庭',
+    '战争',
+    '悬疑',
+    '恐怖',
+    '历史',
+    '伦理',
+    '罪案',
+    '警匪',
+    '惊悚',
+    '奇幻',
+    '魔幻',
+    '青春',
+    '都市',
+    '搞笑',
+    '纪录片',
+    '时装',
+    '动画',
+    '音乐']
 
 plugin = Plugin()
 Meiju = RenRenMeiJu()

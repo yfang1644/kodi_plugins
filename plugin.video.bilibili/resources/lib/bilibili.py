@@ -2,10 +2,12 @@
 #coding=utf-8
 
 import base64
-import json
+from json import loads
 import hashlib
 import urllib, urllib2
+from urlparse import urlparse
 import re
+import time
 import os
 import tempfile
 from random import random
@@ -16,7 +18,28 @@ from bs4 import BeautifulSoup
 from bilibili_config import *
 from niconvert import create_website
 
+def url_locations(url):
+    response = urllib2.urlopen(urllib2.Request(url))
+    return response.url
+
 class Bilibili():
+    name = u'哔哩哔哩 (Bilibili)'
+
+    api_url = 'http://interface.bilibili.com/playurl?'
+    bangumi_api_url = 'http://bangumi.bilibili.com/player/web_api/playurl?'
+    SEC1 = '1c15888dc316e05a15fdd0a02ed6584f'
+    SEC2 = '9b288147e5474dd2aa67085f716c560d'
+    supported_stream_profile = [u'流畅', u'高清', u'超清']
+    stream_types = [
+        {'id': 'hdflv'},
+        {'id': 'flv'},
+        {'id': 'hdmp4'},
+        {'id': 'mp4'},
+        {'id': 'live'},
+        {'id': 'vc'}
+    ]
+    fmt2qlt = dict(hdflv=4, flv=3, hdmp4=2, mp4=1)
+
     def __init__(self, appkey=APPKEY, appsecret=APPSECRET,
                  width=720, height=480):
         self.defaultHeader = {'Referer':'http://www.bilibili.com'}
@@ -72,7 +95,7 @@ class Bilibili():
 
     def get_encryped_pwd(self, pwd):
         import rsa
-        result = json.loads(get_html(LOGIN_HASH_URL.format(random()),
+        result = loads(get_html(LOGIN_HASH_URL.format(random()),
                     headers={'Referer':'https://passport.bilibili.com/login'}))
         pwd = result['hash'] + pwd
         key = result['key']
@@ -157,7 +180,7 @@ class Bilibili():
         params = {'tid': tid, 'order': order, 'days': days, 'page': page, 'pagesize': pagesize}
         url = LIST_URL.format(self.api_sign(params))
 
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         results = []
         for i in range(pagesize):
             if result['list'].has_key(str(i)):
@@ -169,14 +192,14 @@ class Bilibili():
     def get_my_info(self):
         if self.is_login == False:
             return []
-        result = json.loads(get_html(MY_INFO_URL))
+        result = loads(get_html(MY_INFO_URL))
         return result['data']
 
     def get_bangumi_chase(self, page = 1, pagesize = 20):
         if self.is_login == False:
             return []
         url = BANGUMI_CHASE_URL.format(self.mid, page, pagesize)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result['data']['result'], result['data']['pages']
 
     def get_bangumi_detail(self, season_id):
@@ -186,14 +209,14 @@ class Bilibili():
             start = result.find('(') + 1
             end = result.find(');')
             result = result[start:end]
-        result = json.loads(result)
+        result = loads(result)
         return result['result']
 
     def get_history(self, page = 1, pagesize = 20):
         if self.is_login == False:
             return []
         url = HISTORY_URL.format(page, pagesize)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         if len(result['data']) >= int(pagesize):
             total_page = int(page) + 1
         else:
@@ -204,7 +227,7 @@ class Bilibili():
         if self.is_login == False:
             return []
         url = DYNAMIC_URL.format(pagesize, page)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         total_page = int((result['data']['page']['count'] + pagesize - 1) / pagesize)
         return result['data']['feeds'], total_page
 
@@ -212,46 +235,35 @@ class Bilibili():
         if self.is_login == False:
             return []
         url = ATTENTION_URL.format(self.mid, page, pagesize)
-        print '=========ATTENTION_URL======================',url
-        ua = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'}
-        data = get_html(url, headers=ua, decoded=False)
-        print data
-        result = json.loads(get_html(url, headers=ua))
-        return result['data']['list'], result['data']['pages']
+        result = loads(get_html(url))
+        return result['data']['list']
 
     def get_attention_video(self, mid, tid = 0, page = 1, pagesize = 20):
         if self.is_login == False:
             return []
         url = ATTENTION_VIDEO_URL.format(mid, page, pagesize, tid)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result['data'], result['data']['pages']
 
     def get_attention_channel(self, mid):
         if self.is_login == False:
             return []
         url = ATTENTION_CHANNEL_URL.format(mid)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result['data']['list']
-
-    def get_attention_channel_list(self, mid, cid, page = 1, pagesize = 20):
-        if self.is_login == False:
-            return []
-        url = ATTENTION_CHANNEL_LIST_URL.format(mid, cid, page, pagesize)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
-        return result['data']['list'], result['data']['total']
 
     def get_fav_box(self):
         if self.is_login == False:
             return []
         url = FAV_BOX_URL.format(self.mid)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result['data']['list']
 
     def get_fav(self, fav_box, page = 1, pagesize = 20):
         if self.is_login == False:
             return []
         url = FAV_URL.format(self.mid, page, pagesize, fav_box)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result['data']['vlist'], result['data']['pages']
 
     def login(self, userid, pwd, captcha):
@@ -271,7 +283,7 @@ class Bilibili():
                 break
 
         if key is None:
-            return False, LOGIN_ERROR_MAP[json.loads(result)['code']]
+            return False, LOGIN_ERROR_MAP[loads(result)['code']]
         self.cj.save()
         self.is_login = True
         self.mid = str(key)
@@ -287,7 +299,7 @@ class Bilibili():
         if fav != 0:
             params['fav'] = fav
         url = VIEW_URL.format(self.api_sign(params))
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         results = [result]
         if (int(page) < result['pages']) and (pagesize > 1):
             results += self.get_av_list_detail(aid, int(page) + 1, fav, pagesize = pagesize - 1)[0]
@@ -296,7 +308,7 @@ class Bilibili():
 
     def get_av_list(self, aid):
         url = AV_URL.format(aid)
-        result = json.loads(get_html(url, headers=self.defaultHeader))
+        result = loads(get_html(url, headers=self.defaultHeader))
         return result
 
 
@@ -324,13 +336,13 @@ class Bilibili():
         m = hashlib.md5()
         m.update(INTERFACE_PARAMS.format(str(cid), SECRETKEY_MINILOADER))
         url = INTERFACE_URL.format(str(cid), m.hexdigest())
-        doc = parseString(get_html(url, headers=self.defaultHeader))
+        doc = parseString(get_html(url))
         urls = []
         for durl in doc.getElementsByTagName('durl'):
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
             if re.match(r'.*\.qqvideo\.tc\.qq\.com', url):
                 re.sub(r'.*\.qqvideo\.tc', 'http://vsrc.store', u)
-            urls.append(u + '|Referer=http://www.bilibili.com')
+            urls.append(u + '|Referer=https://www.bilibili.com')
 
         return urls
 
@@ -338,6 +350,105 @@ class Bilibili():
         url = ADD_HISTORY_URL.format(str(cid), str(aid))
         get_html(url)
 
+    def api_req(self, cid, quality, bangumi, bangumi_movie=False, **kwargs):
+        ts = str(int(time.time()))
+        if not bangumi:
+            params_str = 'cid={}&player=1&quality={}&ts={}'.format(cid, quality, ts)
+            chksum = hashlib.md5(bytes(params_str+self.SEC1)).hexdigest()
+            api_url = self.api_url + params_str + '&sign=' + chksum
+        else:
+            mod = 'movie' if bangumi_movie else 'bangumi'
+            params_str = 'cid={}&module={}&player=1&quality={}&ts={}'.format(cid, mod, quality, ts)
+            chksum = hashlib.md5(bytes(params_str+self.SEC2)).hexdigest()
+            api_url = self.bangumi_api_url + params_str + '&sign=' + chksum
+
+        return get_html(api_url)
+
+    def download_by_vid(self, cid, bangumi, **kwargs):
+        stream_id = kwargs.get('stream_id')
+        if stream_id and stream_id in self.fmt2qlt:
+            quality = stream_id
+        else:
+            quality = 'hdflv' if bangumi else 'flv'
+
+        level = kwargs.get('level', 0)
+        xml = self.api_req(cid, level, bangumi, **kwargs)
+        doc = parseString(xml)
+        urls = []
+        for durl in doc.getElementsByTagName('durl'):
+            u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
+            urls.append(u + '|Referer=https://www.bilibili.com')
+
+        return urls
+
+    def entry(self, **kwargs):
+        # tencent player
+        tc_flashvars = re.search(r'"bili-cid=\d+&bili-aid=\d+&vid=([^"]+)"', self.page)
+        if tc_flashvars:
+            tc_flashvars = tc_flashvars.group(1)
+        if tc_flashvars is not None:
+            self.out = True
+            return qq_download_by_vid(tc_flashvars, self.title, output_dir=kwargs['output_dir'], merge=kwargs['merge'], info_only=kwargs['info_only'])
+
+        cid = re.search(r'cid=(\d+)', self.page).group(1)
+        if cid is not None:
+            return self.download_by_vid(cid, False, **kwargs)
+        else:
+        # flashvars?
+            flashvars = re.search(r'flashvars="([^"]+)"', self.page).group(1)
+            if flashvars is None:
+                raise Exception('Unsupported page {}'.format(self.url))
+            param = flashvars.split('&')[0]
+            t, cid = param.split('=')
+            t = t.strip()
+            cid = cid.strip()
+            if t == 'vid':
+                sina_download_by_vid(cid, self.title, output_dir=kwargs['output_dir'], merge=kwargs['merge'], info_only=kwargs['info_only'])
+            elif t == 'ykid':
+                youku_download_by_vid(cid, self.title, output_dir=kwargs['output_dir'], merge=kwargs['merge'], info_only=kwargs['info_only'])
+            elif t == 'uid':
+                tudou_download_by_id(cid, self.title, output_dir=kwargs['output_dir'], merge=kwargs['merge'], info_only=kwargs['info_only'])
+            else:
+                raise NotImplementedError('Unknown flashvars {}'.format(flashvars))
+            return
+
+    def movie_entry(self, **kwargs):
+        patt = r"var\s*aid\s*=\s*'(\d+)'"
+        aid = re.search(patt, self.page).group(1)
+        page_list = loads(get_html('http://www.bilibili.com/widget/getPageList?aid={}'.format(aid)))
+        # better ideas for bangumi_movie titles?
+        self.title = page_list[0]['pagename']
+        return self.download_by_vid(page_list[0]['cid'], True, bangumi_movie=True, **kwargs)
+
+    def get_video_from_url(self, url, **kwargs):
+        self.url = url_locations(url)
+        frag = urlparse(self.url).fragment
+        # http://www.bilibili.com/video/av3141144/index_2.html#page=3
+        if frag:
+            hit = re.search(r'page=(\d+)', frag)
+            if hit is not None:
+                page = hit.group(1)
+                av_id = re.search(r'av(\d+)', self.url).group(1)
+                self.url = 'http://www.bilibili.com/video/av{}/index_{}.html'.format(av_id, page)
+        self.page = get_html(self.url)
+
+        if 'bangumi.bilibili.com/movie' in self.url:
+            return self.movie_entry(**kwargs)
+        elif 'bangumi.bilibili.com' in self.url:
+            return self.bangumi_entry(**kwargs)
+        elif 'live.bilibili.com' in self.url:
+            return self.live_entry(**kwargs)
+        elif 'vc.bilibili.com' in self.url:
+            return self.vc_entry(**kwargs)
+        else:
+            return self.entry(**kwargs)
+
+    def bangumi_entry(self, **kwargs):
+        pass
+    def live_entry(self, **kwargs):
+        pass
+    def vc_entry(self, **kwargs):
+        pass
 
 if __name__ == '__main__':
     b = Bilibili()

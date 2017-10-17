@@ -1,18 +1,14 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib
-import json
+from urllib import urlencode
+from json import loads, dumps
 import time
 import hashlib
 from common import get_html
-import xbmcvfs
-import xbmcgui
-import xbmcaddon
 from random import randrange
 
 SERVER = "https://api.rr.tv"
-__ADDON__ = xbmcaddon.Addon()
 
 SECRET_KEY = "clientSecret=08a30ffbc8004c9a916110683aab0060"
 TOKEN = [
@@ -24,11 +20,12 @@ TOKEN = [
     'a65cb45354614c23bf3e30ca12e043d3',
     '8e575ee9b50643368d1c0792eb1a3f22',
     '1d71c7d377bc4b81b0c607b622b84b4b',
+    '79e7dc7de5814908bc11e62972b6b819',
     '6b6cfdd3e90843c0a0914425638db7ef',
 ]
 
 FAKE_HEADERS = {
-    "clientType": "Android_rrmj",
+    "clientType": "android_RRMJ",
     "clientVersion": "3.6.3",
     "deviceId": "861134030056129",
     "token": TOKEN[0],
@@ -36,21 +33,6 @@ FAKE_HEADERS = {
     "t": '',
     "Authentication": "RRTV 470164b995ea4aa5a53f9e5cbceded472:IxIYBj:LPWfRb:I9gvePR5R2N8muXD7NWPCj"
 }
-
-
-def getGUID():
-    if xbmcvfs.exists("special://temp/rrmj.key"):
-        f = xbmcvfs.File("special://temp/rrmj.key")
-        result = f.read()
-        f.close()
-        if result != "":
-            return result
-    import uuid
-    key = str(uuid.uuid1())
-    f = xbmcvfs.File("special://temp/rrmj.key", 'w')
-    result = f.write(key)
-    f.close()
-    return key
 
 
 def createKey():
@@ -75,33 +57,17 @@ class RenRenMeiJu(object):
     def __init__(self):
         self._header = FAKE_HEADERS
         #self.get_token()
-        key_id = getGUID()
         self._header.update(a=key_id)
-        self.get_ticket()
 
     def get_json(self, api, data=None, pretty=False):
         headers = self.header
         headers.update(b=SERVER+api)
-        s = json.loads(get_html(SERVER+api, data=data, headers=headers))
+        s = loads(get_html(SERVER+api, data=data, headers=headers))
         if pretty:
             print headers
-            print json.dumps(s, sort_keys=True,
+            print dumps(s, sort_keys=True,
                              indent=4, separators=(',', ': '))
         return s
-
-    def get_ticket(self):
-        expired_time = __ADDON__.getSetting("expired_time")
-        if expired_time != "":
-            now = int(time.time()) * 1000
-            if now < int(expired_time):
-                return
-        API = '/auth/ticket'
-        auth_data = {"a": FAKE_HEADERS["a"],
-                     "b": createKey()}
-        data = self.get_json(API, data=urllib.urlencode(auth_data))
-        if data["data"]["ticket"] != "":
-            __ADDON__.setSetting("expired_time", str(
-                data["data"]["expiredTime"]))
 
     @property
     def header(self):
@@ -112,11 +78,11 @@ class RenRenMeiJu(object):
         API = '/v3plus/video/search'
         kwargs["page"] = page
         kwargs["rows"] = rows
-        return self.get_json(API, data=urllib.urlencode(kwargs))
+        return self.get_json(API, data=urlencode(kwargs))
 
     def get_album(self, albumId=2):
         API = '/v3plus/video/album'
-        return self.get_json(API, data=urllib.urlencode(dict(albumId=albumId)))
+        return self.get_json(API, data=urlencode(dict(albumId=albumId)))
 
     def index_info(self):
         API = '/v3plus/video/indexInfo'
@@ -126,7 +92,7 @@ class RenRenMeiJu(object):
         API = '/v3plus/season/detail'
         kwargs["seasonId"] = seasonId
         kwargs["token"] = self._header['token']
-        return self.get_json(API, data=urllib.urlencode(kwargs))
+        return self.get_json(API, data=urlencode(kwargs))
 
     def hot_word(self):
         API = '/v3plus/video/hotWord'
@@ -150,14 +116,14 @@ class RenRenMeiJu(object):
             'userName': name,
             'securityCode': ''
         }
-        data = self.get_json(API, data=urllib.urlencode(body))
+        data = self.get_json(API, data=urlencode(body))
         FAKE_HEADERS['token']= data['data']['user']['token']
 
 
 class RRMJResolver(RenRenMeiJu):
 
     def get_by_sid(self, seasonId, episodeSid, quality):
-        API = "/video/findM3u8ByEpisodeSid"
+        API = "/video/findM3u8ByEpisodeSidAuth"
         url = SERVER + API
         headers = self.header
         l2 = str(int(time.time()) * 1000 - 28800000)
@@ -169,10 +135,10 @@ class RRMJResolver(RenRenMeiJu):
         MD5.update(s7)
         signature = MD5.hexdigest()
         headers['signature'] = signature
-        post_data = 'episodeSid=%s&quality=%s&seasonId=%s' % (
-            episodeSid, quality, seasonId)
+        post_data = 'episodeSid=%s&quality=%s&seasonId=%s&token=%s' % (
+            episodeSid, quality, 0, headers['token'])
         ppp = get_html(url, data=post_data, headers=headers)
-        data = json.loads(ppp)
+        data = loads(ppp)
         if data["code"] != "0000":
             return None, None
         else:
@@ -181,7 +147,7 @@ class RRMJResolver(RenRenMeiJu):
             quality_array = m3u8["qualityArr"]
             if current_quality == "QQ":
                 decoded_url = m3u8["url"].decode("base64")
-                real_url = json.loads(decoded_url)
+                real_url = loads(decoded_url)
                 print real_url
                 return real_url["V"][0]["U"], current_quality
             else:
