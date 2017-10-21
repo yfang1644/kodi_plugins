@@ -210,25 +210,24 @@ def search(page, **kwargs):
 def get_album(albumId):
     c_list = Meiju.get_album(albumId)
     for one in c_list["data"]["results"]:
-        item = ListItem(**{
+        yield {
             'label': one.get("title"),
             'path': plugin.url_for("detail", seasonId=one.get("id")),
             'icon': one["cover"],
             'thumbnail': one["cover"],
-        })
-        item.set_info("video", {"plot": one.get("brief", ""),
-                                "rating ": float(one["score"]),
-                                "genre": one["cat"],
-                                "season": one["seasonNo"]})
-        item._listitem.setArt({"poster": one["cover"]})
-        item.set_is_playable(False)
-        yield item
+            'info': {"title": one.get('title'),
+                     "plot": one.get("brief", ""),
+                     "rating ": float(one["score"]),
+                     "genre": one["cat"],
+                     "season": one["seasonNo"]}
+        }
     plugin.set_content('TVShows')
 
 
 # get season episodes by season id
 @plugin.route('/detail/<seasonId>', name="detail")
 def video_detail(seasonId):
+    plugin.set_content('episodes')
     detail = Meiju.video_detail(seasonId)
     season_data = detail["data"]["season"]
     title = season_data["title"]
@@ -243,18 +242,17 @@ def video_detail(seasonId):
         label = title + str(episode["episode"])
         if episode["episode"] == playing_episode:
             label = "[B]" + colorize(label, "green") + "[/B]"
-        item = ListItem(**{
+
+        yield {
             'label': label,
             'path': plugin.url_for("play_season", seasonId=seasonId, index=episode["episode"], Esid=episode["episodeSid"]),
-        })
-        item.set_info("video", {"plot": season_data["brief"],
-                                "TVShowTitle": title,
-                                "episode": int(episode["episode"]),
-                                "season": 0})
-        item._listitem.setArt({"poster": season_data["cover"]})
-        item.set_is_playable(True)
-        yield item
-    plugin.set_content('episodes')
+            'thumbnail': season_data['cover'],
+            'is_playable': True,
+            'info': {"plot": season_data["brief"],
+                     "title": title,
+                     "episode": int(episode["episode"]),
+                     "season": 0},
+        }
 
 
 @plugin.route('/play/<seasonId>/<index>/<Esid>', name="play_season")
@@ -263,7 +261,7 @@ def play(seasonId="", index="", Esid=""):
     title = season_data["title"]
     episode_sid = Esid
     rs = RRMJResolver()
-    play_url, _ = rs.get_play(seasonId, episode_sid, plugin.get_setting("quality"))
+    play_url, _ = rs.get_play(episode_sid, plugin.get_setting("quality"))
     if play_url is not None:
         stackurl = play_url.split('|')
         play_url = 'stack://' + ' , '.join(stackurl)
@@ -271,7 +269,8 @@ def play(seasonId="", index="", Esid=""):
         li = ListItem(title+index,
                     path=play_url,
                     thumbnail=season_data.get('cover'))
-        li.set_info('video', {"plot": season_data.get('brief','')})
+        li.set_info('video', {'title': title+index,
+                              "plot": season_data.get('brief','')})
 
         plugin.set_resolved_url(li)
     else:

@@ -1,8 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin
-from urllib import quote_plus
-import urllib2
 from json import loads
 from common import get_html
 from iqiyi import video_from_vid as IQIYI_from_vid

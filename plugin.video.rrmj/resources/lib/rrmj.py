@@ -10,7 +10,6 @@ from random import randrange
 
 SERVER = "https://api.rr.tv"
 
-SECRET_KEY = "clientSecret=08a30ffbc8004c9a916110683aab0060"
 TOKEN = [
     '5028f46f37d2414a9c61e8e3a24a4b8b',
     '485f80c4ce6b4d65a221aedbf55a413f',
@@ -27,18 +26,9 @@ TOKEN = [
 FAKE_HEADERS = {
     "clientType": "android_RRMJ",
     "clientVersion": "3.6.3",
-    "deviceId": "861134030056129",
     "token": TOKEN[0],
-    "signature": '',
-    "t": '',
     "Authentication": "RRTV 470164b995ea4aa5a53f9e5cbceded472:IxIYBj:LPWfRb:I9gvePR5R2N8muXD7NWPCj"
 }
-
-
-def createKey():
-    constantStr = "yyets"
-    c = str(int(time.time())) + "416"
-    return caesarEncryption(constantStr + c, 3)
 
 
 def caesarEncryption(source, offset):
@@ -55,24 +45,17 @@ class RenRenMeiJu(object):
     """docstring for RenRenMeiJu"""
 
     def __init__(self):
-        self._header = FAKE_HEADERS
+        self.header = FAKE_HEADERS
         #self.get_token()
-        self._header.update(a=key_id)
 
     def get_json(self, api, data=None, pretty=False):
         headers = self.header
-        headers.update(b=SERVER+api)
         s = loads(get_html(SERVER+api, data=data, headers=headers))
         if pretty:
             print headers
             print dumps(s, sort_keys=True,
                              indent=4, separators=(',', ': '))
         return s
-
-    @property
-    def header(self):
-        self._header.update(d=str(int(time.time())) + "416")
-        return self._header
 
     def search(self, page=1, rows=12, **kwargs):
         API = '/v3plus/video/search'
@@ -84,6 +67,10 @@ class RenRenMeiJu(object):
         API = '/v3plus/video/album'
         return self.get_json(API, data=urlencode(dict(albumId=albumId)))
 
+    def index_movie(self):
+        API = '/v3plus'
+        return self.get_json(API)
+
     def index_info(self):
         API = '/v3plus/video/indexInfo'
         return self.get_json(API)
@@ -91,7 +78,7 @@ class RenRenMeiJu(object):
     def video_detail(self, seasonId, userId=0, **kwargs):
         API = '/v3plus/season/detail'
         kwargs["seasonId"] = seasonId
-        kwargs["token"] = self._header['token']
+        kwargs["token"] = self.header['token']
         return self.get_json(API, data=urlencode(kwargs))
 
     def hot_word(self):
@@ -122,22 +109,17 @@ class RenRenMeiJu(object):
 
 class RRMJResolver(RenRenMeiJu):
 
-    def get_by_sid(self, seasonId, episodeSid, quality):
+    def get_by_sid(self, episodeSid, quality):
         API = "/video/findM3u8ByEpisodeSidAuth"
         url = SERVER + API
         headers = self.header
-        l2 = str(int(time.time()) * 1000 - 28800000)
-        headers['t'] = l2
-        s7 = "episodeSid=%squality=%sclientType=%sclientVersion=%st=%s%s" % (
-            episodeSid, quality, headers['clientType'],
-            headers['clientVersion'], l2, SECRET_KEY)
-        MD5 = hashlib.md5()
-        MD5.update(s7)
-        signature = MD5.hexdigest()
-        headers['signature'] = signature
-        post_data = 'episodeSid=%s&quality=%s&seasonId=%s&token=%s' % (
-            episodeSid, quality, 0, headers['token'])
-        ppp = get_html(url, data=post_data, headers=headers)
+        body = {
+            'episodeSid': episodeSid,
+            'quality': quality,
+            'seasonId': 0,
+            'token': headers['token']
+        }
+        ppp = get_html(url, data=urlencode(body), headers=headers)
         data = loads(ppp)
         if data["code"] != "0000":
             return None, None
@@ -153,5 +135,5 @@ class RRMJResolver(RenRenMeiJu):
             else:
                 return m3u8["url"], current_quality
 
-    def get_play(self, seasonId, episodeSid, quality='super'):
-        return self.get_by_sid(seasonId, episodeSid, quality)
+    def get_play(self, episodeSid, quality='super'):
+        return self.get_by_sid(episodeSid, quality)

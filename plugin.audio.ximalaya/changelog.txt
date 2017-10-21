@@ -1,2 +1,4 @@
-﻿V1.0.0 (2017-5.12)
+﻿V1.0.4
+- rewrite ximalaya, using xbmcswift2
+V1.0.0 (2017-5.12)
 - initial
