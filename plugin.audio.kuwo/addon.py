@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin
-from urllib import urlencode
 import re
 from bs4 import BeautifulSoup
-from common import get_html, match1
+from common import get_html, r1
 
 # Plugin constants
 
@@ -15,6 +14,10 @@ musicAPI = 'http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'
 sourceAPI = 'http://antiserver.kuwo.cn/anti.s?type=convert_url&response=url'
 
 plugin = Plugin()
+
+@plugin.route('/stay')
+def stay():
+    pass
 
 @plugin.route('/musiclist/<url>')
 def musiclist(url):
@@ -26,28 +29,54 @@ def musiclist(url):
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('li', {'class': 'clearfix'})
 
+    musicList = []
+    mvList = []
     for music in soup:
         mid = music.input['mid']
-        title = music.find('p', {'class': 'm_name'})
-        title = title.text.strip()
-        albumname = music.find('p', {'class': 'a_name'})
-        albumname = albumname.text.strip()
+        song = music.find_all('p', {'class': ['m_name','a_name','video']})
+        title = song[0].a.text
+        albumname = song[1].a.text
 
         html = get_html(musicAPI + mid)
-        iconimage = match1(html, '<artist_pic240>(.*)</artist_pic240>')
-        artist = match1(html, '<artist>(.*)</artist>')
+        iconimage = r1('<artist_pic240>(.*)</artist_pic240>', html)
+        artist = r1('<artist>(.*)</artist>', html)
 
         for t in supported_stream_types:
             url = get_html(sourceAPI + '&format={}&rid=MUSIC_{}'.format(t, mid))
             if url:
+                musicList.append({
+                    'label': title +'-'+ albumname,
+                    'path': url,
+                    'thumbnail': iconimage,
+                    'is_playable': True,
+                    'info': {'title': title, 'artist': artist}
+                })
                 break
-        yield {
-            'label': title +'-'+ albumname,
-            'thumbnail': iconimage,
-            'path': url,
-            'is_playable': True,
-            'info': {'title': title, 'artist': artist}
-        }
+
+        if song[2].a is not None:
+            html = get_html(mv.a['href'])
+            mp4 = r1('var mp4url.+(http:.+?mp4)', html)
+            mvList.append({
+                'label': title +'-'+ albumname,
+                'path': mp4,
+                'is_playable': True,
+                'thumbnail': iconimage,
+                'info': {'title': title, 'artist': artist}
+            })
+
+    if len(musicList) > 0:
+        musicList.insert(0, {
+            'label': BANNER_FMT % u'音乐',
+            'path': plugin.url_for('stay')
+        })
+
+    if len(mvList) > 0:
+        mvList.insert(0, {
+            'label': BANNER_FMT % u'MV',
+            'path': plugin.url_for('stay')
+        })
+
+    return musicList + mvList
 
 @plugin.route('/albumlist/<url>')
 def albumlist(url):
@@ -75,13 +104,12 @@ def singeralbum(url, id, page):
 
     yield {
         'label': BANNER_FMT % u'专辑',
-        'path': plugin.url_for('singeralbum', url=url,id=id,page=page)
+        'path': plugin.url_for('stay')
     }
 
     html = get_html(SINGER + url.replace(' ', '%20')) # some singer name has ' '
     tree = BeautifulSoup(html, "html.parser")
 
-    print 'XXXXXXXXXXXXXXXXX', SINGER+url
     # ALBUM #######################################
     soup = tree.find_all('div', {'id': 'album'})
     li = soup[0].find_all('li')
@@ -100,12 +128,12 @@ def singeralbum(url, id, page):
     li = soup[0].find_all('li')
     yield {
         'label': BANNER_FMT % u'MV',
-        'path': plugin.url_for('singeralbum', url=url, id=id, page=page)
+        'path': plugin.url_for('stay')
     }
     for mv in li:
         name = mv.find('span', {'class': 'name'})
         html = get_html(name.a['href'])
-        mp4 = match1(html, 'var mp4url.+(http:.+?mp4)')
+        mp4 = r1('var mp4url.+(http:.+?mp4)', html)
         image = mv.find('div', {'class': 'cover'})
         image = image.img['src']
         yield {
@@ -117,13 +145,13 @@ def singeralbum(url, id, page):
         }
 
     # SONGS ###############################################
+    yield {
+        'label': BANNER_FMT % u'单曲',
+        'path': plugin.url_for('stay')
+    }
     aurl = 'http://www.kuwo.cn/artist/contentMusicsAjax'
     aurl += '?artistId=%s&pn=%d&rn=15' % (id, page)
     html = get_html(aurl)
-    yield {
-        'label': BANNER_FMT % u'单曲',
-        'path': plugin.url_for('singeralbum', url=url, id=id, page=page)
-    }
     l = re.compile('"id":"MUSIC_(\d+)').findall(html)
     maxpage = re.compile('data-page="(\d+)"').findall(html)
     maxpage = int(maxpage[0])
@@ -141,8 +169,8 @@ def singeralbum(url, id, page):
         mid = re.compile('\d+').findall(song.a['href'])
         mid = mid[0]
         html = get_html(musicAPI + mid)
-        iconimage = match1(html, '<artist_pic240>(.*)</artist_pic240>')
-        artist = match1(html, '<artist>(.*)</artist>')
+        iconimage = r1('<artist_pic240>(.*)</artist_pic240>', html)
+        artist = r1('<artist>(.*)</artist>', html)
 
         for t in ['aac', 'wma', 'mp3']:
             url = get_html(sourceAPI + '&format={}&rid=MUSIC_{}'.format(t, mid))
@@ -212,7 +240,7 @@ def singerlist():
     for singer in soup:
         yield {
             'label': BANNER_FMT % singer.span.text,
-            'path': plugin.url_for('singerlist')
+            'path': plugin.url_for('stay')
         }
         li = singer.find_all('dd')
         for item in li:
@@ -257,7 +285,7 @@ def sortlist():
     for sdlist in soup:
         yield {
             'label': BANNER_FMT % sdlist.h1.text,
-            'path': plugin.url_for('sortlist')
+            'path': plugin.url_for('stay')
         }
         li = sdlist.find_all('li')
 
@@ -276,7 +304,7 @@ def category():
     for hotlist in soup:
         yield {
             'label': BANNER_FMT % hotlist.h1.text,
-            'path': plugin.url_for('category')
+            'path': plugin.url_for('stay')
         }
         x = hotlist.find_all('ul', {'class': 'clearfix'})
         li = x[0].find_all('li')

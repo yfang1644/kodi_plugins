@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcaddon
-from urllib import urlencode
 import re
 from json import loads
 from bs4 import BeautifulSoup
@@ -97,7 +96,7 @@ def httphead(url):
 
 @plugin.route('/')
 def root():
-
+    plugin.set_content('music')
     html = get_html(HOST_URL + '/dq/all/')
     html = re.sub('\t|\r|\n', '', html)
     tree = BeautifulSoup(html, 'html.parser')
@@ -119,6 +118,7 @@ def root():
 
 @plugin.route('/sublist/<cid>')
 def sublist(cid):
+    plugin.set_content('music')
     html = get_html(HOST_URL + '/dq/all/')
     tree = BeautifulSoup(html, 'html.parser')
 
@@ -133,6 +133,7 @@ def sublist(cid):
 
 @plugin.route('/albumlist/<url>')
 def albumlist(url):
+    plugin.set_content('music')
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'discoverAlbum_wrapper'})
@@ -160,17 +161,11 @@ def albumlist(url):
             'path': plugin.url_for('albumlist', url=httphead(url.encode('utf-8')))
         }
 
-@plugin.route('/play/<url>')
-def play(url):
-    plugin.set_content('music')
-    plugin.resolved_url(url)
 
 @plugin.route('/playList/<url>/<page>/<order>')
 def playList(url, page, order):
     plugin.set_content('music')
-    pdata = {'page': page, 'order': order}
-    data = urlencode(pdata)
-    html = get_html(url + '?' + data)
+    html = get_html(url + '?page={}&order={}'.format(page, order))
     tree = BeautifulSoup(html, 'html.parser')
 
     info = tree.find_all('div', {'class': 'rich_intro'})
