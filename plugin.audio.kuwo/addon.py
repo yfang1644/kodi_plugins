@@ -10,19 +10,44 @@ from common import get_html, r1
 
 URL_BASE = 'http://yinyue.kuwo.cn'
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
-musicAPI = 'http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'
-sourceAPI = 'http://antiserver.kuwo.cn/anti.s?type=convert_url&response=url'
+
+musicINFO = 'http://player.kuwo.cn/webmusic/st/getNewMuiseByRid?rid=MUSIC_'
+musicAPI = 'http://antiserver.kuwo.cn/anti.s?type=convert_url&response=url'
+mvAPI = 'http://www.kuwo.cn/yy/st/mvurl?rid=MUSIC_'
 
 plugin = Plugin()
+url_for = plugin.url_for
 
 @plugin.route('/stay')
 def stay():
     pass
 
+
+@plugin.route('/playmusic/<mid>')
+def playmusic(mid):
+    supported_stream_types = ['aac', 'wma', 'mp3']
+    #html = get_html(musicINFO + mid)
+    #iconimage = r1('<artist_pic240>(.*)</artist_pic240>', html)
+    #artist = r1('<artist>(.*)</artist>', html)
+
+    for t in supported_stream_types:
+        url = get_html(musicAPI + '&format={}&rid=MUSIC_{}'.format(t, mid))
+        break
+
+    if url:
+        plugin.set_resolved_url(url)
+
+
+@plugin.route('/playmv/<mid>')
+def playmv(mid):
+    url = get_html(mvAPI + mid)
+    if url:
+        plugin.set_resolved_url(url)
+
+
 @plugin.route('/musiclist/<url>')
 def musiclist(url):
     plugin.set_content('music')
-    supported_stream_types = ['aac', 'wma', 'mp3']
     if url.startswith('/'):
         url = URL_BASE + url
     html = get_html(url)
@@ -37,43 +62,31 @@ def musiclist(url):
         title = song[0].a.text
         albumname = song[1].a.text
 
-        html = get_html(musicAPI + mid)
-        iconimage = r1('<artist_pic240>(.*)</artist_pic240>', html)
-        artist = r1('<artist>(.*)</artist>', html)
-
-        for t in supported_stream_types:
-            url = get_html(sourceAPI + '&format={}&rid=MUSIC_{}'.format(t, mid))
-            if url:
-                musicList.append({
-                    'label': title +'-'+ albumname,
-                    'path': url,
-                    'thumbnail': iconimage,
-                    'is_playable': True,
-                    'info': {'title': title, 'artist': artist}
-                })
-                break
+        musicList.append({
+            'label': title +'-'+ albumname,
+            'path': url_for('playmusic', mid=mid),
+            'is_playable': True,
+            'info': {'title': title, 'artist': albumname}
+        })
 
         if song[2].a is not None:
-            html = get_html(mv.a['href'])
-            mp4 = r1('var mp4url.+(http:.+?mp4)', html)
             mvList.append({
                 'label': title +'-'+ albumname,
-                'path': mp4,
+                'path': url_for('playmv', mid=mid),
                 'is_playable': True,
-                'thumbnail': iconimage,
-                'info': {'title': title, 'artist': artist}
+                'info': {'title': title, 'artist': albumname}
             })
 
     if len(musicList) > 0:
         musicList.insert(0, {
             'label': BANNER_FMT % u'音乐',
-            'path': plugin.url_for('stay')
+            'path': url_for('stay')
         })
 
     if len(mvList) > 0:
         mvList.insert(0, {
             'label': BANNER_FMT % u'MV',
-            'path': plugin.url_for('stay')
+            'path': url_for('stay')
         })
 
     return musicList + mvList
@@ -92,7 +105,7 @@ def albumlist(url):
         name = name + '(' + itemp + ')'
         yield {
             'label': name,
-            'path': plugin.url_for(attr, url=item.a['href']),
+            'path': url_for(attr, url=item.a['href']),
             'thumbnail': item.img['lazy_src']
         }
 
@@ -104,7 +117,7 @@ def singeralbum(url, id, page):
 
     yield {
         'label': BANNER_FMT % u'专辑',
-        'path': plugin.url_for('stay')
+        'path': url_for('stay')
     }
 
     html = get_html(SINGER + url.replace(' ', '%20')) # some singer name has ' '
@@ -119,7 +132,7 @@ def singeralbum(url, id, page):
         image = thumb.img['src']
         yield {
             'label': name.text.strip(),
-            'path': plugin.url_for('musiclist', url=name.a['href']),
+            'path': url_for('musiclist', url=name.a['href']),
             'thumbnail': str(image)   # why is unicode not string??
         }
 
@@ -128,17 +141,16 @@ def singeralbum(url, id, page):
     li = soup[0].find_all('li')
     yield {
         'label': BANNER_FMT % u'MV',
-        'path': plugin.url_for('stay')
+        'path': url_for('stay')
     }
     for mv in li:
         name = mv.find('span', {'class': 'name'})
-        html = get_html(name.a['href'])
-        mp4 = r1('var mp4url.+(http:.+?mp4)', html)
+        mid = r1('\/mv\/(\d+)?', name.a['href'])
         image = mv.find('div', {'class': 'cover'})
         image = image.img['src']
         yield {
             'label': name.text.strip(),
-            'path': mp4,
+            'path': url_for('playmv', mid=mid),
             'is_playable': True,
             'thumbnail': str(image),
             'info': {'title': name.text.strip()}
@@ -147,7 +159,7 @@ def singeralbum(url, id, page):
     # SONGS ###############################################
     yield {
         'label': BANNER_FMT % u'单曲',
-        'path': plugin.url_for('stay')
+        'path': url_for('stay')
     }
     aurl = 'http://www.kuwo.cn/artist/contentMusicsAjax'
     aurl += '?artistId=%s&pn=%d&rn=15' % (id, page)
@@ -162,32 +174,25 @@ def singeralbum(url, id, page):
     if page > 0:
         yield {
             'label': BANNER_FMT % u'上一页',
-            'path': plugin.url_for('singeralbum', url=url, id=id, page=page-1)
+            'path': url_for('singeralbum', url=url, id=id, page=page-1)
         }
 
     for song in soup:
         mid = re.compile('\d+').findall(song.a['href'])
         mid = mid[0]
         html = get_html(musicAPI + mid)
-        iconimage = r1('<artist_pic240>(.*)</artist_pic240>', html)
-        artist = r1('<artist>(.*)</artist>', html)
 
-        for t in ['aac', 'wma', 'mp3']:
-            url = get_html(sourceAPI + '&format={}&rid=MUSIC_{}'.format(t, mid))
-            if url:
-                break
         yield {
             'label': song.a.text,
-            'path': url,
-            'thumbnail': iconimage,
+            'path': url_for('playmusic', mid=mid),
             'is_playable': True,
-            'info': {'title': song.a.text, 'artist': artist}
+            'info': {'title': song.a.text}
         }
 
     if page < maxpage:
         yield {
             'label': BANNER_FMT % u'下一页',
-            'path': plugin.url_for('singeralbum', url=url, id=id, page=page+1)
+            'path': url_for('singeralbum', url=url, id=id, page=page+1)
         }
 
 @plugin.route('/singergroup/<url>/<page>/<letter>')
@@ -203,7 +208,7 @@ def singergroup(url, page, letter):
     if page > 0:
         yield {
             'label': BANNER_FMT % u'上一页',
-            'path': plugin.url_for('singergroup', url=url, page=page-1, letter=letter)
+            'path': url_for('singergroup', url=url, page=page-1, letter=letter)
         }
 
     for artist in soup:
@@ -213,7 +218,7 @@ def singergroup(url, page, letter):
         artistid = artist.find('div', {'class': 'artistnav'})['data-id']
         yield {
             'label': name,
-            'path': plugin.url_for('singeralbum', url=aurl, id=artistid, page=0),
+            'path': url_for('singeralbum', url=aurl, id=artistid, page=0),
             'thumbnail': artist.img['src']
         }
 
@@ -222,13 +227,13 @@ def singergroup(url, page, letter):
     if page < maxpage:
         yield {
             'label': BANNER_FMT % u'下一页',
-            'path': plugin.url_for('singergroup', url=url, page=page+1, letter=letter)
+            'path': url_for('singergroup', url=url, page=page+1, letter=letter)
         }
 
     for abc in range(0x41, 0x5B):   # A--Z
         yield {
             'label': chr(abc),
-            'path': plugin.url_for('singergroup', url=url, page=page, letter=chr(abc))
+            'path': url_for('singergroup', url=url, page=page, letter=chr(abc))
         }
 
 @plugin.route('/singerlist')
@@ -240,14 +245,14 @@ def singerlist():
     for singer in soup:
         yield {
             'label': BANNER_FMT % singer.span.text,
-            'path': plugin.url_for('stay')
+            'path': url_for('stay')
         }
         li = singer.find_all('dd')
         for item in li:
             url = item.a['href'].encode('utf-8')
             yield {
                 'label': item.text.strip(),
-                'path': plugin.url_for('singergroup', url=url, page=0, letter='0')
+                'path': url_for('singergroup', url=url, page=0, letter='0')
             }
 
 @plugin.route('/sortitem/<url>')
@@ -259,7 +264,7 @@ def sortitem(url):
     for item in soup:
         yield {
             'label': item.a['title'],
-            'path': plugin.url_for('musiclist', url=item.a['href']),
+            'path': url_for('musiclist', url=item.a['href']),
             'thumbnail': item.img['lazy_src']
         }
 
@@ -273,7 +278,7 @@ def sortitem(url):
             continue
         yield {
             'label': item.text,
-            'path': plugin.url_for('sortitem', url=item['href'])
+            'path': url_for('sortitem', url=item['href'])
         }
 
 @plugin.route('/sortlist')
@@ -285,14 +290,14 @@ def sortlist():
     for sdlist in soup:
         yield {
             'label': BANNER_FMT % sdlist.h1.text,
-            'path': plugin.url_for('stay')
+            'path': url_for('stay')
         }
         li = sdlist.find_all('li')
 
         for item in li:
             yield {
                 'label': item.text,
-                'path': plugin.url_for('sortitem', url=item.a['href'])
+                'path': url_for('sortitem', url=item.a['href'])
             }
 
 @plugin.route('/category')
@@ -304,7 +309,7 @@ def category():
     for hotlist in soup:
         yield {
             'label': BANNER_FMT % hotlist.h1.text,
-            'path': plugin.url_for('stay')
+            'path': url_for('stay')
         }
         x = hotlist.find_all('ul', {'class': 'clearfix'})
         li = x[0].find_all('li')
@@ -312,14 +317,14 @@ def category():
         for item in li:
             yield {
                 'label': item.text,
-                'path': plugin.url_for('albumlist', url=item.a['href'])
+                'path': url_for('albumlist', url=item.a['href'])
             }
 
 @plugin.route('/')
 def root():
     LIST = {u'分类': 'category', u'歌手': 'singerlist', u'专辑': 'sortlist'}
     for item in LIST:
-        yield {'label': item, 'path': plugin.url_for(LIST[item])}
+        yield {'label': item, 'path': url_for(LIST[item])}
 
 if __name__ == '__main__':
     plugin.run()

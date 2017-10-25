@@ -25,6 +25,7 @@ stream_types = [
 HOST_URL = 'http://www.ximalaya.com'
 
 plugin = Plugin()
+url_for = plugin.url_for
 
 def url_from_id(id, stream_id=2):
     api = HOST_URL + '/tracks/%s.json' % id
@@ -93,6 +94,22 @@ def httphead(url):
 
     return url
 
+@plugin.route('/play/<sound_id>')
+def play(sound_id):
+    api = HOST_URL + '/tracks/%s.json' % sound_id
+    json_data = loads(get_html(api))
+    
+    plugin.set_resolved_url(json_data.get('play_path_64'))
+    #item = [{
+    #    'label': json_data.get('title'),
+    #    'path': json_data.get('play_path_64'),
+    #    'thumbnail': json_data.get('cover_url'),
+    #    'is_playable': True,
+    #    'info': {
+    #        'title': json_data.get('title'),
+    #        'duration': json_data.get('duration'),
+    #        'plot': json_data.get('intro')}
+    #}]
 
 @plugin.route('/')
 def root():
@@ -113,7 +130,7 @@ def root():
         href = httphead(href)
         yield {
             'label': prog.text,
-            'path': plugin.url_for('sublist', cid=prog['cid'])
+            'path': url_for('sublist', cid=prog['cid'])
         }
 
 @plugin.route('/sublist/<cid>')
@@ -128,7 +145,7 @@ def sublist(cid):
         url = httphead(page['href'].encode('utf-8'))
         yield {
             'label': page['tid'],
-            'path': plugin.url_for('albumlist', url=url)
+            'path': url_for('albumlist', url=url)
         }
 
 @plugin.route('/albumlist/<url>')
@@ -143,7 +160,7 @@ def albumlist(url):
         yield {
             'label': album.img['alt'],
             'thumbnail': album.img['src'],
-            'path': plugin.url_for('playList', url=album.a['href'], page=1, order='asc')
+            'path': url_for('playList', url=album.a['href'], page=1, order='asc')
         }
 
     soup = tree.find_all('div', {'class': 'pagingBar_wrapper'})
@@ -158,7 +175,7 @@ def albumlist(url):
             continue
         yield {
             'label': page.text,
-            'path': plugin.url_for('albumlist', url=httphead(url.encode('utf-8')))
+            'path': url_for('albumlist', url=httphead(url.encode('utf-8')))
         }
 
 
@@ -180,7 +197,7 @@ def playList(url, page, order):
         corder = 'asc'
     yield {
         'label': u'更改排序',
-        'path': plugin.url_for('playList', url=url, page=page, order=corder),
+        'path': url_for('playList', url=url, page=page, order=corder),
         'info': {'plot': info}
     }
 
@@ -188,19 +205,13 @@ def playList(url, page, order):
     songs = soup[0].find_all('li')
 
     for song in songs:
-        api = HOST_URL + '/tracks/%s.json' % song['sound_id']
-        json_data = loads(get_html(api))
-
+        name = song.find('a', {'class':'title'})
+        title = name['title']
         yield {
-            'label': json_data.get('title'),
-            'path': json_data.get('play_path_64'),
-            'thumbnail': json_data.get('cover_url'),
+            'label': title,
+            'path': url_for('play', sound_id=song['sound_id']),
             'is_playable': True,
-            'info': {
-                'title': json_data.get('title'),
-                'duration': json_data.get('duration'),
-                'plot': json_data.get('intro')
-            }
+            'info': {'title': title}
         }
 
     # pagelist
@@ -215,7 +226,7 @@ def playList(url, page, order):
             url = httphead(url.encode('utf-8'))
             yield {
                 'label': pagen.text.encode('utf-8'),
-                'path': plugin.url_for('playList', url=url, page=page, order=order)
+                'path': url_for('playList', url=url, page=page, order=order)
             }
     except:
         pass
