@@ -67,22 +67,29 @@ def next_page(endpoint, page, total_page, **kwargs):
 def get_av_item(aid, **kwargs):
     result = bilibili.get_av_list(aid)
     item = dict(**kwargs)
+    if not result:
+        return {'label': '(空)', 'path': plugin.url_for('stay')}
 
     if len(result) == 1:
         vid = result[0].get('vid', '')
+        #item['icon'] = kwargs.get('thumbnail')
         item['is_playable'] = True
         if len(vid) > 0:
             item['label'] += '(QQ)'
         else:
             vid = '0'
-        item['path'] = plugin.url_for('playmovie', cid=result[0]['cid'], vid=vid)
+        item['path'] = plugin.url_for('playmovie', cid=result[0]['cid'], vid=vid, name=item['label'].encode('utf-8'))
     else:
         item['path'] = plugin.url_for('list_video', aid=aid)
     return item
 
 
-@plugin.route('/playmovie/<cid>/<vid>')
-def playmovie(cid, vid):
+@plugin.route('/stay')
+def stay():
+    pass
+
+@plugin.route('/playmovie/<cid>/<vid>/<name>')
+def playmovie(cid, vid, name):
     if vid != '0':
         urls = video_from_vid(vid)
     else:
@@ -94,7 +101,7 @@ def playmovie(cid, vid):
     playlist = xbmc.PlayList(1)
     playlist.clear()
     player = BiliPlayer()
-    list_item = xbmcgui.ListItem(u'播放')
+    list_item = xbmcgui.ListItem(name)
     playlist.add(stack_url, list_item)
 
     if danmu == 'true':
@@ -121,7 +128,7 @@ def list_video(aid):
             vid = '0'
         item = ListItem(**{
             'label': x['pagename'],
-            'path': plugin.url_for('playmovie', cid=x['cid'], vid=vid)
+            'path': plugin.url_for('playmovie', cid=x['cid'], vid=vid, name=x['pagename'].encode('utf-8'))
         })
         item.set_info("video", {})
         item.set_is_playable(True)

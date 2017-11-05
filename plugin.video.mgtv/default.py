@@ -1,12 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xbmc
-from xbmcgui import Dialog, ListItem
-import xbmcplugin
+from xbmcswift2 import Plugin, xbmcgui
 import xbmcaddon
 from urlparse import parse_qsl
-from urllib import quote_plus
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
@@ -28,6 +25,9 @@ HOST_URL = 'http://www.mgtv.com'
 
 RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
 
+plugin = Plugin()
+
+url_for = plugin.url_for
 
 def httphead(url):
     if len(url) < 2:
@@ -40,91 +40,62 @@ def httphead(url):
     return url
 
 
-def mainMenu():
-    http = get_html(LIST_URL)
-    tree = BeautifulSoup(http, 'html.parser')
-    soup = tree.find_all('div', {'class': 'm-category'})
-
-    items = soup[0].find_all('li')
-    for item in items:
-        name = item.a.text
-        url = item.a['href'].split('?')
-        href = httphead(url[0])
-        p_data = url[1].encode('utf-8')
-        li = ListItem(name)
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=mainlist&name=' + name + '&' + p_data
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def changeList(params):
-    url = params['url']
-    name = params['name']
-    filter = params.get('filter')
-
+@plugin.route('/changeList/<url>')
+def changeList(url):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'm-catgory-listbox'})
+    soup = tree.find_all('div', {'class': 'm-tag-type'})
 
     surl = url.split('/')
     purl = surl[-1].split('-')
 
-    dialog = Dialog()
+    dialog = xbmcgui.Dialog()
 
     filter = ''
-    for iclass in soup[1:]:
-        title = iclass.find('span', {'class': 'u-meta'}).text
+    for iclass in soup:
+        title = iclass.find('h5', {'class': 'u-title'}).text
         si = iclass.find_all('a')
         list = []
-        item = []
         for subitem in si:
             list.append(subitem.text)
-            item.append(subitem['href'])
         sel = dialog.select(title, list)
 
         if sel < 0:
             continue
 
-        filter += '|' + title + '(' + si[sel].text + ')'
-        seurl = si[sel]['href'].split('/')[-1]
+        filter += u'|' + title + u'(' + si[sel].text + u')'
+        seurl = si[sel]['onclick'].split('/')[-1]
         seurl = seurl.split('-')
+
         for i in range(0, len(purl)):
             if seurl[i] != '':
                 purl[i] = seurl[i]
 
     surl[-1] = '-'.join(purl)
-    params['url'] = '/'.join(surl)
-    params['filter'] = filter
+    url = '/'.join(surl)
+    mainlist(url, filter)
 
-    listSubMenu(params)
+@plugin.route('/mainlist/<url>/<filter>')
+def mainlist(url, filter):
+    print "UUUUUUUUUUUUUUUUUUUUUUUUUUU", url
+    filtitle = '' if filter == '0' else filter
+    items = [{
+        'label': BANNER_FMT % (u'[分类过滤]' + filtitle),
+        'path': url_for('changeList', url=url)
+    }]
 
-
-def listSubMenu(params):
-    url = params['url']
-    channelId = params['channelId']
-    name = params['name']
-    filter = params.get('filter', '')
-    filter = filter.encode('utf-8')
-    li = ListItem(BANNER_FMT % (name + '[分类过滤]' + filter))
-    u = sys.argv[0] + '?url=' + quote_plus(url)
-    u += '&mode=select&name=' + quote_plus(name)
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    html = get_html(url + '?channelId=' + channelId)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
 
-    soup = tree.find_all('div', {'class': 'm-result-list'})
+    soups = tree.find_all('div', {'class': 'm-result-list'})
 
-    items = soup[0].find_all('li', {'class': 'm-result-list-item'})
-    for item in items:
+    soup= soups[0].find_all('li', {'class': 'm-result-list-item'})
+    for item in soup:
         thumb = item.img['src']
         t = item.find('a', {'class': 'u-title'})
         title = t.text
         href = t['href']
         t = item.find('a', {'class': 'u-video'})
-        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
         try:
             exinfo = '(' + item.em.text + ')'
         except:
@@ -139,13 +110,13 @@ def listSubMenu(params):
 
         pinfo = item.find('span', {'class': 'u-desc'})
         info = pinfo.text.replace(' ', '')
-        li = ListItem(title + exinfo + pay,
-                              iconImage=thumb, thumbnailImage=thumb)
-        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
-        u += '&name=' + quote_plus(name)
-        u += '&thumb=' + quote_plus(thumb)
-        u += '&filter=' + quote_plus(filter)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        info = info.replace('\t', '')
+        items.append({
+            'label': title + exinfo + pay,
+            'path': url_for('episodelist', url=href, page=0),
+            'thumbnail': item.img['src'],
+            'info': {'title': title, 'plot': info}
+        })
 
     # multiple pages
     setpage = tree.find_all('div', {'class': 'w-pages'})
@@ -161,26 +132,20 @@ def listSubMenu(params):
                 continue
             else:
                 href = httphead(href)
-            li = ListItem(BANNER_FMT % title)
-            u = sys.argv[0] + '?url=' + href + '&mode=mainlist'
-            u += '&name=' + quote_plus(name)
-            u += '&filter=' + quote_plus(filter)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+            items.append({
+                'label': BANNER_FMT % title,
+                'path': url_for('mainlist', url=href, filter=filter)
+            })
     except:
         pass
+    return items
 
-    xbmcplugin.setContent(int(sys.argv[1]), 'movies')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def episodesList(params):
-    url = params['url']
-    name = params.get('name')
+@plugin.route('/episodelist/<url>/<page>')
+def episodelist(url, page):
+    plugin.set_content('video')
     episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
     episode_api = 'http://pcweb.api.mgtv.com/episode/list'
     episode_api += '?video_id=%s&page=%d&size=40'
-    thumb = params.get('thumb')
-    page = params.get('page', '0')
     page = int(page)
     if url[-1] == '/':    # is a directory
         html = get_html(url)
@@ -192,19 +157,13 @@ def episodesList(params):
     jsdata = loads(html)
 
     data = jsdata['data']
-    list = data.get('list')
+    list = data.get('list', []) + data.get('short', [])
     total_page = data.get('total_page', 1)
 
-    playlist = xbmc.PlayList(1)
-    playlist.clear()
-    j = 0
     for series in list:
         title = series['t1'] + ' ' + series['t2']
         if series['isnew'] != '0':
             title = title + u'(预)'
-        img = series['img']
-        href = httphead(series['url'])
-        vid = series['video_id']
 
         vip = series.get('isvip')
         if vip and vip != '0':
@@ -212,117 +171,60 @@ def episodesList(params):
         else:
             pay = ''
 
-        li = ListItem(title + pay, iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
-        u += '&thumb=' + img + '&vid=%d.%s' % (j, vid)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-        playlist.add(vid, li)
-        j += 1
-
-    short = data.get('short')
-    for series in short:
-        title = series['t1'] + ' ' + series['t2']
-        if series['isnew'] != '0':
-            title = title + u'(预)'
-        img = series['img']
-        href = httphead(series['url'])
-        vid = series['video_id']
-
-        vip = series.get('isvip')
-        if vip and vip != '0':
-            pay = '(VIP)'
-        else:
-            pay = ''
-
-        li = ListItem(title + pay, iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=playvideo'
-        u += '&thumb=' + img + '&vid=%d.%s' % (j, vid)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-        playlist.add(vid, li)
-        j += 1
+        yield {
+            'label': title + pay,
+            'path': url_for('playvideo', vid=series['video_id']),
+            'is_playable': True,
+            'thumbnail': series['img'],
+            'info': {'title': title}
+        }
 
     if page > 0:
-        li = ListItem(BANNER_FMT % '上一页')
-        u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
-        u += '&thumb=' + thumb + '&page=%d' % (page-1)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        yield {
+            'label': BANNER_FMT % u'上一页',
+            'path': url_for('episodelist', url=url, page=page-1)
+        }
     if page < total_page - 1:
-        li = ListItem(BANNER_FMT % '下一页')
-        u = sys.argv[0] + '?url=' + url + '&mode=episodelist'
-        u += '&thumb=' + thumb + '&page=%d' % (page+1)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
+        yield {
+            'label': BANNER_FMT % u'下一页',
+            'path': url_for('episodelist', url=url, page=page+1)
+        }
 
     related = data.get('related')
     if related:
         title = related['t1'] + ' ' + related['t2']
         img = related['img']
         href = httphead(related['url'])
+        yield {
+            'label': BANNER_FMT2 % title,
+            'path': url_for('episodelist', url=href, page=page),
+            'thumbnail': img,
+            'info': {'title': title}
+        }
 
-        li = ListItem(BANNER_FMT2 % title,
-                              iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
-        u += '&thumb=' + img
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def playVideo(params):
+@plugin.route('/playvideo/<vid>')
+def playvideo(vid):
     level = int(__addon__.getSetting('resolution'))
-    thumb = params['thumb']
-    vid = params['vid'].split('.')
-    v_pos = int(vid[0])
-    vid = vid[1]
 
-    playlistA = xbmc.PlayList(1)
-    playlist = xbmc.PlayList(0)
-    playlist.clear()
-    psize = playlistA.size()
+    m3u_url = video_from_vid(vid, level=level)
 
-    playmode = __addon__.getSetting('video_vplaycont')
+    plugin.set_resolved_url(m3u_url)
 
-    for x in range(v_pos, psize):
-        p_item = playlistA.__getitem__(x)
-        p_vid = p_item.getfilename(x)
-        p_list = p_item.getdescription(x)
-        li = p_item      # pass all li items including the embedded thumb image
-        li.setInfo(type='Video', infoLabels={'Title': p_list})
 
-        m3u_url = video_from_vid(p_vid, level=level)
+@plugin.route('/')
+def root():
+    mainAPI = 'http://pc.bz.mgtv.com/odin/c1/channel/list?version=5.0&type=4&pageSize=999'
+    jsdata = loads(get_html(mainAPI))
 
-        playlist.add(m3u_url, li)
-        if x == v_pos:
-            xbmc.Player(0).play(playlist)
-        if playmode == 'false':
-            break
+    for item in jsdata['data']:
+        url = LIST_URL + '/-------------.html?channelId=' + item['pageType']
+        yield {
+            'label': item['title'],
+            'path': url_for('mainlist',
+                            url=url,
+                            filter='0'),
+            'info': {'title': item['title'], 'plot': item['vclassName']}
+        }
 
-    '''
-    urllist = get_mgtv_real_url(m3u_url)
-    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-    playlist.clear()
-    ulen = len(urllist)
-    for i in range(ulen):
-        playlist.add(urllist[i], li)
-
-    xbmc.Player().play(playlist)
-    '''
-
-# main programs goes here #########################################
-params = sys.argv[2][1:]
-params = dict(parse_qsl(params))
-
-mode = params.get('mode')
-
-runlist = {
-    None: 'mainMenu()',
-    'mainlist': 'listSubMenu(params)',
-    'episodelist': 'episodesList(params)',
-    'select': 'changeList(params)',
-    'playvideo': 'playVideo(params)'
-    }
-
-exec(runlist[mode])
+if __name__ == '__main__':
+    plugin.run()

@@ -242,7 +242,7 @@ def relatedList(params, playlist, j):
         u += '&name=' + quote_plus(name)
         u += '&title=%d.%s' % (k+j, p_name)
         u += '&thumb=' + p_thumb
-        addDirectoryItem(pluginhandle, u, li, False)
+        xbmcplugin.addDirectoryItem(pluginhandle, u, li, False)
         playlist.add(href, li)
 
 

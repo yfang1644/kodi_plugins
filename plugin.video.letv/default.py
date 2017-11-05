@@ -5,19 +5,16 @@ import xbmc
 import xbmcgui
 import xbmcplugin
 import xbmcaddon
-import urllib2
 from urllib import quote_plus
 from urlparse import parse_qsl
 import re
 import sys
 import os
 import time
-import random
-import hashlib
-import socket
-import cookielib
 from json import loads
 from bs4 import BeautifulSoup
+from common import get_html
+from letv import video_from_url
 
 ########################################################################
 # 乐视网(LeTv) by cmeng
@@ -127,10 +124,10 @@ class LetvPlayer(xbmc.Player):
                     pDialog.close()
 
                 v_url = self.v_urls[i]
-                bfile = getHttpData(v_url, True, True)
+                bfile = get_html(v_url)
                 # give another trial if playback is active and bfile is invalid
                 if ((len(bfile) < 30) and self.isPlayingVideo()):
-                    bfile = getHttpData(v_url, True, True)
+                    bfile = get_html(v_url)
                 fs.write(bfile)
 
                 # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
@@ -182,7 +179,7 @@ class LetvPlayer(xbmc.Player):
             self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
             fs = open(self.videourl, 'wb')
 
-            v_urls = decrypt_url(p_url, self.mCheck)
+            v_urls = video_from_url(p_url, m3u8=__m3u8__)
             self.v_urls_size = len(v_urls)
             self.title = "UGC list @ %s (size = %s): %s" % (str(self.curpos), str(self.v_urls_size), p_list)
             # print "### Preparing: " + self.title
@@ -199,7 +196,7 @@ class LetvPlayer(xbmc.Player):
                 else:
                     pDialog.close()
 
-                bfile = getHttpData(v_url, True, True)
+                bfile = get_html(v_url)
                 fs.write(bfile)
 
                 # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
@@ -296,128 +293,6 @@ class LetvPlayer(xbmc.Player):
                 except:
                     pass
 
-
-##################################################################################
-# LeTV Video Link Decode Algorithm
-# Extract all the video list and start playing first found valid link
-# http://www.letv.com/ptv/vplay/1967644.html
-##################################################################################
-def calcTimeKey(t):
-    ror = lambda val, r_bits, : ((val & (2 ** 32 - 1)) >> r_bits % 32) | (val << (32 - (r_bits % 32)) & (2 ** 32 - 1))
-    magic = 185025305
-    return ror(t, magic % 17) ^ magic
-
-
-# # --- decrypt m3u8 data --------- ##
-def m3u8decode(data):
-    version = data[0:5]
-    if version.lower() == b'vc_01':
-        # get real m3u8
-        loc2 = bytearray(data[5:])
-        length = len(loc2)
-        loc4 = [0] * (2 * length)
-        for i in range(length):
-            loc4[2 * i] = loc2[i] >> 4
-            loc4[2 * i + 1] = loc2[i] & 15
-        loc6 = loc4[len(loc4) - 11:] + loc4[:len(loc4) - 11]
-        loc7 = [0] * length
-        for i in range(length):
-            loc7[i] = (loc6[2 * i] << 4) + loc6[2 * i + 1]
-        return ''.join([chr(i) for i in loc7])
-    else:
-        # directly return
-        return data
-
-
-#  ------ video links decrypt ---------------------- ##
-def decrypt_url(url, mCheck=True):
-    videoRes = int(__addon__.getSetting('video_resolution'))
-    serverIndex = int(__addon__.getSetting('video_server')) - 1
-    vparamap = {0: '1300', 1: '720p', 2: '1080p'}
-
-    t_url = 'http://player-pc.le.com/mms/out/video/playJson?id={}&platid=1&splatid=101&format=1&tkey={}&domain=www.le.com&region=cn&source=1000&accesyx=1'
-
-    t_url2 = '&m3v=1&termid=1&format=1&hwtype=un&ostype=MacOS10.12.4&p1=1&p2=10&p3=-&expect=3&tn={}&vid={}&uuid={}&sign=letv'
-
-    try:
-        vid = re.compile('/vplay/(\d+).html').findall(url)[0]
-        j_url = t_url.format(vid, calcTimeKey(int(time.time())))
-        link = getHttpData(j_url)
-        info = loads(link)
-        playurl = info['msgs']['playurl']
-    except:
-        return ''
-
-    if (mCheck):
-        pDialog.update(30)
-    stream_id = None
-    support_stream_id = playurl["dispatch"].keys()
-#     print("Current Video Supports:")
-#     for i in support_stream_id:
-#         print("\t--format",i,"<URL>")
-    if "1080p" in support_stream_id:
-        stream_id = '1080p'
-    elif "720p" in support_stream_id:
-        stream_id = '720p'
-    else:
-        stream_id = sorted(support_stream_id, key=lambda i: int(i[1:]))[-1]
-
-    # pick a random domain or user selected to minimize overloading single server
-    if (serverIndex == -1):
-        index = random.randint(0, len(playurl['domain']) - 1)
-    else:
-        index = serverIndex % len(playurl['domain'])
-    domain = playurl['domain'][index]
-    # print "### Video Server Selection: %i %i = %s" % (serverIndex, index, playurl['domain'])
-
-    vodRes = playurl['dispatch']
-    vod = None
-    while (vod is None) and (videoRes >= 0):
-        vRes = vparamap.get(videoRes, 0)
-        try:
-            vod = vodRes.get(vRes)[0]
-        except:
-            pass
-        videoRes -= 1
-    if vod is None:
-        try:
-            vod = playurl['dispatch']['1000'][0]
-        except KeyError:
-            vod = playurl['dispatch']['350'][0]
-        except:
-            return ''
-
-    url = domain + vod
-    uuid = hashlib.sha1(url.encode('utf8')).hexdigest() + '_0'
-    url = url.replace('tss=0', 'tss=ios')
-    url += t_url2.format(random.random(), vid, uuid)
-    # ext = vodRes[stream_id][1].split('.')[-1]
-
-    r2 = getHttpData(url.encode('utf-8'))
-    if (mCheck):
-        pDialog.update(60, line2="### 服务器  [ %i ]" % (index + 1))
-
-    # try:
-    info2 = loads(r2)
-    suffix = '&r=' + str(int(time.time() * 1000)) + '&appid=500'
-
-    # need to decrypt m3u8 (encoded) - may hang here
-    m3u8 = getHttpData(info2['location'] + suffix)
-    if (m3u8 is None):
-        return None
-
-    if (mCheck):
-        pDialog.update(90)
-    m3u8_list = m3u8decode(m3u8)
-    with open(__m3u8__, "wb") as m3u8File:
-        m3u8File.write(m3u8_list)
-    m3u8File.close()
-
-    # urls contains array of v_url video links for playback
-    urls = re.findall(r'^[^#][^\r]*', m3u8_list, re.MULTILINE)
-    return urls
-
-
 ##################################################################################
 # Continuous Player start playback from user selected video
 # User backspace to previous menu will not work - playlist = last selected
@@ -426,14 +301,12 @@ def playVideoUgc(params):
     pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
     pDialog.update(0)
     videom3u8 = __addon__.getSetting('video_m3u8')
-    vid = params.get('vid')
-    if vid:    # pack vid address (cheating)
-        url = 'http://www.google.com/vplay/%s.html' % vid
-    else:
-        url = params['url']
+    
+    url = params['url']
     name = params['name']
     thumb = params['thumb']
-    v_urls = decrypt_url(url)
+    v_urls = video_from_url(url, m3u8=__m3u8__)
+
     pDialog.close()
 
     if len(v_urls):
@@ -452,77 +325,6 @@ def playVideoUgc(params):
         xbmcgui.Dialog().ok(__addonname__, '未匹配到视频文件')
 
 
-##################################################################################
-# Routine to fetech url site data using Mozilla browser
-# - deletc '\r|\n|\t' for easy re.compile
-# - do not delete ' ' i.e. <space> as some url include spaces
-# - unicode with 'replace' option to avoid exception on some url
-# - translate to utf8
-##################################################################################
-def getHttpData(url, binary=False, mCheck=False):
-    print "getHttpData: " + url
-    # setup proxy support
-    proxy = __addon__.getSetting('http_proxy')
-    type = 'http'
-    if proxy != '':
-        ptype = re.split(':', proxy)
-        if len(ptype) < 3:
-            # full path requires by Python 2.4
-            proxy = type + '://' + proxy
-        else:
-            type = ptype[0]
-        httpProxy = {type: proxy}
-    else:
-        httpProxy = {}
-    proxy_support = urllib2.ProxyHandler(httpProxy)
-
-    # setup cookie support
-    cj = cookielib.MozillaCookieJar(cookieFile)
-    if os.path.isfile(cookieFile):
-        cj.load(ignore_discard=True, ignore_expires=True)
-    else:
-        if not os.path.isdir(os.path.dirname(cookieFile)):
-            os.makedirs(os.path.dirname(cookieFile))
-
-    # create opener for both proxy and cookie
-    opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor(cj))
-    req = urllib2.Request(url)
-    req.add_header('User-Agent', UserAgent)
-    # req.add_header('cookie', 'PHPSESSID=ruebtvftj69ervhpt24n1b86i3')
-
-    for k in range(3):  # give 3 trails to fetch url data
-        if (mCheck and pDialog.iscanceled()):  # exit if cancelled by user
-            return None
-
-        try:
-            response = opener.open(req)
-        except urllib2.HTTPError, e:
-            httpdata = e.read()
-        except urllib2.URLError, e:
-            httpdata = "IO Timeout Error"
-        except socket.timeout, e:
-            httpdata = "IO Timeout Error"
-        else:
-            httpdata = response.read()
-            response.close()
-            # Retry if exception: {"exception":{....
-            if not "exception" in httpdata:
-                cj.save(cookieFile, ignore_discard=True, ignore_expires=True)
-                # for cookie in cj:
-                #     print('%s --> %s'%(cookie.name,cookie.value))
-                break
-
-    if (not binary):
-        httpdata = re.sub('\r|\n|\t', ' ', httpdata)
-        match = re.compile('<meta.+?charset=["]*(.+?)"').findall(httpdata)
-        if len(match):
-            charset = match[0].lower()
-            if (charset != 'utf-8') and (charset != 'utf8'):
-                httpdata = unicode(httpdata, charset, 'replace').encode('utf-8')
-
-    return httpdata
-
-
 def mainMenu():
     li = xbmcgui.ListItem('[COLOR FF00FF00] 【乐视网 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
@@ -530,7 +332,7 @@ def mainMenu():
 
     url = LIST_URL + '/listn/c2_t-1_a-1_y-1_s1_md_o51_d1_p.html'
     #url = 'http://list.le.com/listn/c2_t30024_a-1_y-1_s1_md_o20_d1_p.html'
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'channel_list'})
 
@@ -548,7 +350,8 @@ def mainMenu():
 def listSubMenu(params):
     url = params['url']
     name = params.get('name')
-    html = getHttpData(url)
+    html = get_html(url)
+    html = re.sub('\t|\n|\r', '', html)
     tree = BeautifulSoup(html, 'html.parser')
 
     #  sort mode
@@ -630,7 +433,7 @@ def listSubMenu(params):
 def normalSelect(params):
     url = params.get('url')
     del(params['url'])
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'label_list'})
 
@@ -664,7 +467,7 @@ def normalSelect(params):
 
 def educationSelect(params):
     url = params.get('url')
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'label_list first_condition'})
 
@@ -698,37 +501,27 @@ def changeList(params):
 
 
 def album2series(url):
-    html = getHttpData(url)
+    html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'list active'})
+    soup = tree.find_all('div', {'class': 'col_4'})
 
-    for soups in soup:
-        items = soups.find_all('dl')
-        number = 0
-        for item in items:
-            try:
-                href = item.a['href']
-                title = item.img['title']
-                pic = item.img['src']
-            except:
-                continue
-            try:
-                extra = item.find('span', {'class': 'time'})
-                time = '[COLOR FF808000](' + extra.text + ')[/COLOR]'
-            except:
-                time= ''
-            try:
-                info = item.find('p', {'class': 'p2'})
-                info = info.text
-            except:
-                info = ''
-            li = xbmcgui.ListItem(title + time, iconImage=pic, thumbnailImage=pic)
-            li.setInfo(type='Video',
-                       infoLabels={'Title': title, 'Plot': info})
-            u = sys.argv[0] + '?url=' + href
-            u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-            number += 1
+    for item in soup:
+        href = item.a['href']
+        title = item.dt.a['title']
+        pic = item.i['data-src']
+        info = item.find('dd', {'class': 'd_cnt'}).text
+        dur = item.find('span', {'class': 'video_info'}).text
+
+        duration = 0
+        for t in dur.split(':'):
+            duration = duration * 60 + int(t)
+    
+        info = {'title': title, 'plot': info, 'duration': duration}
+        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
+        li.setInfo(type='Video', infoLabels=info)
+        u = sys.argv[0] + '?url=' + href
+        u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
+        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
     xbmcplugin.endOfDirectory(int(sys.argv[1]))
@@ -742,14 +535,14 @@ def episodesList(params):
         return
 
     if name in ['动漫', '综艺']:
-        html = getHttpData(url)
+        html = get_html(url)
         html = re.sub('\'', '', html)
         match = re.compile('video:\s*{.+?vid:\s*(\d+)').findall(html)
     else:
         match = re.compile('http.+?(\d+).html').findall(url)
     vid = match[0]
 
-    html = getHttpData(ALBULM_URL % (vid))
+    html = get_html(ALBULM_URL % (vid))
     jsdata = loads(html)
 
     album = jsdata['data']['episode']['videolist']
@@ -853,7 +646,7 @@ def searchLeTV(params):
     page = params['page']
     p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
     p_url = p_url + quote_plus(keyword)
-    link = getHttpData(p_url)
+    link = get_html(p_url)
 
     li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')
     u = sys.argv[0] + "?name=" + quote_plus(keyword) + "&page=" + page

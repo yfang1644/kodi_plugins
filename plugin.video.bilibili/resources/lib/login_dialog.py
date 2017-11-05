@@ -1,6 +1,5 @@
 #coding=utf-8
 from xbmcswift2 import xbmc, xbmcgui
-from bilibili import Bilibili
 
 class LoginDialog(xbmcgui.WindowDialog):
     def __init__(self, *args, **kwargs):
@@ -15,8 +14,7 @@ class LoginDialog(xbmcgui.WindowDialog):
         self.kbd.doModal()
         if (self.kbd.isConfirmed()):
             text = self.kbd.getText()
-            self.close()
-            return text
+        else:
+            text = False
         self.close()
-        return False
-
+        return text
