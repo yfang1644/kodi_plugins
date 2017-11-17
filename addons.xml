@@ -527,7 +527,7 @@
 
 <addon id="plugin.video.rrmj"
        name="人人美剧"
-       version="0.3.6"
+       version="0.3.7"
        provider-name="jindaxia,yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -732,7 +732,7 @@
 
 <addon id="plugin.video.bilibili"
     name="哔哩哔哩(bilibili)"
-    version="1.0.4"
+    version="1.0.5"
     provider-name="Catro,yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -798,4 +798,27 @@
         <platform>all</platform>
     </extension>
 </addon>
+
+<addon id="plugin.audio.qingting"
+    name="蜻蜓FM"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>QingTing FM plugin for kodi</summary>
+        <summary lang="zh">蜻蜓fm插件</summary>
+        <description>QingTing FM plugin for kodi</description>
+        <description lang="zh">蜻蜓fm插件</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.qingting</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
 </addons>

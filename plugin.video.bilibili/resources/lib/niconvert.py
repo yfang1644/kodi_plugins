@@ -270,8 +270,6 @@ class AssSubtitle:
 
 class Downloader:
 
-    TITLE_RE = re.compile('<title>(.*)</title>')
-
     def __init__(self, url):
         self.url = url
         self.html = self.get_html()
@@ -283,7 +281,7 @@ class Downloader:
         raise NotImplementedError
 
     def get_title(self):
-        title = Downloader.TITLE_RE.findall(self.html)[0].split(' - ')[0]
+        title = re.compile('<title>(.*)</title>').findall(self.html)[0].split(' - ')[0]
         if isinstance(title, str):
             title = title.decode('utf-8')
         logger.info(u'视频标题: %s', title)
@@ -296,21 +294,16 @@ class Downloader:
         return fetch_url(self.comment_url)
 
 class BilibiliDownloader(Downloader):
-    URL_PARAMS = re.compile('cid=(\d+)&aid=\d+')
-    URL_PARAMS2 = re.compile("cid:'(\d+)'")
-
-    def __init__(self, url):
-        Downloader.__init__(self, url)
 
     def get_html(self):
-        return fetch_url(self.url).decode('UTF-8')
+        return fetch_url(self.url).decode('utf-8')
 
     def get_comment_url(self):
         try:
-            cids = self.URL_PARAMS.findall(self.html)
+            cids = re.compiles('cid=(\d+)&aid=\d+').findall(self.html)
             if not cids:
-                cids = self.URL_PARAMS2.findall(self.html)
-            comment_url = 'http://comment.bilibili.tv/%s.xml' % cids[0]
+                cids = re.compile("cid:'(\d+)'").findall(self.html)
+            comment_url = 'https://comment.bilibili.com/%s.xml' % cids[0]
             print comment_url
             logger.info(u'评论地址: %s', comment_url)
             return comment_url
@@ -319,14 +312,11 @@ class BilibiliDownloader(Downloader):
 
 class BilibiliDownloaderAlt(Downloader):
 
-    def __init__(self, url):
-        Downloader.__init__(self, url)
-
     def get_html(self):
         return ''
 
     def get_title(self):
-        faketitle = self.url.split('tv/')[1]
+        faketitle = self.url.split('com/')[1]
         logger.info(u'视频标题: %s', faketitle)
         return faketitle
 
@@ -368,9 +358,6 @@ class AcfunDownloader(Downloader):
         return comment_url
 
 class AcfunDownloaderAlt(Downloader):
-
-    def __init__(self, url):
-        Downloader.__init__(self, url)
 
     def get_html(self):
         return ''
@@ -430,11 +417,8 @@ class Bilibili(Website):
 
     XML_NODE_RE = re.compile('<d p="([^"]*)">([^<]*)</d>')
 
-    def __init__(self, url):
-        Website.__init__(self, url)
-
     def create_downloader(self):
-        if self.url.startswith('http://comment.bilibili.tv/'):
+        if self.url.startswith('https://comment.bilibili.com/'):
             return BilibiliDownloaderAlt(self.url)
         else:
             return BilibiliDownloader(self.url)
@@ -465,9 +449,6 @@ class Bilibili(Website):
         return nico_subtitles
 
 class Acfun(Website):
-
-    def __init__(self, url):
-        Website.__init__(self, url)
 
     def create_downloader(self):
         if self.url.find('.json') == -1:

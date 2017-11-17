@@ -1,9 +1,10 @@
 #!/usr/bin/python
 #coding=utf-8
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui, ListItem
+from xbmcswift2 import Plugin, xbmc, xbmcgui
 from resources.lib.bilibili import Bilibili
 from resources.lib.subtitle import subtitle_offset
+from resources.lib.login_dialog import LoginDialog
 import time
 import string, os
 from random import choice
@@ -13,11 +14,92 @@ from common import get_html
 from json import loads
 from bs4 import BeautifulSoup
 
-try:
-    from resources.lib.login_dialog import LoginDialog
-except:
-    #Debug for xbmcswift2 run from cli
-    pass
+CATEGORY = {
+    "0": "全部",
+    "1": "动画",
+    "24": "MAD·AMV",
+    "25": "MMD·3D",
+    "47": "短片·手书·配音",
+    "27": "综合",
+    "13": "番剧",
+    "33": "连载动画",
+    "32": "完结动画",
+    "51": "资讯",
+    "152": "官方延伸",
+    "167": "国创",
+    "153": "国产动画",
+    "168": "国产原创相关",
+    "169": "布袋戏",
+    "170": "资讯",
+    "3": "音乐",
+    "28": "原创音乐",
+    "31": "翻唱",
+    "30": "VOCALOID·UTAU",
+    "59": "演奏",
+    "29": "三次元音乐",
+    "54": "OP/ED/OST",
+    "130": "音乐选集",
+    "129": "舞蹈",
+    "20": "宅舞",
+    "154": "三次元舞蹈",
+    "156": "舞蹈教程",
+    "4": "游戏",
+    "17": "单机联机",
+    "65": "网游·电竞",
+    "136": "音游",
+    "19": "Mugen",
+    "121": "GMV",
+    "36": "科技",
+    "37": "纪录片",
+    "124": "趣味科普人文",
+    "122": "野生技术协会",
+    "39": "演讲·公开课",
+    "96": "星海",
+    "95": "数码",
+    "98": "机械",
+    "160": "生活",
+    "138": "搞笑",
+    "21": "日常",
+    "76": "美食圈",
+    "75": "动物圈",
+    "161": "手工",
+    "162": "绘画",
+    "163": "运动",
+    "119": "鬼畜",
+    "22": "鬼畜调教",
+    "26": "音MAD",
+    "126": "人力VOCALOID",
+    "127": "教程演示",
+    "155": "时尚",
+    "157": "美妆",
+    "158": "服饰",
+    "164": "健身",
+    "159": "资讯",
+    "165": "广告",
+    "5": "娱乐",
+    "71": "综艺",
+    "137": "明星",
+    "131": "Korea相关",
+    "23": "电影",
+    "82": "电影相关",
+    "85": "短片",
+    "145": "欧美电影",
+    "146": "日本电影",
+    "147": "国产电影",
+    "83": "其他国家",
+    "11": "电视剧",
+    "15": "连载剧集",
+    "34": "完结剧集",
+    "86": "特摄",
+    "128": "电视剧相关",
+    "177": '纪录片',
+    '181': '影视',
+    '182': '影视杂谈',
+    '183': '影视剪辑',
+    '184': '预告·资讯',
+    '176': '汽车',
+}
+
 
 #hotapi = 'https://www.bilibili.com/index/tag/145/17046/rank.json'
 # 分页标签热门
@@ -66,10 +148,10 @@ def next_page(endpoint, page, total_page, **kwargs):
 
 def get_av_item(aid, **kwargs):
     result = bilibili.get_av_list(aid)
-    item = dict(**kwargs)
     if not result:
         return {'label': '(空)', 'path': plugin.url_for('stay')}
 
+    item = dict(**kwargs)
     if len(result) == 1:
         vid = result[0].get('vid', '')
         #item['icon'] = kwargs.get('thumbnail')
@@ -79,6 +161,7 @@ def get_av_item(aid, **kwargs):
         else:
             vid = '0'
         item['path'] = plugin.url_for('playmovie', cid=result[0]['cid'], vid=vid, name=item['label'].encode('utf-8'))
+        item['info'] = {'title': item['label']}
     else:
         item['path'] = plugin.url_for('list_video', aid=aid)
     return item
@@ -126,15 +209,15 @@ def list_video(aid):
         vid = x.get('vid', '')
         if len(vid) < 1:
             vid = '0'
-        item = ListItem(**{
+        items.append({
             'label': x['pagename'],
-            'path': plugin.url_for('playmovie', cid=x['cid'], vid=vid, name=x['pagename'].encode('utf-8'))
+            'path': plugin.url_for('playmovie', cid=x['cid'], vid=vid, name=x['pagename'].encode('utf-8')),
+            'is_playable': True,
+            'info': {'title': x['pagename'], 'type':'video'}
         })
-        item.set_info("video", {})
-        item.set_is_playable(True)
-        items.append(item)
 
     return items
+
 
 @plugin.route('/searchResult/<page>/<keyword>')
 def searchResult(page, keyword):
@@ -431,57 +514,13 @@ def history(page):
     return items
 
 
-@plugin.route('/category/<tid>')
-def category(tid):
-    items = []
-    results = bilibili.get_category(tid)
-    for data in results:
-        tid = data.keys()[0]
-        value = data.values()[0]
-        if not value.has_key('subs') or len(value['subs']) == 0:
-            path = plugin.url_for('category_tag', tid=tid)
-        else:
-            path = plugin.url_for('category', tid=tid)
-        items.append({'label': value['title'], 'path': path})
-
-    return items
-
-@plugin.route('/category_tag/<tid>')
-def category_tag(tid):
-    orderapi = 'https://api.bilibili.com/x/tag/hots?rid={}'
-    html = get_html(orderapi.format(tid))
-    tags = loads(html)
-
-    tags = tags['data'][0]['tags']
-
-    items = [{
-        'label': tag['tag_name'],
-        'path': plugin.url_for('category_list',
-                               tid=tid,
-                               tag=tag['tag_id'],
-                               page='1')
-    } for tag in tags]
-
-    items.insert(0, {
-        'label': '全部',
-        'path': plugin.url_for('category_list', tid=tid, tag='0', page=1)
-    })
-    return items
-
-
 @plugin.route('/category_list/<tid>/<tag>/<page>')
 def category_list(tid, tag, page):
     plugin.set_content('videos')
-    page_size = 20
     listapi = 'https://www.bilibili.com/index/catalogy/%s-week.json' % tid
-    listByTag = 'https://api.bilibili.com/x/tag/ranking/archives?jsonp=jsonp&tag_id={}&rid={}&ps={}&pn={}'
-    listAll = 'https://api.bilibili.com/archive_rank/getarchiverankbypartion?type=jsonp&tid={}&ps={}&pn={}'
-    if tag != '0':
-        api = listByTag.format(tag, tid, page_size, page)
-    else:
-        api = listAll.format(tid, page_size, page)
-    html = get_html(api)
-    lists = loads(html)
+
+    lists = bilibili.get_category_by_tag(tag=int(tag), tid=tid, page=page)
+
     archives = lists['data']['archives']
     size = lists['data']['page']['size']
     count = lists['data']['page']['count']
@@ -489,10 +528,7 @@ def category_list(tid, tag, page):
     items = previous_page('category_list', page, total_page, tid=tid, tag=tag)
 
     for item in archives:
-        if tag != '0':
-            x = item
-        else:
-            x = archives[item]
+        x = archives[item] if tag == '0' else item
         info = {
             'genre': x.get('tname'),
             'writer': x.get('author'),
@@ -507,6 +543,52 @@ def category_list(tid, tag, page):
         items.append(get_av_item(x['aid'], label=x['title'], thumbnail=x['pic'], info=info))
 
     items += next_page('category_list', page, total_page, tid=tid, tag=tag)
+    return items
+
+
+@plugin.route('/category_tag/<tid>')
+def category_tag(tid):
+    orderapi = 'https://api.bilibili.com/x/tag/hots?rid={}'
+    html = get_html(orderapi.format(tid))
+    tags = loads(html)
+
+    tags = tags['data']
+    numbers = len(tags)
+    items = []
+    if numbers > 1:
+        items.append({
+            'label': '全部',
+            'path': plugin.url_for('category_list', tid=tid, tag=0, page=1)
+        })
+        for x in range(numbers):
+            items.append({
+                'label': CATEGORY.get(str(tags[x]['rid']), 'u'),
+                'path': plugin.url_for('category_tag', tid=tags[x]['rid'])
+            })
+    else:
+        for tag in tags[0]['tags']:
+            items.append({
+                'label': tag['tag_name'],
+                'path': plugin.url_for('category_list',
+                                       tid=tid,
+                                       tag=tag['tag_id'],
+                                       page='1')
+            })
+    return items
+
+
+@plugin.route('/category/<tid>')
+def category(tid):
+    items = []
+    api = 'http://api.bilibili.com/x/web-interface/online'
+    
+    results = loads(get_html(api))
+    lists = results['data']['region_count']
+    for data in lists:
+        items.append({
+            'label': CATEGORY[data],
+            'path': plugin.url_for('category_tag', tid=data)
+        })
     return items
 
 

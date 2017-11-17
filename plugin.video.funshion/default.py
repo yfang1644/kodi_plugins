@@ -225,13 +225,6 @@ def relatedList(params, playlist, j):
         info = {
             'label': p_name,
         }
-        span = pic.find('span')
-        if span and len(span.text) > 0:
-            duration = 0
-            for t in span.text.split(':'):
-                duration = duration*60 + int(t)
-            info['duration'] = duration
-
         desc = inf.find('p', {'class', 'desc'})
         if desc:
             p_name1 += ' (' + desc.text + ')'

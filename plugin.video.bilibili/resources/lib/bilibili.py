@@ -176,6 +176,15 @@ class Bilibili():
     def get_order(self):
         return ORDER
 
+    def get_category_by_tag(self, tag=0, tid=0, page=1, pagesize=20):
+        if tag == 0:
+            url = LIST_BY_ALL.format(tid, pagesize, page)
+        else:
+            url = LIST_BY_TAG.format(tag, tid, pagesize, page)
+        
+        results = loads(get_html(url))
+        return results
+
     def get_category_list(self, tid = 0, order = 'default', days = 30, page = 1, pagesize = 20):
         params = {'tid': tid, 'order': order, 'days': days, 'page': page, 'pagesize': pagesize}
         url = LIST_URL.format(self.api_sign(params))
@@ -308,7 +317,11 @@ class Bilibili():
 
     def get_av_list(self, aid):
         url = AV_URL.format(aid)
-        result = loads(get_html(url, headers=self.defaultHeader))
+        try:
+            page = get_html(url)
+            result = loads(page)
+        except:
+            result = {}
         return result
 
 

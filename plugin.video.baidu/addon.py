@@ -1,29 +1,30 @@
 #!/usr/bin/python
 #coding=utf-8
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui, ListItem
-import time
+from xbmcswift2 import Plugin, xbmc, ListItem
 import re
-from random import choice
-from urllib import quote_plus, urlencode
-from qq import video_from_vid
+from urllib import quote_plus, unquote_plus, urlencode
 from common import get_html
-from iqiyi import video_from_url as iqiyi_url
+
+from iqiyi import IQiyi
+from qq import QQ
+from youku import Youku
+from pptv import PPTV
+from sohu import Sohu
+from funshion import Funshion
+from letv import LeTV
+from mgtv import MGTV
+
 from json import loads, dumps
 from bs4 import BeautifulSoup
 
 BANNER_FMT = '[COLOR gold]%s[/COLOR]'
 BANNER_FMT2 = '[COLOR pink][%s][/COLOR]'
 
-SITELIST = [
-    'iqiyi.com', 'sohu.com', 'qq.com'
-]
-
 HOST = 'http://v.baidu.com'
 
-
 plugin = Plugin()
-
+url_for = plugin.url_for
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -32,7 +33,7 @@ def previous_page(endpoint, page, total_page, **kwargs):
         info['pn'] = page
         info = dumps(info)
         kwargs['info'] = info
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
     else:
         return []
 
@@ -43,7 +44,7 @@ def next_page(endpoint, page, total_page, **kwargs):
         info['pn'] = page
         info = dumps(info)
         kwargs['info'] = info
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
     else:
         return []
 
@@ -74,75 +75,8 @@ def filter_list(endpoint, field, a, **kwargs):
 
     info = dumps(info)
     kwargs['info'] = info
-    return [{'label': title, 'path': plugin.url_for(endpoint, **kwargs)}]
+    return [{'label': title, 'path': url_for(endpoint, **kwargs)}]
     
-
-def get_av_item(aid, **kwargs):
-    result = bilibili.get_av_list(aid)
-    item = dict(**kwargs)
-
-    if len(result) == 1:
-        vid = result[0].get('vid', '')
-        item['is_playable'] = True
-        if len(vid) > 0:
-            item['label'] += '(QQ)'
-        else:
-            vid = '0'
-        item['path'] = plugin.url_for('playmovie', cid=result[0]['cid'], vid=vid)
-    else:
-        item['path'] = plugin.url_for('list_video', aid=aid)
-    return item
-
-
-@plugin.route('/playmovie/<cid>/<vid>')
-def playmovie(cid, vid='0'):
-    if vid != '0':
-        urls = video_from_vid(vid)
-    else:
-        urls = bilibili.get_video_urls(cid)
-
-    stack_url = 'stack://' + ' , '.join(urls)
-    danmu = plugin.addon.getSetting('danmu')
-
-    playlist = xbmc.PlayList(1)
-    playlist.clear()
-    player = BiliPlayer()
-    list_item = xbmcgui.ListItem(u'播放')
-    playlist.add(stack_url, list_item)
-
-    if danmu == 'true':
-        bilibili.parse_subtitle(cid)
-        player.setSubtitle(bilibili._get_tmp_dir() + '/tmp.ass')
-    else:
-        player.showSubtitles(False)
-        player.show_subtitle = False
-
-    player.play(playlist)
-    #while(not xbmc.abortRequested):
-    xbmc.sleep(1000)
-
-
-@plugin.route('/list_video/<aid>')
-def list_video(aid):
-    plugin.set_content('videos')
-    result = bilibili.get_av_list(aid)
-
-    items = []
-    for x in result:
-        vid = x.get('vid', '')
-        if len(vid) < 1:
-            vid = '0'
-        item = ListItem(**{
-            'label': x['pagename'],
-            'path': plugin.url_for('playmovie', cid=x['cid'], vid=vid)
-        })
-        item.set_info("video", {})
-        item.set_is_playable(True)
-        items.append(item)
-
-    return items
-
-
 
     req = {
         'filter': 'false',
@@ -160,20 +94,180 @@ def list_video(aid):
 
     return[]
 
-@plugin.route('/video_list/<url>/<site>')
-def video_list(url, site):
-    html = get_html(url)
-    match = re.search('<a href=\"(.+)\"', html)
-    if match:
-        match1 = match.group(1)
-    else:
-        return []
-    if 'iqiyi.com' in match1:
-        urls = iqiyi_url(match1)
-        playurl = 'stack://' + ' , '.join(urls)
-        print "PPPPPPPPPPPPPP",playurl
-        xbmc.Player().play(playurl)
 
+@plugin.route('/play/<link>/<title>')
+def play(link, title):
+    if link[0] == '/':
+        link = HOST + link
+    page = get_html(link)
+    playurl = re.compile('a href="(http.+?)\"').findall(page)[0]
+
+    if 'sohu.com' in playurl:
+        site = Sohu()
+    elif 'qq.com' in playurl:
+        site = QQ()
+    elif 'iqiyi.com' in playurl:
+        site = IQiyi()
+    elif 'fun.tv' in playurl:
+        site = Funshion()
+    elif 'youku.com' in playurl:
+        site = Youku()
+    elif 'mgtv.com' in playurl:
+        site = MGTV()
+    else:
+        pass
+
+    urls = site.video_from_url(playurl)
+    stackurl = 'stack://' + ' , '.join(urls)
+    li = ListItem(title, path=stackurl)
+    li.set_info('video', {'title': title})
+    plugin.set_resolved_url(li)
+
+
+@plugin.route('/tvshowlist/<id>')
+def tvshowlist(id):
+    api = HOST + '/show_intro/?'
+    req = {
+        'dtype': 'tvshowPlayUrl',
+        'id': id,
+        'service': 'json',
+        'e': 1,
+    }
+    data = urlencode(req)
+    series = loads(get_html(api + data))
+
+    items = []
+    for x in series:
+        try:
+            content = x['episodes']
+        except:
+            continue
+        for item in content:
+            items.append({
+                'label': item['single_title'] + '--' + item['episode'],
+                'path': url_for('play',
+                                link=item['url'],
+                                title=item['single_title'].encode('utf-8')),
+                'thumbnail': item['thumbnail'],
+                'is_playable': True,
+                'info': {'title': item['single_title'],
+                         'plot': '\n'.join(item['guest'])},
+            })
+
+    return items
+    pass
+
+
+@plugin.route('/comiclist/<id>')
+def comiclist(id):
+    api = HOST + '/comic_intro/?'
+    req = {
+        'dtype': 'comicplayUrl',
+        'id': id,
+        'service': 'json',
+        'e':1
+    }
+    data = urlencode(req)
+    series = loads(get_html(api + data))
+    items = []
+    for x in series:
+        try:
+            content = x['episodes']
+        except:
+            continue
+        for item in content:
+            items.append({
+                'label': item['single_title'] + '--' + item['episode'],
+                'path': url_for('play',
+                                link=item['url'],
+                                title=item['single_title'].encode('utf-8')),
+                'thumbnail': item['thumbnail'],
+                'is_playable': True,
+                'info': {'title': item['single_title']}
+            })
+
+    return items
+
+@plugin.route('/shortplay/<url>')
+def shortplay(url):
+    html = get_html(url)
+    link = re.compile('var flashUrl.*video=(http.+?)\'').findall(html)[0]
+    link = unquote_plus(link)
+    plugin.set_resolved_url(link)
+
+
+@plugin.route('/channellist/<url>/<info>')
+def channellist(url, info):
+    plugin.set_content('videos')
+    req = loads(info)
+    page = req['pn']
+    #'http://v.baidu.com/channel/amuse?format=json&pn=1'
+    api = HOST + '/' + url + '?format=json&pn=' + str(page)
+    print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",api
+    html = get_html(api)
+    data = loads(html)['data']
+    videos = data['videos']
+    size = data['video_num']
+    total = data['total_num']
+    total_page = (total + size - 1) // size
+
+    items = previous_page('channellist', page, total_page, url=url, info=info)
+
+    for item in videos:
+        duration = 0
+        for t in item['duration'].split(':'):
+            duration = duration * 60 + int(t)
+        items.append({
+            'label': item['title'],
+            'path': url_for('shortplay', url=item['url']),
+            'thumbnail': item['imgv_url'],
+            'is_playable': True,
+            'info': {'title': item['title'], 'duration': duration}
+        })
+    items += next_page('channellist', page, total_page, url=url, info=info)
+
+    return items
+
+
+@plugin.route('/movielist/<id>')
+def movielist(id):
+    api = HOST + '/movie_intro/?'
+    req = {
+        'dtype': 'playUrl',
+        'id': id,
+        'service': 'json',
+        'frp': 'browse',
+    }
+    data = urlencode(req)
+    movie = loads(get_html(api + data))
+    link = movie[0]['link']
+    play(link, 'XX')
+
+
+@plugin.route('/episodelist/<id>')
+def episodelist(id):
+    api = HOST + '/tv_intro/?'
+    req = {
+        'dtype': 'tvEpisodeIntro',
+        'id': id,
+        'service': 'json',
+    }
+    data = urlencode(req)
+    series = loads(get_html(api + data))
+
+    items = []
+    for x in series:
+        for item in x['intro']:
+            items.append({
+                'label': item['subtitle'],
+                'path': url_for('play',
+                                link=item['url'],
+                                title=item['subtitle'].encode('utf-8')),
+                'is_playable': True,
+                'info': {'title': item['subtitle'], 'plot': item['intro']},
+            })
+
+    return items
 
 
 # 电影: /commonapi/movie2level/
@@ -181,17 +275,20 @@ def video_list(url, site):
 # 综艺: /commonapi/tvshow2level/
 # 动漫: /commonapi/comic2level/
 # 少儿 : /channel/commonapi/shaoer2level/  (channel)
-@plugin.route('/channel_list/<url>/<info>')
-def channel_list(url, info):
+@plugin.route('/mainlist/<url>/<info>/<func>')
+def mainlist(url, info, func):
+    plugin.set_content('videos')
     api = HOST
-    if url == 'shaoer':
+    if 'channel' in url:
         api += '/channel'
+
+    url = url.replace('channel/', '')
     api += '/commonapi/{}2level/?'.format(url)
     #'http://v.baidu.com/commonapi/movie2level/?channel=movie'
+    #'http://v.baidu.com/channel/amuse?format=json&pn=1'
     req = loads(info)
     req['channel'] = url
     data = urlencode(encoded_dict(req))
-    print "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDd",data
     html = get_html(api + data)
     js = loads(html)
     videos = js['videoshow']['videos']
@@ -201,34 +298,25 @@ def channel_list(url, info):
 
     total_page = (total + size - 1) // size
 
-    items = previous_page('channel_list', page, total_page, url=url, info=info)
+    items = previous_page('mainlist', page, total_page, url=url, info=info,func=func)
     for video in videos:
-        site_url = '0'
-        for site in video['site']:
-            if site['site_url'] == 'sohu.com':
-                site_url = site['site_url']
-                break
-            if site['site_url'] == 'iqiyi.com':
-                site_url = site['site_url']
-                break
-            if site['site_url'] == 'qq.com':
-                site_url = site['site_url']
-                break
+        isPlay = True if func in ('movielist', 'funnylist') else False
+
+        preview = '' if video.get('isplay', 1) else u'(预)'
         items.append({
-            'label': video['title'],
-            'path': plugin.url_for('video_list',
-                                   url=video['url'],
-                                  site=site_url),
+            'label': video['title'] + preview,
+            'path': url_for(func, id=video['id']),
             'thumbnail': video['imgh_url'],
             'icon': video['imgv_url'],
+            'is_playable': isPlay,
             'info': {
+                'title': video['title'],
                 'duration': video.get('duration'),
                 'plot': video['intro']
             },
-            'is_playable': True,
         })
 
-    items += next_page('channel_list', page, total_page, url=url, info=info)
+    items += next_page('mainlist', page, total_page, url=url, info=info,func=func)
 
     filters = js['condition_order_list']['condition_list']
     for f in filters:
@@ -236,21 +324,37 @@ def channel_list(url, info):
         areas = f['value']
         field = f['field']
         for a in areas:
-            items += filter_list('channel_list', field, a, url=url, info=info)
-
+            items += filter_list('mainlist', field, a, url=url, info=info,func=func)
 
     return items
+
 
 @plugin.route('/')
 def root():
 
-    LIST = {'电影': 'movie', '电视剧': 'tvplay', '综艺': 'tvshow',
-            '动漫': 'comic', '动画片': 'shaoer'}
+    LIST = [(u'电影', 'movie', 'movielist'),
+            (u'电视剧', 'tvplay', 'episodelist'),
+            (u'综艺', 'tvshow', 'tvshowlist'),
+            (u'动漫', 'comic', 'comiclist'),
+            (u'动画片', 'channel/shaoer', 'comiclist')]
+    items = []
+    for item in LIST:
+        items.append({
+            'label': item[0],
+            'path': url_for('mainlist',
+                            url=item[1],
+                            info='{"pn":1}',
+                            func=item[2])
 
-    items = [{
-        'label': item,
-        'path': plugin.url_for('channel_list', url=LIST[item], info='{"pn":1}')
-    } for item in LIST]
+        })
+
+    LIST = [(u'搞笑', 'channel/amuse'),
+            (u'娱乐', 'channel/star')]
+    for item in LIST:
+        items.append({
+            'label': item[0],
+            'path': url_for('channellist', url=item[1], info='{"pn":1}')
+        })
 
     return items
 

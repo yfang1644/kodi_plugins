@@ -25,7 +25,7 @@ TOKEN = [
 
 FAKE_HEADERS = {
     "clientType": "android_RRMJ",
-    "clientVersion": "3.6.3",
+    "clientVersion": "3.6.2",
     "token": TOKEN[0],
     "Authentication": "RRTV 470164b995ea4aa5a53f9e5cbceded472:IxIYBj:LPWfRb:I9gvePR5R2N8muXD7NWPCj"
 }
@@ -58,9 +58,10 @@ class RenRenMeiJu(object):
         return s
 
     def search(self, page=1, rows=12, **kwargs):
-        API = '/v3plus/video/search'
+        API = '/season/query'
         kwargs["page"] = page
         kwargs["rows"] = rows
+        kwargs['sort'] = 'updateTime'
         return self.get_json(API, data=urlencode(kwargs))
 
     def get_album(self, albumId=2):
@@ -72,7 +73,7 @@ class RenRenMeiJu(object):
         return self.get_json(API)
 
     def index_info(self):
-        API = '/v3plus/video/indexInfo'
+        API = '/season/index'
         return self.get_json(API)
 
     def video_detail(self, seasonId, userId=0, **kwargs):
@@ -82,7 +83,7 @@ class RenRenMeiJu(object):
         return self.get_json(API, data=urlencode(kwargs))
 
     def hot_word(self):
-        API = '/v3plus/video/hotWord'
+        API = '/video/hotWord'
         return self.get_json(API)
 
     def get_token(self):
