@@ -366,6 +366,9 @@ def PlayVideo(playurl, title, thumb):
     elif ('cntv.cn' in playurl) or ('cctv.com' in playurl):
         from lib.cntv import video_from_url
 
+    elif 'mgtv.com' in playurl:
+        from lib.mgtv import video_from_url
+
     elif 'pptv.com' in playurl:
         from lib.pptv import video_from_url
 

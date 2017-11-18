@@ -77,7 +77,6 @@ def changeList(url):
 
 @plugin.route('/mainlist/<url>/<filter>')
 def mainlist(url, filter):
-    print "UUUUUUUUUUUUUUUUUUUUUUUUUUU", url
     filtitle = '' if filter == '0' else filter
     items = [{
         'label': BANNER_FMT % (u'[分类过滤]' + filtitle),
@@ -162,14 +161,13 @@ def episodelist(url, page):
 
     for series in list:
         title = series['t1'] + ' ' + series['t2']
-        if series['isnew'] != '0':
+        if series['isnew'] == '1':
+            title = title + u'(新)'
+        elif series['isnew'] == '2':
             title = title + u'(预)'
 
-        vip = series.get('isvip')
-        if vip and vip != '0':
-            pay = '(VIP)'
-        else:
-            pay = ''
+        vip = series.get('isvip', 0)
+        pay = '(VIP)' if vip == '1' else ''
 
         yield {
             'label': title + pay,
@@ -207,8 +205,8 @@ def playvideo(vid):
     level = int(__addon__.getSetting('resolution'))
 
     m3u_url = video_from_vid(vid, level=level)
-
-    plugin.set_resolved_url(m3u_url)
+    stackurl = 'stack://' + ' , '.join(m3u_url)
+    plugin.set_resolved_url(stackurl)
 
 
 @plugin.route('/')

@@ -61,7 +61,7 @@ class MGTV():
         content = loads(get_html(url))
         url = content['info']
 
-        return url
+        return [url]
 
     def video_from_url(self, url, **kwargs):
         vid = self.vid_from_url(url)
