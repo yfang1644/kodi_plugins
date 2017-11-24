@@ -57,7 +57,7 @@ class RenRenMeiJu(object):
                              indent=4, separators=(',', ': '))
         return s
 
-    def search(self, page=1, rows=12, **kwargs):
+    def search(self, page=1, rows=20, **kwargs):
         API = '/season/query'
         kwargs["page"] = page
         kwargs["rows"] = rows
@@ -67,6 +67,12 @@ class RenRenMeiJu(object):
     def get_album(self, albumId=2):
         API = '/v3plus/video/album'
         return self.get_json(API, data=urlencode(dict(albumId=albumId)))
+
+    def update(self, page=1, rows=20, **kwargs):
+        API = '/v3plus/season/index'
+        kwargs["page"] = page
+        kwargs["rows"] = rows
+        return self.get_json(API, data=urlencode(kwargs))
 
     def index_movie(self):
         API = '/v3plus'

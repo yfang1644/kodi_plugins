@@ -188,12 +188,12 @@ def video_detail(seasonId):
                 playing_episode = l['index']
 
     items = []
-    for episode in season_data[s'playUrlList']:
+    for episode in season_data['playUrlList']:
         label = title + str(episode['episode'])
         if episode["episode"] == playing_episode:
             label = "[B]" + colorize(label, "green") + "[/B]"
 
-        yield {
+        items.append({
             'label': label,
             'path': plugin.url_for('play_season',
                                    seasonId=seasonId,
@@ -205,23 +205,10 @@ def video_detail(seasonId):
                      'title': title,
                      'episode': int(episode['episode']),
                      'season': 0},
-        }
-        #items.append({
-        #    'label': label,
-        #    'path': plugin.url_for('play_season',
-        #                           seasonId=seasonId,
-        #                           index=episode['episode'],
-        #                           Esid=episode['episodeSid']),
-        #    'thumbnail': season_data['cover'],
-        #    'is_playable': True,
-        #    'info': {'plot': season_data['brief'],
-        #             'title': title,
-        #             'episode': int(episode['episode']),
-        #             'season': 0},
-        #})
+        })
 
-    #plugin.finish(items, sort_methods=['episode'])
-    #return items
+    plugin.finish(items, sort_methods=['episode'])
+    return items
 
 
 @plugin.route('/play/<seasonId>/<index>/<Esid>', name='play_season')
@@ -271,13 +258,13 @@ def history():
         }
 
 
-@plugin.route('/recommend/<page>')
-def recommend(page):
-    searchlist = Meiju.recommended(page, PAGE_ROWS)
+@plugin.route('/update/<page>')
+def update(page):
+    searchlist = Meiju.update(page, PAGE_ROWS)
     total = searchlist['data']['total']
     total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
 
-    items = previous_page('recommend', page, total_page)
+    items = previous_page('update', page, total_page)
     for item in searchlist['data']['results']:
         status = u'(完结)' if item['finish'] else u'(更新到{})'.format(item['upInfo'])
         items.append({
@@ -293,9 +280,8 @@ def recommend(page):
         })
         #item._listitem.setArt({"poster": one["cover"]})
 
-    items += next_page('recommend', page, total_page)
+    items += next_page('update', page, total_page)
     return items
-    
 
 
 # main entrance
@@ -310,14 +296,14 @@ def index():
         'path': plugin.url_for('hotword'),
     }
     yield {
-        'label': u'小编推荐'
-        'path': plugin.url_for('recommend'),
+        'label': u'更新',
+        'path': plugin.url_for('update', page=1),
     }
     yield {
         'label': '历史',
         'path': plugin.url_for('history'),
     }
-    mainpage = Meiju.index_info()['data']
+    #mainpage = Meiju.index_info()['data']
 
     '''
     for serial in mainpage["index"]:
