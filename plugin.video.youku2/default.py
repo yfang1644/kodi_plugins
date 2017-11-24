@@ -74,11 +74,12 @@ def PlayVideo(params):
         for i in range(ulen):
             name = title + '(%d/%d)' % (i + 1, ulen)
             li = ListItem(name, thumbnailImage=thumb)
-            li.setInfo(type='Video', infoLabels={'Title': p_list})
+            li.setInfo(type='Video', infoLabels={'Title': name})
             playlist.add(urls[i], li)
 
         if x == v_pos:
             xbmc.Player(0).play(playlist)
+            xbmc.sleep(1500)
         if playmode == 'false':
             break
 

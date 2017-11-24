@@ -30,7 +30,7 @@
     <requires>
         <import addon="xbmc.python" version="2.1.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="plugin.video.cntv-video" version="1.0.8"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -386,7 +386,7 @@
     provider-name="catro, yfang1644">
     <requires>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="plugin.video.cntv-video" version="1.0.8"/>
     </requires>
     <extension point="xbmc.python.script" library="addon.py">
         <provides>video</provides>
@@ -648,7 +648,7 @@
 
 <addon id="plugin.video.cntv-video"
     name="CNTV 视频"
-    version="1.0.7"
+    version="1.0.8"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
@@ -816,6 +816,29 @@
         <description>QingTing FM plugin for kodi</description>
         <description lang="zh">蜻蜓fm插件</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.qingting</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
+<addon id="plugin.audio.xiami"
+    name="虾米音乐"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+    </requires>
+
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Xiami audio plugin</summary>
+        <summary lang="zh">虾米音乐插件</summary>
+        <description>Xiami Music Kodi Plugin</description>
+        <description lang="zh">虾米音乐插件</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.xiami</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>

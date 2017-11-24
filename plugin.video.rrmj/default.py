@@ -177,54 +177,54 @@ def get_album(albumId):
 def video_detail(seasonId):
     plugin.set_content('video')
     detail = Meiju.video_detail(seasonId)
-    season_data = detail["data"]["season"]
-    title = season_data["title"]
-    SEASON_CACHE[seasonId] = detail["data"]  # store season detail
-    history = HISTORY.get("list", None)
+    season_data = detail['data']['season']
+    title = season_data['title']
+    SEASON_CACHE[seasonId] = detail['data']  # store season detail
+    history = HISTORY.get('list', None)
     playing_episode = "0"
     if history is not None:
         for l in history:
-            if l["seasonId"] == seasonId:
-                playing_episode = l["index"]
+            if l['seasonId'] == seasonId:
+                playing_episode = l['index']
 
     items = []
-    for episode in season_data["playUrlList"]:
-        label = title + str(episode["episode"])
+    for episode in season_data[s'playUrlList']:
+        label = title + str(episode['episode'])
         if episode["episode"] == playing_episode:
             label = "[B]" + colorize(label, "green") + "[/B]"
 
         yield {
             'label': label,
-            'path': plugin.url_for("play_season",
+            'path': plugin.url_for('play_season',
                                    seasonId=seasonId,
-                                   index=episode["episode"],
-                                   Esid=episode["episodeSid"]),
+                                   index=episode['episode'],
+                                   Esid=episode['episodeSid']),
             'thumbnail': season_data['cover'],
             'is_playable': True,
-            'info': {"plot": season_data["brief"],
-                     "title": title,
-                     "episode": int(episode["episode"]),
-                     "season": 0},
+            'info': {'plot': season_data['brief'],
+                     'title': title,
+                     'episode': int(episode['episode']),
+                     'season': 0},
         }
         #items.append({
         #    'label': label,
-        #    'path': plugin.url_for("play_season",
+        #    'path': plugin.url_for('play_season',
         #                           seasonId=seasonId,
-        #                           index=episode["episode"],
-        #                           Esid=episode["episodeSid"]),
+        #                           index=episode['episode'],
+        #                           Esid=episode['episodeSid']),
         #    'thumbnail': season_data['cover'],
         #    'is_playable': True,
-        #    'info': {"plot": season_data["brief"],
-        #             "title": title,
-        #             "episode": int(episode["episode"]),
-        #             "season": 0},
+        #    'info': {'plot': season_data['brief'],
+        #             'title': title,
+        #             'episode': int(episode['episode']),
+        #             'season': 0},
         #})
 
     #plugin.finish(items, sort_methods=['episode'])
     #return items
 
 
-@plugin.route('/play/<seasonId>/<index>/<Esid>', name="play_season")
+@plugin.route('/play/<seasonId>/<index>/<Esid>', name='play_season')
 def play(seasonId="", index="", Esid=""):
     season_data = SEASON_CACHE.get(seasonId).get('season')
     title = season_data["title"]
@@ -259,33 +259,63 @@ def add_history(seasonId, index, Esid, title):
     HISTORY["list"].insert(0, item)
 
 
-@plugin.route('/history/list')
-def list_history():
-    if "list" in HISTORY:
-        for l in HISTORY["list"]:
-            seasonId = l["seasonId"]
-            index = l["index"]
-            sid = l["sid"]
-            yield {
-                'label': u"[COLOR green]{title}[/COLOR]  观看到第[COLOR yellow]{index}[/COLOR]集".format(title=l["season_name"], index=l["index"]),
-                'path': plugin.url_for("detail", seasonId=seasonId),
+@plugin.route('/history')
+def history():
+    for l in HISTORY.get('list', {}):
+        seasonId = l['seasonId']
+        index = l['index']
+        sid = l['sid']
+        yield {
+            'label': u"[COLOR green]{title}[/COLOR]  观看到第[COLOR yellow]{index}[/COLOR]集".format(title=l["season_name"], index=l["index"]),
+            'path': plugin.url_for("detail", seasonId=seasonId),
+        }
+
+
+@plugin.route('/recommend/<page>')
+def recommend(page):
+    searchlist = Meiju.recommended(page, PAGE_ROWS)
+    total = searchlist['data']['total']
+    total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
+
+    items = previous_page('recommend', page, total_page)
+    for item in searchlist['data']['results']:
+        status = u'(完结)' if item['finish'] else u'(更新到{})'.format(item['upInfo'])
+        items.append({
+            'label': item['title'] + status,
+            'path': plugin.url_for("detail", seasonId=item['id']),
+            'thumbnail': item.get('url', ''),
+            'info': {
+                'title': item['title'],
+                'plot': item.get('shortBrief', ''),
+                'rating': float(item['score']),
+                'genre': ''
             }
+        })
+        #item._listitem.setArt({"poster": one["cover"]})
+
+    items += next_page('recommend', page, total_page)
+    return items
+    
 
 
 # main entrance
 @plugin.route('/')
 def index():
     yield {
-        'label': '分类',
+        'label': u'分类',
         'path': plugin.url_for('category'),
     }
     yield {
-        'label': '搜索',
+        'label': u'搜索',
         'path': plugin.url_for('hotword'),
     }
     yield {
+        'label': u'小编推荐'
+        'path': plugin.url_for('recommend'),
+    }
+    yield {
         'label': '历史',
-        'path': plugin.url_for('list_history'),
+        'path': plugin.url_for('history'),
     }
     mainpage = Meiju.index_info()['data']
 

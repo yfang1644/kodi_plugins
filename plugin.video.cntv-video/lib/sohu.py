@@ -69,7 +69,7 @@ class Sohu():
         level = kwargs.get('level', 0)
         qtyp = vidlist[level]
 
-        #if re.match(r'http://tv.sohu.com/', url):
+        #if re.match(r'http[s]://tv.sohu.com/', url):
             # if extractor_proxy:
             #     set_proxy(tuple(extractor_proxy.split(":")))
         try:
