@@ -41,7 +41,7 @@ def caesarEncryption(source, offset):
     return result
 
 
-class RenRenMeiJu(object):
+class RenRenMeiJu():
     """docstring for RenRenMeiJu"""
 
     def __init__(self):
@@ -58,7 +58,7 @@ class RenRenMeiJu(object):
         return s
 
     def search(self, page=1, rows=20, **kwargs):
-        API = '/season/query'
+        API = '/v3plus/season/query'
         kwargs["page"] = page
         kwargs["rows"] = rows
         kwargs['sort'] = 'updateTime'
@@ -74,19 +74,44 @@ class RenRenMeiJu(object):
         kwargs["rows"] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
-    def index_movie(self):
-        API = '/v3plus'
-        return self.get_json(API)
+    def movie_index(self, page=1, rows=20, **kwargs):
+        API = '/v3plus/movie/index'
+        kwargs["page"] = page
+        kwargs["rows"] = rows
+        return self.get_json(API, data=urlencode(kwargs))
 
-    def index_info(self):
-        API = '/season/index'
-        return self.get_json(API)
+    def season_index(self, page=1, rows=20, area='usk', **kwargs):
+        API = '/v3plus/season/{}/index'.format(area)
+        kwargs["page"] = page
+        kwargs["rows"] = rows
+        return self.get_json(API, data=urlencode(kwargs))
 
-    def video_detail(self, seasonId, userId=0, **kwargs):
+    def season_detail(self, seasonId, userId=0, **kwargs):
         API = '/v3plus/season/detail'
         kwargs["seasonId"] = seasonId
-        kwargs["token"] = self.header['token']
         return self.get_json(API, data=urlencode(kwargs))
+
+    def video_detail(self, videoId, **kwargs):
+        #API = '/v3plus/video/detail'
+        API = '/v3plus/video/getVideoPlayLinkByVideoId'
+        kwargs['videoId'] = videoId
+        return self.get_json(API, data=urlencode(kwargs))
+
+    def cat_index(self, page=1, rows=20, **kwargs):
+        API = '/v3plus/video/categoryIndex'
+        kwargs["page"] = page
+        kwargs["rows"] = rows
+        return self.get_json(API, data=urlencode(kwargs))
+
+    def leafcat_index(self, page=1, rows=20, **kwargs):
+        API = '/v3plus/category/getLeafCategory'
+        kwargs["page"] = page
+        kwargs["rows"] = rows
+        return self.get_json(API, data=urlencode(kwargs))
+
+    def category(self):
+        API = '/v3plus/category/all'
+        return self.get_json(API)
 
     def hot_word(self):
         API = '/video/hotWord'
@@ -117,7 +142,7 @@ class RenRenMeiJu(object):
 class RRMJResolver(RenRenMeiJu):
 
     def get_by_sid(self, episodeSid, quality):
-        API = "/video/findM3u8ByEpisodeSidAuth"
+        API = '/video/findM3u8ByEpisodeSidAuth'
         url = SERVER + API
         headers = self.header
         body = {
@@ -128,17 +153,16 @@ class RRMJResolver(RenRenMeiJu):
         }
         ppp = get_html(url, data=urlencode(body), headers=headers)
         data = loads(ppp)
-        if data["code"] != "0000":
+        if data['code'] != '0000':
             return None, None
         else:
-            m3u8 = data["data"]["m3u8"]
-            current_quality = m3u8["currentQuality"]
-            quality_array = m3u8["qualityArr"]
-            if current_quality == "QQ":
-                decoded_url = m3u8["url"].decode("base64")
+            m3u8 = data['data']['m3u8']
+            current_quality = m3u8['currentQuality']
+            quality_array = m3u8['qualityArr']
+            if current_quality == 'QQ':
+                decoded_url = m3u8['url'].decode('base64')
                 real_url = loads(decoded_url)
-                print real_url
-                return real_url["V"][0]["U"], current_quality
+                return real_url['V'][0]['U'], current_quality
             else:
                 return m3u8["url"], current_quality
 
