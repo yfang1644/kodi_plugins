@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
 <settings>
 	<setting id="show_non_video_files" type="bool" label="是否显示非视频类文件" default="false" />
 	<setting id="video_file_exts" type="text" label="视频文件扩展名（以逗号分开）" default="mkv,rmvb,rm,avi,mpg,mpeg,mp4,mov,3gp,asf,wmv,flv" />

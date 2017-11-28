@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.rrys"
+       name="人人影视"
+       version="1.0.0"
+       provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+       <import addon="plugin.video.cntv-video" version="1.0.6"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="zh-CN">来自人人影视(renrenyingshi.com)的视频</summary>
+        <description>人人影视(renrenyinyshi.com)</description>
+        <forum></forum>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.rrys</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
+</addon>
