@@ -9,13 +9,13 @@ ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
 sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
 
-from xbmcswift2 import Plugin, ListItem, xbmc
+from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 from rrmj import *
 from urlparse import parse_qsl
 from urllib import urlencode
 from json import loads
 
-CATE = [
+CATLIST = [
     '爱情',
     '剧情',
     '喜剧',
@@ -98,27 +98,56 @@ def uskseason():
         })
     return items
 
+@plugin.route('/categorylist/<area>/<catname>')
+def categorylist(area, catname):
+    dialog = xbmcgui.Dialog()
+    sel = dialog.select('分类', ['全部'] + CATLIST)
+    if sel == 0:
+        catname = '0'
+    elif sel > 0:
+        catname = CATLIST[sel-1]
 
-@plugin.route('/season/<page>/<area>')
-def season(page, area):
+    return season(1, area, catname)
+
+
+@plugin.route('/season/<page>/<area>/<catname>')
+def season(page, area, catname):
     plugin.set_content('TVShows')
-    seasonlist = Meiju.season_index(page, PAGE_ROWS, area=area)
-    items = []
+    items = [{
+        'label': colorize('分类','yellow'),
+        'path': url_for('categorylist', area=area, catname=catname)
+    }]
+
+    seasonlist = Meiju.search(page,
+                              PAGE_ROWS,
+                              area=area,
+                              category='' if catname=='0' else catname)
     total = seasonlist['data']['total']
     total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
-    items = previous_page('season', page, total_page, area=area)
+    items += previous_page('season',
+                           page,
+                           total_page,
+                           area=area,
+                           catname=catname)
     for x in seasonlist['data']['results']:
+        status = u'(完结)' if x['finish'] else u'(更新到{})'.format(x['upInfo'])
         items.append({
-            'label': x['title'],
+            'label': x['title'] + status,
             'path': url_for("detail", seasonId=x['id']),
             'thumbnail': x.get('cover'),
             'info': {
                 'title': x['title'],
-                'plot': x.get('brief')
+                'plot': x.get('brief'),
+                'rating': float(x['score']),
+                'genre': ''
             }
         })
 
-    items += next_page('season', page, total_page, area=area)
+    items += next_page('season',
+                       page,
+                       total_page,
+                       area=area,
+                       catname=catname)
     return items
 
 
@@ -221,16 +250,15 @@ def category():
     
     items.append({
         'label': '英美剧',
-        'path': url_for('season', page=1, area='usk')
+        'path': url_for('season', page=1, area='USK', catname=0)
     })
-
     items.append({
         'label': '日韩剧',
-        'path': url_for('season', page=1, area='jp')
+        'path': url_for('season', page=1, area='JP', catname=0)
     })
     items.append({
         'label': '泰剧',
-        'path': url_for('season', page=1, area='th')
+        'path': url_for('season', page=1, area='TH', catname=0)
     })
 
     items.append({
@@ -283,7 +311,7 @@ def search(title):
             'thumbnail': item.get('url', ''),
             'info': {
                 'title': item['title'],
-                'plot': item.get('shortBrief', ''),
+                'plot': item.get('brief', ''),
                 'rating': float(item['score']),
                 'genre': ''
             }

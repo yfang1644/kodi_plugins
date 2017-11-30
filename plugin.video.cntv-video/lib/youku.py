@@ -89,8 +89,14 @@ class Youku():
 
         #m3u8 = streams[self.level]['m3u8_url']
         #return [m3u8]
-
-        urls = [s['cdn_url'] for s in streams[self.level]['segs']]
+        print streams[self.level]
+        urls = []
+        for s in streams[self.level].get('segs', ''):
+            u = s.get('cdn_url')
+            if u:
+                urls += [u]
+            else:
+                break
         return urls
 
     def vid_from_url(self, url):

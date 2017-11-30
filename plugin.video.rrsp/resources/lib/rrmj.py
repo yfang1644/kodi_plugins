@@ -61,7 +61,6 @@ class RenRenMeiJu():
         API = '/v3plus/season/query'
         kwargs["page"] = page
         kwargs["rows"] = rows
-        kwargs['sort'] = 'updateTime'
         return self.get_json(API, data=urlencode(kwargs))
 
     def get_album(self, albumId=2):
