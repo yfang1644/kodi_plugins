@@ -33,7 +33,7 @@ class Youku():
     ]
 
     def __init__(self, *args):
-        self.ccode = '0502'
+        self.ccode = '0501'
         self.title = ''
 
     def video_from_vid(self, vid, **kwargs):
