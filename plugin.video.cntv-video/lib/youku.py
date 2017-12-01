@@ -87,9 +87,9 @@ class Youku():
         if self.level > 0:
             self.level = min(len(streams)-1, self.level)
 
-        #m3u8 = streams[self.level]['m3u8_url']
-        #return [m3u8]
-        print streams[self.level]
+        m3u8 = streams[self.level]['m3u8_url']
+        return [m3u8]
+        # m3u8_url is complete, but mp4 not
         urls = []
         for s in streams[self.level].get('segs', ''):
             u = s.get('cdn_url')
