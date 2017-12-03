@@ -31,16 +31,6 @@ FAKE_HEADERS = {
 }
 
 
-def caesarEncryption(source, offset):
-    dic = "abcdefghijklmnopqrstuvwxyz0123456789"
-    length = len(dic)
-    result = ""
-    for ch in source:
-        i = dic.find(ch)
-        result += dic[(i + offset) % length]
-    return result
-
-
 class RenRenMeiJu():
     """docstring for RenRenMeiJu"""
 
@@ -57,10 +47,18 @@ class RenRenMeiJu():
                              indent=4, separators=(',', ': '))
         return s
 
+    def toplist(self, **kwargs):
+        API = '/v3plus/season/topList'
+        return self.get_json(API, data=urlencode(kwargs))
+
+    def ranklist(self, **kwargs):
+        API = '/video/seasonRankingList'
+        return self.get_json(API, data=urlencode(kwargs))
+
     def search(self, page=1, rows=20, **kwargs):
         API = '/v3plus/season/query'
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
     def get_album(self, albumId=2):
@@ -69,43 +67,51 @@ class RenRenMeiJu():
 
     def update(self, page=1, rows=20, **kwargs):
         API = '/v3plus/season/index'
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
-    def movie_index(self, page=1, rows=20, **kwargs):
+    def movie_catname(self, page=1, rows=20, **kwargs):
         API = '/v3plus/movie/index'
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        return self.get_json(API)
+
+    def movie_query(self, page=1, rows=20, **kwargs):
+        API = '/v3plus/movie/query'
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
     def season_index(self, page=1, rows=20, area='usk', **kwargs):
         API = '/v3plus/season/{}/index'.format(area)
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
     def season_detail(self, seasonId, userId=0, **kwargs):
         API = '/v3plus/season/detail'
-        kwargs["seasonId"] = seasonId
+        kwargs['seasonId'] = seasonId
         return self.get_json(API, data=urlencode(kwargs))
 
     def video_detail(self, videoId, **kwargs):
-        #API = '/v3plus/video/detail'
         API = '/v3plus/video/getVideoPlayLinkByVideoId'
+        kwargs['videoId'] = videoId
+        return self.get_json(API, data=urlencode(kwargs))
+
+    def video_detail2(self, videoId, **kwargs):
+        API = '/v3plus/video/detail'
         kwargs['videoId'] = videoId
         return self.get_json(API, data=urlencode(kwargs))
 
     def cat_index(self, page=1, rows=20, **kwargs):
         API = '/v3plus/video/categoryIndex'
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
     def leafcat_index(self, page=1, rows=20, **kwargs):
         API = '/v3plus/category/getLeafCategory'
-        kwargs["page"] = page
-        kwargs["rows"] = rows
+        kwargs['page'] = page
+        kwargs['rows'] = rows
         return self.get_json(API, data=urlencode(kwargs))
 
     def category(self):
@@ -137,10 +143,8 @@ class RenRenMeiJu():
         data = self.get_json(API, data=urlencode(body))
         FAKE_HEADERS['token']= data['data']['user']['token']
 
-
-class RRMJResolver(RenRenMeiJu):
-
-    def get_by_sid(self, episodeSid, quality):
+    def get_by_sid(self, episodeSid, quality='super'):
+        API = '/video/findM3u8ByEpisodeSid'
         API = '/video/findM3u8ByEpisodeSidAuth'
         url = SERVER + API
         headers = self.header
@@ -164,6 +168,3 @@ class RRMJResolver(RenRenMeiJu):
                 return real_url['V'][0]['U'], current_quality
             else:
                 return m3u8["url"], current_quality
-
-    def get_play(self, episodeSid, quality='super'):
-        return self.get_by_sid(episodeSid, quality)

@@ -207,7 +207,7 @@ def relatedList(params, playlist, j):
         except:
             continue
         href = httphead(href)
-        p_id = pic.a['data-cid']
+        p_id = inf.a['data-id']
         p_thumb = httphead(pic.img['_lazysrc'])
         p_name = pic.img['alt']
 
@@ -225,6 +225,13 @@ def relatedList(params, playlist, j):
         info = {
             'label': p_name,
         }
+        span = pic.find('span')
+        if span and len(span.text) > 0:
+            duration = 0
+            for t in span.text.split(':'):
+                duration = duration*60 + int(t)
+            info['duration'] = duration
+
         desc = inf.find('p', {'class', 'desc'})
         if desc:
             p_name1 += ' (' + desc.text + ')'
@@ -503,13 +510,6 @@ def mainList(params):
         info = {
             'label': p_name,
         }
-        if p_duration:
-            duration = 0
-            for t in str(p_duration.text).split(':'):
-                duration = duration*60 + int(t)
-
-            info['duration'] = duration
-
         desc = inf.find('p', {'class', 'desc'})
         if desc:
             info['plot'] = desc.text

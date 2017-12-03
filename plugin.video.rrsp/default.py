@@ -10,10 +10,10 @@ ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
 sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
 
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
-from rrmj import *
+from rrmj import RenRenMeiJu
 from urlparse import parse_qsl
 from urllib import urlencode
-from json import loads
+from json import loads, dumps
 
 CATLIST = [
     '爱情',
@@ -114,14 +114,14 @@ def categorylist(area, catname):
 def season(page, area, catname):
     plugin.set_content('TVShows')
     items = [{
-        'label': colorize('分类','yellow'),
+        'label': colorize('分类--'+catname, 'yellow'),
         'path': url_for('categorylist', area=area, catname=catname)
     }]
 
     seasonlist = Meiju.search(page,
                               PAGE_ROWS,
                               area=area,
-                              category='' if catname=='0' else catname)
+                              category='' if catname=='全部' else catname)
     total = seasonlist['data']['total']
     total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
     items += previous_page('season',
@@ -151,14 +151,36 @@ def season(page, area, catname):
     return items
 
 
-@plugin.route('/movies/<page>')
-def movies(page):
-    plugin.set_content('video')
-    movielist = Meiju.movie_index(page, PAGE_ROWS)
+@plugin.route('/movieCatList/<catid>')
+def movieCatList(catid):
+    moviecat = Meiju.movie_catname()['data']['categoryList']
+    dialog = xbmcgui.Dialog()
+    catlist = [x['name'] for x in moviecat]
+    cat_id = [x['id'] for x in moviecat]
+    sel = dialog.select('分类(可能不全)', ['全部'] + catlist)
+    if sel == 0:
+        catid = '0'
+    elif sel > 0:
+        catid = cat_id[sel-1]
+
+    return movies(1, catid)
+
+
+@plugin.route('/movies/<page>/<catid>')
+def movies(page, catid):
+    plugin.set_content('TVShows')
+    items = [{
+        'label': colorize('分类','yellow'),
+        'path': url_for('movieCatList', catid=catid)
+    }]
+
+    movielist = Meiju.movie_query(page,
+                                  PAGE_ROWS,
+                                  categoryId='' if catid == '0' else catid)
     total = movielist['data']['total']
     total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
 
-    items = previous_page('movies', page, total_page)
+    items += previous_page('movies', page, total_page, catid=catid)
     for x in movielist['data']['results']:
         t = x.get('duration', '')
         if t == '': t = '0:0:0'
@@ -177,19 +199,25 @@ def movies(page):
                      'duration': duration}
         })
 
-    items += next_page('movies', page, total_page)
+    items += next_page('movies', page, total_page, catid=catid)
     return items
 
 
 @plugin.route('/videodetail/<videoId>/<title>')
 def videodetail(videoId, title):
-    video = Meiju.video_detail(videoId=videoId)
+    video = Meiju.video_detail(videoId)
     play_url = video['data']['playLink']
-    stackurl = play_url.split('|')
-    play_url = 'stack://' + ' , '.join(stackurl)
-    li = ListItem(title, path=play_url)
-    li.set_info('video', {'title': title})
-    plugin.set_resolved_url(li)
+    if play_url:
+        stackurl = play_url.split('|')
+        play_url = 'stack://' + ' , '.join(stackurl)
+        li = ListItem(title, path=play_url)
+        li.set_info('video', {'title': title})
+        plugin.set_resolved_url(li)
+    else:
+        video = Meiju.video_detail2(videoId)
+        url = video['data']['videoDetailView']['playLink']
+        xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
+                            '请使用其他插件搜索播放')
 
 
 @plugin.route('/leafCategory/<catid>/<page>')
@@ -250,20 +278,20 @@ def category():
     
     items.append({
         'label': '英美剧',
-        'path': url_for('season', page=1, area='USK', catname=0)
+        'path': url_for('season', page=1, area='USK', catname='全部')
     })
     items.append({
         'label': '日韩剧',
-        'path': url_for('season', page=1, area='JP', catname=0)
+        'path': url_for('season', page=1, area='JP', catname='全部')
     })
     items.append({
         'label': '泰剧',
-        'path': url_for('season', page=1, area='TH', catname=0)
+        'path': url_for('season', page=1, area='TH', catname='全部')
     })
 
     items.append({
         'label': '电影',
-        'path': url_for('movies', page=1)
+        'path': url_for('movies', page=1, catid=0)
     })
 
     return items
@@ -323,6 +351,7 @@ def search(title):
 
 @plugin.route('/album/<albumId>/', name="album")
 def get_album(albumId):
+    plugin.set_content('TVShows')
     c_list = Meiju.get_album(albumId)
     for one in c_list['data']['results']:
         yield {
@@ -336,13 +365,12 @@ def get_album(albumId):
                      'genre': one['cat'],
                      'season': one['seasonNo']}
         }
-    plugin.set_content('TVShows')
 
 
 # get season episodes by season id
 @plugin.route('/detail/<seasonId>')
 def detail(seasonId):
-    plugin.set_content('video')
+    plugin.set_content('TVShows')
     detail = Meiju.season_detail(seasonId)
     season_data = detail['data']['season']
     title = season_data['title']
@@ -382,8 +410,7 @@ def play(seasonId='', index='', Esid=''):
     season_data = SEASON_CACHE.get(seasonId).get('season')
     title = season_data['title']
     episode_sid = Esid
-    rs = RRMJResolver()
-    play_url, _ = rs.get_play(episode_sid, plugin.get_setting('quality'))
+    play_url, _ = Meiju.get_by_sid(episode_sid, plugin.get_setting('quality'))
     if play_url is not None:
         stackurl = play_url.split('|')
         play_url = 'stack://' + ' , '.join(stackurl)
@@ -426,6 +453,7 @@ def history():
 
 @plugin.route('/update/<page>')
 def update(page):
+    plugin.set_content('TVShows')
     searchlist = Meiju.update(page, PAGE_ROWS)
     total = searchlist['data']['total']
     total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
@@ -436,10 +464,10 @@ def update(page):
         items.append({
             'label': item['title'] + status,
             'path': url_for("detail", seasonId=item['id']),
-            'thumbnail': item.get('url', ''),
+            'thumbnail': item.get('cover', ''),
             'info': {
                 'title': item['title'],
-                'plot': item.get('shortBrief', ''),
+                'plot': item.get('brief', ''),
                 'rating': float(item['score']),
                 'genre': ''
             }

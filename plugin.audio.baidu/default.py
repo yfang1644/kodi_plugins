@@ -83,6 +83,7 @@ def MVList(url):
 
 @plugin.route('/musiclist/<url>')
 def musiclist(url):
+    url = url.strip()
     if url[0] == '/':
         url = HOST + url
 
@@ -142,12 +143,18 @@ def taglist(url):
 
     for item in soups:
         js = loads(item['data-musicicon'])
+        try:
+            playable = item.a['data-action']
+            title = js['songTitle']
+        except:
+            playable = False
+            title = js['songTitle'] + u'(该歌曲已下架)' 
+
         albumId = js['albumId']
-        
         items.append({
-            'label': js['songTitle'],
+            'label': title,
             'path': url_for('playBD', sid=js['id']),
-            'is_playable': True,
+            'is_playable': True if playable else False,
             'info': {'title': js['songTitle']}
         })
 
@@ -282,7 +289,7 @@ def albumlist(url):
         c = item.find_all('p', {'class': 'text-title'})
         items.append({
             'label': c[0].text,
-            'path': url_for('MVList', url=c[0].a['href']),
+            'path': url_for('taglist', url=c[0].a['href']),
             'thumbnail': item.img['src'],
         })
 
