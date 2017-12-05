@@ -14,6 +14,7 @@ from rrmj import RenRenMeiJu
 from urlparse import parse_qsl
 from urllib import urlencode
 from json import loads, dumps
+import sqlite3
 
 CATLIST = [
     '爱情',
@@ -45,10 +46,33 @@ CATLIST = [
 plugin = Plugin()
 url_for = plugin.url_for
 
+conn = sqlite3.connect(ADDON_PATH + '/local.db')
+cur = conn.cursor()
+
 Meiju = RenRenMeiJu()
 PAGE_ROWS = int(plugin.get_setting('page_rows'))
 SEASON_CACHE = plugin.get_storage('season')
 HISTORY = plugin.get_storage('history')
+
+
+def setSettingByRPC(key, value):
+    """Set Kodi Setting by JSON-RPC
+
+    Args:
+        key (TYPE): Description
+        value (TYPE): Description
+
+    Returns:
+        TYPE: Description
+    """
+    result = xbmc.executeJSONRPC('{"jsonrpc":"2.0", "method":"Settings.SetSettingValue", "params":{"setting":"%s", "value":%s}, "id":1}' % (key, value))
+    result = loads(result)
+    return result
+
+
+def set_auto_play():
+    auto_play_setting = plugin.get_setting("auto_next")
+    print setSettingByRPC("videoplayer.autoplaynextitem", auto_play_setting)
 
 
 def colorize(label, color):
@@ -297,6 +321,7 @@ def category():
     return items
 
 
+
 # search entrance
 @plugin.route('/hotword/')
 def hotword():
@@ -309,7 +334,7 @@ def hotword():
         word = word.encode('utf-8')
         item = {
             'label': colorize(word, 'green'),
-            'path': url_for('search', title=word),
+            'path': url_for('search', title=word)
         }
         yield item
 
@@ -324,6 +349,11 @@ def input_keyword():
         keyword = keyboard.getText()
         url = url_for('search', title=keyword)
         plugin.redirect(url)
+
+
+@plugin.route('/stay')
+def stay():
+    pass
 
 
 @plugin.route('/search/<title>')
@@ -346,6 +376,20 @@ def search(title):
         })
         #item._listitem.setArt({"poster": one["cover"]})
 
+    # search local
+    items.append({
+        'label': colorize(u'本地数据库', 'yellow'),
+        'path': url_for('stay')
+    })
+
+    title = title.decode('utf-8')
+    p = cur.execute('select * from mjindex where name like ?', ('%'+title+'%',))
+    total = p.fetchall()
+    for item in total:
+        items.append({
+            'label': item[1],
+            'path': url_for('detail', seasonId=item[0])
+        })
     return items
 
 
@@ -480,6 +524,7 @@ def update(page):
 # main entrance
 @plugin.route('/')
 def index():
+    set_auto_play()
     yield {
         'label': u'分类',
         'path': url_for('category'),
