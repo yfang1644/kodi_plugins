@@ -334,7 +334,7 @@ def hotword():
         word = word.encode('utf-8')
         item = {
             'label': colorize(word, 'green'),
-            'path': url_for('search', title=word)
+            'path': url_for('search', title=word, page=1)
         }
         yield item
 
@@ -347,7 +347,7 @@ def input_keyword():
     keyboard.doModal()
     if (keyboard.isConfirmed()):
         keyword = keyboard.getText()
-        url = url_for('search', title=keyword)
+        url = url_for('search', title=keyword, page=1)
         plugin.redirect(url)
 
 
@@ -356,12 +356,18 @@ def stay():
     pass
 
 
-@plugin.route('/search/<title>')
-def search(title):
+@plugin.route('/search/<title>/<page>')
+def search(title, page):
     plugin.set_content('video')
-    searchlist = Meiju.search(name=title)
+    searchlist = Meiju.search(name=title)['data']['results']
+
     items = []
-    for item in searchlist['data']['results']:
+    if searchlist:
+        items.append({
+            'label': colorize(u'剧集', 'yellow'),
+            'path': url_for('stay')
+        })
+    for item in searchlist:
         status = u'(完结)' if item['finish'] else u'(更新到{})'.format(item['upInfo'])
         items.append({
             'label': item['title'] + status,
@@ -377,19 +383,45 @@ def search(title):
         #item._listitem.setArt({"poster": one["cover"]})
 
     # search local
-    items.append({
-        'label': colorize(u'本地数据库', 'yellow'),
-        'path': url_for('stay')
-    })
-
-    title = title.decode('utf-8')
-    p = cur.execute('select * from mjindex where name like ?', ('%'+title+'%',))
+    dt = title.decode('utf-8')
+    p = cur.execute('select * from mjindex where name like ?', ('%'+dt+'%',))
     total = p.fetchall()
+    if total:
+        items.append({
+            'label': colorize(u'本地数据库', 'yellow'),
+            'path': url_for('stay')
+        })
     for item in total:
         items.append({
             'label': item[1],
             'path': url_for('detail', seasonId=item[0])
         })
+
+    # search videos
+    searchlist = Meiju.video_search(page, PAGE_ROWS, name=title)['data']
+    total = searchlist['total']
+    if total:
+        items.append({
+            'label': colorize(u'其它视频', 'yellow'),
+            'path': url_for('stay')
+        })
+    total_page = (total + PAGE_ROWS - 1) // PAGE_ROWS
+    items += previous_page('search', page, total_page, title=title)
+    for x in searchlist['results']:
+        t = x.get('videoDuration', 0)
+        items.append({
+            'label': x['title'],
+            'path': url_for('videodetail',
+                            videoId=x['id'],
+                            title=x['title'].encode('utf-8')),
+            'thumbnail': x['url'],
+            'is_playable': True,
+            'info': {'title': x['title'],
+                     'plot': x['brief'],
+                     'duration': int(t)}
+        })
+    items += next_page('search', page, total_page, title=title)
+
     return items
 
 

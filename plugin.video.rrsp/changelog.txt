@@ -1,3 +1,6 @@
+v1.0.3 (2017.12.4)
+- add local search, search videos
+
 v1.0.1 (2017.11.30)
 - add season categories
 

@@ -92,6 +92,12 @@ class RenRenMeiJu():
         kwargs['seasonId'] = seasonId
         return self.get_json(API, data=urlencode(kwargs))
 
+    def video_search(self, page=1, rows=20, **kwargs):
+        API = '/video/search'
+        kwargs['page'] = page
+        kwargs['rows'] = rows
+        return self.get_json(API, data=urlencode(kwargs))
+
     def video_detail(self, videoId, **kwargs):
         API = '/v3plus/video/getVideoPlayLinkByVideoId'
         kwargs['videoId'] = videoId
