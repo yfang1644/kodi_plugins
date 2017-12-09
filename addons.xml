@@ -49,20 +49,19 @@
 
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
-    version="1.7.10"
+    version="1.8.0"
     provider-name="yfang1644">
     <requires>
     </requires>
     <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
+        point="xbmc.python.pluginsource" library="addon.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">YinYueTai video plugin</summary>
         <summary lang="zh">音悦台视频插件</summary>
-        <description lang="en">Online MV from yinyuetai.com[CR][CR]To Enable Video Auto Playback Option:[CR]---------------------------------[CR]- Navigate to Add-on settings[CR]- Video Continuous Playback: Enable/Disable</description>
-        <description lang="zh">观看音悦台在线MV[CR][CR]视频自动播放说明：[CR]--------------------------------[CR]- 找到 Add-on settings 文件列表[CR]- 选择视频连续播放": 是/否</description>
+        <description lang="en">Online MV from yinyuetai.com</description>
+        <description lang="zh">观看音悦台在线MV</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yinyuetai</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
@@ -800,7 +799,7 @@
 
 <addon id="plugin.audio.qingting"
     name="蜻蜓FM"
-    version="1.0.0"
+    version="1.0.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
