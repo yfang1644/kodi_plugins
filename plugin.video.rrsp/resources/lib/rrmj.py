@@ -152,7 +152,6 @@ class RenRenMeiJu():
     def get_by_sid(self, episodeSid, quality='super'):
         API = '/video/findM3u8ByEpisodeSid'
         API = '/video/findM3u8ByEpisodeSidAuth'
-        url = SERVER + API
         headers = self.header
         body = {
             'episodeSid': episodeSid,
@@ -160,8 +159,7 @@ class RenRenMeiJu():
             'seasonId': 0,
             'token': headers['token']
         }
-        ppp = get_html(url, data=urlencode(body), headers=headers)
-        data = loads(ppp)
+        data = self.get_json(API, data=urlencode(body))
         if data['code'] != '0000':
             return None, None
         else:

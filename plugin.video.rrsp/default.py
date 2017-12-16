@@ -10,7 +10,10 @@ ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
 sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
 
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
+
 from rrmj import RenRenMeiJu
+from acfun import video_from_url
+
 from urlparse import parse_qsl
 from urllib import urlencode
 from json import loads, dumps
@@ -180,12 +183,8 @@ def movieCatList(catid):
     moviecat = Meiju.movie_catname()['data']['categoryList']
     dialog = xbmcgui.Dialog()
     catlist = [x['name'] for x in moviecat]
-    cat_id = [x['id'] for x in moviecat]
     sel = dialog.select('分类(可能不全)', ['全部'] + catlist)
-    if sel == 0:
-        catid = '0'
-    elif sel > 0:
-        catid = cat_id[sel-1]
+    catid = moviecat[sel-1]['id'] if sel > 0 else '0'
 
     return movies(1, catid)
 
@@ -232,16 +231,20 @@ def videodetail(videoId, title):
     video = Meiju.video_detail(videoId)
     play_url = video['data']['playLink']
     if play_url:
-        stackurl = play_url.split('|')
-        play_url = 'stack://' + ' , '.join(stackurl)
-        li = ListItem(title, path=play_url)
-        li.set_info('video', {'title': title})
-        plugin.set_resolved_url(li)
+        play_url = play_url.split('|')
     else:
         video = Meiju.video_detail2(videoId)
         url = video['data']['videoDetailView']['playLink']
-        xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
-                            '请使用其他插件搜索播放')
+        if 'acfun' in url:
+            play_url = video_from_url(url)
+        else:
+            xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
+                                '请使用其他插件搜索播放')
+            return
+
+    stackurl = 'stack://' + ' , '.join(play_url)
+    plugin.set_resolved_url(stackurl)
+    
 
 
 @plugin.route('/leafCategory/<catid>/<page>')
@@ -364,7 +367,7 @@ def search(title, page):
     items = []
     if searchlist:
         items.append({
-            'label': colorize(u'剧集', 'yellow'),
+            'label': colorize(u'剧集搜索-'+ title.decode('utf-8'), 'yellow'),
             'path': url_for('stay')
         })
     for item in searchlist:
@@ -409,6 +412,7 @@ def search(title, page):
     items += previous_page('search', page, total_page, title=title)
     for x in searchlist['results']:
         t = x.get('videoDuration', 0)
+        if int(t) < 0: t = 0
         items.append({
             'label': x['title'],
             'path': url_for('videodetail',
@@ -477,8 +481,10 @@ def detail(seasonId):
                      'season': 0},
         })
 
-    plugin.finish(items, sort_methods=['episode'])
-    return items
+    unsorted = [(dict_['info']['episode'], dict_) for dict_ in items]
+    unsorted.sort()
+    sorted = [dict_ for (key, dict_) in unsorted]
+    return sorted
 
 
 @plugin.route('/play/<seasonId>/<index>/<Esid>', name='play_season')
@@ -488,11 +494,11 @@ def play(seasonId='', index='', Esid=''):
     episode_sid = Esid
     play_url, _ = Meiju.get_by_sid(episode_sid, plugin.get_setting('quality'))
     if play_url is not None:
-        stackurl = play_url.split('|')
-        play_url = 'stack://' + ' , '.join(stackurl)
+        play_url = play_url.split('|')
+        stackurl = 'stack://' + ' , '.join(play_url)
         add_history(seasonId, index, Esid, title)
         li = ListItem(title+index,
-                    path=play_url,
+                    path=stackurl,
                     thumbnail=season_data.get('cover'))
         li.set_info('video', {'title': title+index,
                               'plot': season_data.get('brief','')})
@@ -556,7 +562,7 @@ def update(page):
 # main entrance
 @plugin.route('/')
 def index():
-    set_auto_play()
+    #set_auto_play()
     yield {
         'label': u'分类',
         'path': url_for('category'),
