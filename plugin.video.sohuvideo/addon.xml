@@ -8,8 +8,7 @@
         <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
+        point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">

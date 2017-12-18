@@ -12,7 +12,8 @@ sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 
 from rrmj import RenRenMeiJu
-from acfun import video_from_url
+from acfun import video_from_url as video_from_acfun
+from youku import video_from_url as video_from_youku
 
 from urlparse import parse_qsl
 from urllib import urlencode
@@ -236,7 +237,9 @@ def videodetail(videoId, title):
         video = Meiju.video_detail2(videoId)
         url = video['data']['videoDetailView']['playLink']
         if 'acfun' in url:
-            play_url = video_from_url(url)
+            play_url = video_from_acfun(url)
+        elif 'youku' in url:
+            play_url = video_from_youku(url)
         else:
             xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
                                 '请使用其他插件搜索播放')
