@@ -5,9 +5,10 @@ from json import loads
 from random import random, randrange
 import base64
 import hashlib
-import urllib
+import urllib2
 import time
 import re
+from urlparse import urlparse
 from common import get_html, match1
 
 
@@ -103,8 +104,8 @@ class LeTV():
         sign_key = '2f9d6924b33a165a6d8b5d3d42f4f987'  #ALL YOUR BASE ARE BELONG TO US
         str2Hash = ''.join([i + argumet_dict[i] for i in sorted(argumet_dict)]) + sign_key
         sign = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        request_info = urllib.request.Request('http://api.letvcloud.com/gpc.php?' + '&'.join([i + '=' + argumet_dict[i] for i in argumet_dict]) + '&sign={sign}'.format(sign=sign))
-        response = urllib.request.urlopen(request_info)
+        request_info = urllib2.Request('http://api.letvcloud.com/gpc.php?' + '&'.join([i + '=' + argumet_dict[i] for i in argumet_dict]) + '&sign={sign}'.format(sign=sign))
+        response = urllib2.urlopen(request_info)
         data = response.read()
         info = loads(data.decode('utf-8'))
         type_available = []
@@ -113,7 +114,7 @@ class LeTV():
         urls = [base64.b64decode(sorted(type_available, key=lambda x:x['video_quality'])[-1]['video_url']).decode("utf-8")]
 
     def letvcloud_download(self, url):
-        qs = parse.urlparse(url).query
+        qs = urlparse(url).query
         vu = match1(qs, r'vu=([\w]+)')
         uu = match1(qs, r'uu=([\w]+)')
         title = "LETV-" + vu

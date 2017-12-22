@@ -402,7 +402,7 @@
 
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
-    version="2.2.9"
+    version="2.2.10"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
@@ -526,7 +526,7 @@
 
 <addon id="plugin.video.rrsp"
        name="人人视频"
-       version="1.0.4"
+       version="1.0.5"
        provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>

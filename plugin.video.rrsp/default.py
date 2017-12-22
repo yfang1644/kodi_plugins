@@ -14,6 +14,7 @@ from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 from rrmj import RenRenMeiJu
 from acfun import video_from_url as video_from_acfun
 from youku import video_from_url as video_from_youku
+from letv import video_from_url as video_from_letv
 
 from urlparse import parse_qsl
 from urllib import urlencode
@@ -240,6 +241,8 @@ def videodetail(videoId, title):
             play_url = video_from_acfun(url)
         elif 'youku' in url:
             play_url = video_from_youku(url)
+        elif 'letv' in url:
+            play_url = video_from_letv(url)
         else:
             xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
                                 '请使用其他插件搜索播放')
@@ -524,16 +527,31 @@ def add_history(seasonId, index, Esid, title):
     HISTORY["list"].insert(0, item)
 
 
+@plugin.route('/clearhistory')
+def clearhistory():
+    for l in HISTORY['list']:
+        HISTORY['list'].remove(l)
+        break
+    return history()
+
+
 @plugin.route('/history')
 def history():
+    items = [{
+        'label': u'清除观看历史',
+        'path': url_for('clearhistory')
+    }]
+
     for l in HISTORY.get('list', []):
         seasonId = l['seasonId']
         index = l['index']
         sid = l['sid']
-        yield {
-            'label': u'[COLOR green]{title}[/COLOR]  观看到第[COLOR yellow]{index}[/COLOR]集'.format(title=l['season_name'], index=l['index']),
+        items.append({
+            'label': colorize(l['season_name'], 'green') +
+            u' 观看到第{}集'.format(colorize(str(l['index']), 'yellow')),
             'path': url_for('detail', seasonId=seasonId),
-        }
+        })
+    return items
 
 
 @plugin.route('/update/<page>')

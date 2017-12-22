@@ -42,6 +42,16 @@ def httphead(url):
     return url
 
 
+def convertTImer(info):
+    try:
+        duration = 0
+        for t in info.split(':'):
+            duration += duration*60 + int(t)
+        return duration
+    except:
+        return info
+
+
 def selResolution(items):
     ratelist = []
     for i in range(0, len(items)):
@@ -171,7 +181,7 @@ def listSubMenu(params):
             info = item.find('span', {'class': 'icon-vInfo'}).text
         except:
             info = ''
-        info = info.strip(' ')
+        info = convertTImer(info)
         try:
             vip = item.find('span', {'class': 'icon-vip-zx'}).text
             vip = '|[COLOR FF809000]' + vip + '[/COLOR]'
@@ -186,9 +196,16 @@ def listSubMenu(params):
         tvId = item.a.get('data-qidanadd-tvid', 'X')
         if albumId == 'X':
             albumId = tvId
-        li = ListItem(title + '(' + info + vip + pay + ')',
-                              iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        extrainfo = vip + pay
+        if isinstance(info, str):
+            extrainfo = info + extrainfo
+        extrainfo.strip(' ')
+        li = ListItem(title + extrainfo, iconImage=img, thumbnailImage=img)
+        if isinstance(info, str):
+            li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        else:
+            li.setInfo(type='Video', infoLabels={'Title': title, 'duration': info})
+
         u = sys.argv[0] + '?url=' + href
         u += '&mode=episodelist&name=' + quote_plus(name)
         u += '&thumb=' + quote_plus(img) + '&title=' + title
@@ -376,11 +393,11 @@ def episodesList(params):
 def findToPlay(params):
     url = params.get('url')
     link = get_html(url)
-    tvId = r1(r'#curid=(.+)_', self.url) or \
-            r1(r'tvid=([^&]+)', self.url) or \
+    tvId = r1(r'#curid=(.+)_', url) or \
+            r1(r'tvid=([^&]+)', url) or \
             r1(r'data-player-tvid="([^"]+)"', link)
-    videoId = r1(r'#curid=.+_(.*)$', self.url) or \
-            r1(r'vid=([^&]+)', self.url) or \
+    videoId = r1(r'#curid=.+_(.*)$', url) or \
+            r1(r'vid=([^&]+)', url) or \
             r1(r'data-player-videoid="([^"]+)"', link)
 
     if tvId is not None and videoId is not None:
@@ -495,8 +512,8 @@ def searchiQiyi(params):
             xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
             album = series.find_all('li', {'class': 'album_item'})
             for page in album:
-                href = page.a['href']
-                title = page.a['title']
+                href = page.a.get('href', '')
+                title = page.a.get('title', '')
                 li = ListItem('--' + title, thumbnailImage=img)
                 u = sys.argv[0] + '?url=' + href + '&mode=playfound'
                 u += '&thumb=' + quote_plus(img) + '&title=' + title

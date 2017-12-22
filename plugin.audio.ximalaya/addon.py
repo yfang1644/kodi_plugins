@@ -125,9 +125,6 @@ def root():
             href = prog.a['href']
         except:
             continue
-        cid = prog['cid']
-        name = prog.text
-        href = httphead(href)
         yield {
             'label': prog.text,
             'path': url_for('sublist', cid=prog['cid'])
@@ -191,10 +188,7 @@ def playList(url, page, order):
     else:
         info = ''
 
-    if order == 'asc':
-        corder = 'desc'
-    else:
-        corder = 'asc'
+    corder = 'desc' if order == 'asc' else 'asc'
     yield {
         'label': u'更改排序',
         'path': url_for('playList', url=url, page=page, order=corder),
