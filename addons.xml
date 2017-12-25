@@ -750,6 +750,28 @@
     </extension>
 </addon>
 
+<addon id="plugin.video.yongjiu"
+       name="永久资源"
+       version="1.0.0"
+       provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="zh-CN">永久资源视频</summary>
+        <description>永久资源视频</description>
+        <forum></forum>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yongjiu</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
+</addon>
+
 <addon id="plugin.audio.baidu"
     name="百度音乐"
     version="1.0.1"

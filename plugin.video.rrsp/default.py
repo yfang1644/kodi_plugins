@@ -529,9 +529,8 @@ def add_history(seasonId, index, Esid, title):
 
 @plugin.route('/clearhistory')
 def clearhistory():
-    for l in HISTORY['list']:
-        HISTORY['list'].remove(l)
-        break
+    if len(HISTORY['list']):
+        del HISTORY['list'][-1]
     return history()
 
 
