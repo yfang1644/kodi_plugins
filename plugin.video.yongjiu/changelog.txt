@@ -1,2 +1,4 @@
+2017.12.30 (v1.0.1)
+- parser yjyun beside m3u8
 2017.12.25
 - initial

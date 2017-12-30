@@ -300,7 +300,7 @@ def videos(info):
 # list catagories
 @plugin.route('/category')
 def category():
-    plugin.set_content('video')
+    plugin.set_content('videos')
     catlist = Meiju.category()
     items = []
     for x in catlist['data']['category']:

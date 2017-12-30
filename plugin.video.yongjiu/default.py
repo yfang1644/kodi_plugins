@@ -32,22 +32,6 @@ def httphead(url):
     return url
 
 
-def previous_page(endpoint, page, total_page, **kwargs):
-    if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
-
-def next_page(endpoint, page, total_page, **kwargs):
-    if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
-
 # get search result by input keyword
 @plugin.route('/search')
 def search():
@@ -60,15 +44,19 @@ def search():
         return category(url)
 
 
-@plugin.route('/stay')
-def stay():
-    pass
-
-
-@plugin.route('/play/<url>')
-def play(url):
+@plugin.route('/play/<url>/<m3u8>')
+def play(url, m3u8):
     parsed = urlparse(url)
     server = parsed.scheme + '://' + parsed.netloc
+    if int(m3u8) == 0:
+        page = get_html(url)
+        redir = re.compile('var redirecturl.*"(.+)"').findall(page)[0]
+        token = re.compile('var requestToken.*"(.+)"').findall(page)[0]
+        server = parsed.scheme + '://' + redir
+        newurl = server + '/token/' + token
+        page = get_html(newurl)
+        jspage = loads(page)
+        url = server + jspage['main']
     m3u8 = get_html(url)
     videourl = re.compile('(\S.*m3u8)').findall(m3u8)
     m3u8 = get_html(server + videourl[0])
@@ -99,21 +87,25 @@ def episodes(url):
         value = item['value'].split('$')
         if len(value) < 2:
             continue
-        if 'm3u8' not in value[1]:
-            continue
+        if 'm3u8' in value[1]:
+            m3u8 = 1
+            title = title + '(m3u8)'
+        else:
+            m3u8 = 0
         items.append({
-            'label': value[0],
-            'path': url_for('play', url=value[1]),
+            'label': title + '(' + value[0] + ')',
+            'path': url_for('play', url=value[1], m3u8=m3u8),
             'is_playable': True,
             'thumbnail': thumb,
             'info': {'title': title +'-'+value[0], 'plot': textinfo}
         })
     return items
 
+
 # list catagories
 @plugin.route('/category/<url>')
 def category(url):
-    plugin.set_content('videos')
+    plugin.set_content('TVShows')
     page = get_html(url)
     tree = BeautifulSoup(page, 'html.parser')
     soups = tree.find_all('tr', {'class': 'DianDian'})
