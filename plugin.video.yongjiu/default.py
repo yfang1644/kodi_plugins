@@ -89,11 +89,10 @@ def episodes(url):
             continue
         if 'm3u8' in value[1]:
             m3u8 = 1
-            title = title + '(m3u8)'
         else:
             m3u8 = 0
         items.append({
-            'label': title + '(' + value[0] + ')',
+            'label': title + '(m3u8)'*m3u8 + '(' + value[0] + ')',
             'path': url_for('play', url=value[1], m3u8=m3u8),
             'is_playable': True,
             'thumbnail': thumb,
