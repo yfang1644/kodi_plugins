@@ -140,9 +140,10 @@
 
 <addon id="plugin.video.sohuvideo"
     name="搜狐视频(SoHu)"
-    version="2.4.11"
+    version="2.5.0"
     provider-name="Taxigps,yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
         <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
@@ -324,7 +325,7 @@
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Mangguo Video plugin</summary>
         <summary lang="zh">MGTV 视频插件</summary>
-        <description lang="en">Online videos from tv.sohu.com</description>
+        <description lang="en">Online videos from www.mgtv.com</description>
         <description lang="zh">本插件视频解析自芒果TV网站(www.mgtv.com)</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.mgtv</source>
 		<email>yfang1644@gmail.com</email>
