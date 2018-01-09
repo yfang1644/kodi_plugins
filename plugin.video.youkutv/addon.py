@@ -317,7 +317,7 @@ class SettingsWindow(xbmcgui.WindowXMLDialog):
             return
 
         selected = 0
-        for i in range(len(settings_data['resolution'])):
+        for i in xrange(len(settings_data['resolution'])):
             listitem = xbmcgui.ListItem(label=settings_data['resolution'][i])
             self.getControl(1720).addItem(listitem)
             if settings['resolution'] == i:
@@ -326,7 +326,7 @@ class SettingsWindow(xbmcgui.WindowXMLDialog):
         self.getControl(1720).selectItem(selected)
 
         selected = 0
-        for i in range(len(settings_data['language'])):
+        for i in xrange(len(settings_data['language'])):
             listitem = xbmcgui.ListItem(label=settings_data['language'][i])
             self.getControl(1721).addItem(listitem)
             if settings['language'] == i:
@@ -335,7 +335,7 @@ class SettingsWindow(xbmcgui.WindowXMLDialog):
         self.getControl(1721).selectItem(selected)
 
         selected = 0
-        for i in range(len(settings_data['play'])):
+        for i in xrange(len(settings_data['play'])):
             listitem = xbmcgui.ListItem(label=settings_data['play'][i])
             self.getControl(1722).addItem(listitem)
             if settings['play'] == i:
@@ -348,7 +348,7 @@ class SettingsWindow(xbmcgui.WindowXMLDialog):
     def updateSelection(self, controlId):
         if controlId in (1720, 1721, 1722):
             selected = self.getControl(controlId).getSelectedPosition()
-            for index in range(self.getControl(controlId).size()):
+            for index in xrange(self.getControl(controlId).size()):
                 if index != selected and self.getControl(controlId).getListItem(index).isSelected() is True:
                     self.getControl(controlId).getListItem(index).select(False)
             self.getControl(controlId).getSelectedItem().select(True)
@@ -418,8 +418,7 @@ class FilterWindow(BaseWindowDialog):
 
         self.pdata = data['results']
 
-        for index in range(len(data['results'])):
-
+        for index in xrange(len(data['results'])):
             selected = 0
             cl = self.getControl(1620 + index)
             if data['results'][index]['cat'] != 'ob':
@@ -432,7 +431,7 @@ class FilterWindow(BaseWindowDialog):
                 selectedValue = ''
                 listitem.select(True)
 
-            for i in range(len(data['results'][index]['items'])):
+            for i in xrange(len(data['results'][index]['items'])):
                 item = data['results'][index]['items'][i]
                 listitem = xbmcgui.ListItem(label=item['title'], label2=item['value'])
                 cl.addItem(listitem)
@@ -460,9 +459,9 @@ class FilterWindow(BaseWindowDialog):
         if self.cancel:
             return self.sdata
 
-        for i in range(4):
+        for i in xrange(4):
             cl = self.getControl(1620 + i)
-            for index in range(0, cl.size()):
+            for index in xrange(0, cl.size()):
                 if cl.getListItem(index).isSelected():
                     if self.pdata[i]['cat'] == 'ob':
                         self.sdata[self.pdata[i]['cat']] = self.pdata[i]['items'][index]['value']
@@ -477,16 +476,16 @@ class FilterWindow(BaseWindowDialog):
     def updateSelection(self, controlId):
         if controlId >= 1620 and controlId <= 1623:
             selected = self.getControl(controlId).getSelectedPosition()
-            for index in range(self.getControl(controlId).size()):
+            for index in xrange(self.getControl(controlId).size()):
                 if index != selected and self.getControl(controlId).getListItem(index).isSelected() is True:
                     self.getControl(controlId).getListItem(index).select(False)
             self.getControl(controlId).getSelectedItem().select(True)
 
     def onClick(self, controlId):
         if controlId == 1610:
-            for i in range(4):
+            for i in xrange(4):
                 cl = self.getControl(1620 + i)
-                for index in range(1, cl.size()):
+                for index in xrange(1, cl.size()):
                     cl.getListItem(index).select(False)
                 cl.getListItem(0).select(True)
 
@@ -647,13 +646,13 @@ class MainWindow(BaseWindow):
             return
 
         #Channel
-        for i in range(0, len(data['results']['channel']), 2):
+        for i in xrange(0, len(data['results']['channel']), 2):
             item = data['results']['channel'][i]
             listitem = xbmcgui.ListItem(label=item['title'], thumbnailImage=item['image'])
             setProperties(listitem, item)
             self.getControl(560).addItem(listitem)
 
-        for i in range(1, len(data['results']['channel']), 2):
+        for i in xrange(1, len(data['results']['channel']), 2):
             item = data['results']['channel'][i]
             listitem = xbmcgui.ListItem(label=item['title'], thumbnailImage=item['image'])
             setProperties(listitem, item)
@@ -1716,12 +1715,9 @@ class SelectWindow(BaseWindow):
         self.pdata = data
 
         total = len(data)
-        for i in range(total, 0, -20):
+        for i in xrange(total, 0, -20):
             start = str(i)
-            if i - 19 > 0:
-                end = str(i - 19)
-            else:
-                end = str(1)
+            end = str(i - 19) if i > 19 else str(1)
             listitem = xbmcgui.ListItem(label=start + '-' + end)
             listitem.setProperty('start', start)
             listitem.setProperty('end', end)
@@ -1746,7 +1742,7 @@ class SelectWindow(BaseWindow):
         if len(self.pdata) > 1:
             if self.pdata[0]['title'] != self.pdata[1]['title']:
                 lastSpace = 0
-                for i in range(1, len(self.pdata[0]['title'])):
+                for i in xrange(1, len(self.pdata[0]['title'])):
                     if self.pdata[0]['title'][:i] != self.pdata[1]['title'][:i]:
                         break
                     if self.pdata[0]['title'][i - 1] == ' ':
@@ -1756,7 +1752,7 @@ class SelectWindow(BaseWindow):
                 else:
                     trim = self.pdata[0]['title'][:lastSpace]
                 fromTitle = True
-        for i in range(start, end - 1, -1):
+        for i in xrange(start, end - 1, -1):
             if fromTitle:
                 listitem = xbmcgui.ListItem(label=self.pdata[i-1]['title'].replace(trim, ''), label2=str(i-1))
             else:
@@ -1908,7 +1904,7 @@ def play(vid, playContinue=False):
             listitem.setInfo(type="Video", infoLabels={"Title": v_title})
             playlist.add('http://127.0.0.1:%d' % port, listitem)
         elif settings_data['play_type'][settings['play']] == 'list':
-            for i in range(len(urls)):
+            for i in xrange(len(urls)):
                 title = v_title + ' - 第 %d/%d 节' % (i+1, len(urls))
                 listitem = xbmcgui.ListItem(title)
                 listitem.setInfo(type="Video", infoLabels={"Title": title})

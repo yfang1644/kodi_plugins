@@ -133,7 +133,7 @@ class RenRenMeiJu():
         dic = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         dic += "abcdefghijklmnopqrstuvwxyz0123456789"
         name = ''
-        for x in range(0,8):
+        for x in xrange(8):
             name += dic[randrange(62)]
 
         MD5 = hashlib.md5()

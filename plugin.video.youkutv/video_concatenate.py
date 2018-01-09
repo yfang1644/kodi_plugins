@@ -22,7 +22,7 @@ class flv:
 
         #Adjust positions and times
         total_duration = 0
-        for i in range(len(durations)):
+        for i in xrange(len(durations)):
             total_duration += durations[i]
 
         #Calculate the size of new header
@@ -85,7 +85,7 @@ class flv:
         offset += 18
         assert(offset + pos_count * 9 <= len(data))
 
-        for i in range(pos_count):
+        for i in xrange(pos_count):
             positions.append(struct.unpack('>d', data[offset + 1: offset + 9])[0])
             offset += 9
 
@@ -98,7 +98,7 @@ class flv:
         offset += 10
         assert(offset + times_count * 9 <= len(data))
 
-        for i in range(times_count):
+        for i in xrange(times_count):
             times.append(struct.unpack('>d', data[offset + 1: offset + 9])[0])
             offset += 9
 
@@ -282,7 +282,7 @@ class video_concatenate:
                     self.log('Meta: %d' % (len(header)))
                     self.log('Pos Count: %d' % (len(positions)))
                     output = ''
-                    for i in range(len(positions)):
+                    for i in xrange(len(positions)):
                         output += '{%f, %d}, ' % (times[i], int(positions[i]))
                     self.log(output)
                     break
@@ -311,7 +311,7 @@ class video_concatenate:
         times = []
 
         increased = 0
-        for i in range(1, len(infos)):
+        for i in xrange(1, len(infos)):
             if len(infos[i]) == 0:
                 return 0, [], 0, 0, 0, 0, 0
             increased += len(infos[i][4])
@@ -319,7 +319,7 @@ class video_concatenate:
         self.log('Increased: %d' % (increased))
 
         #Process all infomations
-        for i in range(len(infos)):
+        for i in xrange(len(infos)):
             if len(infos[i]) == 0:
                 return 0, [], 0, 0, 0, 0, 0
 
@@ -328,12 +328,12 @@ class video_concatenate:
 
             if i != 0:
                 length -= len(info[2])
-                for j in range(len(info[4])):
+                for j in xrange(len(info[4])):
                     positions.append(info[4][j] + total_size - len(info[2]))
                     times.append(info[5][j] + total_seconds)
             else:
                 length += increased
-                for j in range(len(info[4])):
+                for j in xrange(len(info[4])):
                     positions.append(info[4][j] + increased)
                     times.append(info[5][j] + total_seconds)
 
@@ -352,7 +352,7 @@ class video_concatenate:
             self.log(videos[-1])
 
         output = ''
-        for i in range(len(positions)):
+        for i in xrange(len(positions)):
             output += '{%f, %d}, ' % (times[i], int(positions[i]))
         self.log(output)
 
@@ -404,7 +404,7 @@ class video_concatenate:
         #Adjust the starting bytes to keyframe
         keyframe_start = requested_start
         if keyframe_start != 0:
-            for i in range(1, len(self.positions)):
+            for i in xrange(1, len(self.positions)):
                 if requested_start < self.positions[i]:
                     break
             keyframe_start = self.positions[i - 1]

@@ -170,7 +170,7 @@ def select(name, url):
         selurl = si[sel]['href'].split('/')
         selurl = re.compile('(.+?).html').findall(selurl[-1])
         selurl = selurl[0].split('_')
-        for i in range(1, 14):
+        for i in xrange(1, 14):
             if selurl[i] != 'p%d' % i:
                 lurl[i] = selurl[i]
 
@@ -260,6 +260,7 @@ def episodelist2(url):
             'path': url_for('playvideo', url=item['pageUrl']),
             'thumbnail': item['largePicUrl'],
             'is_playable': True,
+            'info': {'title': item['subName'].encode('utf-8')},
         })
 
     return items
@@ -317,8 +318,8 @@ def livechannel():
 @plugin.route('/liveplay/<station_id>')
 def liveplay(station_id):
     link = get_html(LIVEID_URL % station_id)
-    parsed_json = loads(link.decode('utf-8'))
-    url = httphead(parsed_json['data']['hls'].encode('utf-8'))
+    parsed_json = loads(link)
+    url = httphead(parsed_json['data']['hls'])
 
     # link = get_html(url)
     # parsed_json = loads(link.decode('utf-8'))
@@ -378,7 +379,8 @@ def search():
             items.append({
                 'label': series['title'],
                 'path': url_for('playvideo', url=httphead(series['href'])),
-                'is_playable': True
+                'is_playable': True,
+                'info': {'title': series['title']},
             })
 
     return items

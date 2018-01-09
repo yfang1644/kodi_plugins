@@ -143,8 +143,7 @@ def _getDOMElements(item, name, attrs):
             lst2 = []
         else:
             log("Setting new list " + repr(lst2), 5)
-            test = range(len(lst))
-            test.reverse()
+            test = xrange(len(lst)-1,-1,-1)
             for i in test:  # Delete anything missing from the next list.
                 if not lst[i] in lst2:
                     log("Purging mismatch " + str(len(lst)) + " - " + repr(lst[i]), 3)
@@ -219,7 +218,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
     if len(tmp) > 0:
         filters = parseDOM(tmp[0], 'dt')
         dd = parseDOM(tmp[0], 'dd')
-        for k in range(len(filters)):
+        for k in xrange(len(filters)):
             links = parseDOM(dd[k], 'a', ret='href')
             names = parseDOM(dd[k], 'a')
             label = re.sub('^按', '', filters[k].encode('utf-8'))
@@ -261,7 +260,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
     videos = parseDOM(data, 'a', attrs={'class': 'ui-list-ct'})
     video_names = parseDOM(data, 'a', attrs={'class': 'ui-list-ct'}, ret='title')
     video_links = parseDOM(data, 'a', attrs={'class': 'ui-list-ct'}, ret='href')
-    for i in range(len(videos)):
+    for i in xrange(len(videos)):
         tmp = CheckValidList(parseDOM(videos[i], 'p', attrs={'class': 'ui-pic'}))
         spcs = []
         # get mask
@@ -286,7 +285,7 @@ def GetPPTVVideoList(url, thispage, only_filter=False):
 
     # get TV list
     if url == PPTV_TV_LIST:
-        for i in range(PPTV_TV_AREAS):
+        for i in xrange(PPTV_TV_AREAS):
             tmp = get_html(PPTV_TV_AREA_URL + str(i + 1))
             tmp = re.sub('^\s*\(', '', tmp)
             tmp = re.sub('\)\s*$', '', tmp)
@@ -445,7 +444,7 @@ def flvcd_sc_input(sc_base, sc_in, sc_time):
     sc_t = int(sc_time / 600000)
     sc_out = ""
 
-    for i in range(0, len(sc_in)):
+    for i in xrange(len(sc_in)):
         j = (ord(sc_in[i]) ^ ord(sc_base[i]) ^ sc_t) % ord('z')
         c = ''
         if j < ord('0'):
@@ -648,7 +647,7 @@ def playVideo(params):
     v_pos = int(tmp[0])
     name = '.'.join(tmp[1:])
 
-    for x in range(v_pos, psize):
+    for x in xrange(v_pos, psize):
         p_item = playlistA.__getitem__(x)
         p_url = p_item.getfilename(x)
         p_list = p_item.getdescription(x)
@@ -657,7 +656,7 @@ def playVideo(params):
 
         ppurls = video_from_url(p_url, level=quality)
         if ppurls and len(ppurls) > 0:
-            for i in range(0, len(ppurls)):
+            for i in xrange(len(ppurls)):
                 title = p_list + ' 第 %d/%d' % (i + 1, len(ppurls)) + ' 节'
                 liz = ListItem(title, thumbnailImage=thumb)
                 liz.setInfo(type='Video', infoLabels={'Title': title})
