@@ -121,6 +121,7 @@ def videolist(name, url):
             'label': title + ' ' + mask + extra,  
             'path': url_for(mode, url=href),
             'thumbnail': img,
+            'is_playable': True if mode == 'playvideo' else False,
             'info': {'title': title, 'plot': info}
         })
 
