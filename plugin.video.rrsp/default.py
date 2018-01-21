@@ -230,19 +230,20 @@ def movies(page, catid):
 
 @plugin.route('/videodetail/<videoId>/<title>')
 def videodetail(videoId, title):
-    video = Meiju.video_detail(videoId)
-    play_url = video['data']['playLink']
-    if play_url:
-        play_url = play_url.split('|')
+    video = Meiju.video_detail2(videoId)
+    url = video['data']['videoDetailView']['playLink']
+    if 'acfun' in url:
+        play_url = video_from_acfun(url)
+    elif 'youku' in url:
+        play_url = video_from_youku(url)
+    elif 'letv' in url:
+        play_url = video_from_letv(url)
     else:
-        video = Meiju.video_detail2(videoId)
-        url = video['data']['videoDetailView']['playLink']
-        if 'acfun' in url:
-            play_url = video_from_acfun(url)
-        elif 'youku' in url:
-            play_url = video_from_youku(url)
-        elif 'letv' in url:
-            play_url = video_from_letv(url)
+        video = Meiju.video_detail(videoId)
+        play_url = video['data']['playLink']
+        if play_url:
+            #play_url = play_url.replace('ccode=0502', 'ccode=0508')
+            play_url = play_url.split('|')
         else:
             xbmcgui.Dialog().ok('视频地址' + url.encode('utf-8'),
                                 '请使用其他插件搜索播放')

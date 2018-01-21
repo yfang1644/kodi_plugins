@@ -7,8 +7,14 @@ from urllib import quote_plus
 import re
 from json import loads
 from bs4 import BeautifulSoup
+from urlparse import urlparse
 from common import get_html
 from sohu import video_from_url, video_from_vid
+
+from iqiyi import video_from_url as video_from_iqiyi
+from qq import video_from_url as video_from_qq
+from funshion import video_from_url as video_from_fun
+from youku import video_from_url as video_from_youku
 
 ########################################################################
 # 搜狐视频 tv.sohu.com
@@ -19,8 +25,8 @@ url_for = plugin.url_for
 
 # Plugin constants
 LIVEID_URL = 'http://live.tv.sohu.com/live/player_json.jhtml?lid=%s&type=1'
-HOST_URL = 'http://tv.sohu.com'
-LIST_URL = 'http://so.tv.sohu.com'
+HOST_URL = 'https://tv.sohu.com'
+LIST_URL = 'https://so.tv.sohu.com'
 PROGRAM_URL = 'http://poll.hd.sohu.com/live/stat/menu-segment.jsonp?num=8&sid=%d'
 
 BANNER_FMT = '[COLOR FFDEB887] %s [/COLOR]'
@@ -38,6 +44,7 @@ def httphead(url):
         url = LIST_URL + url
 
     return url
+
 
 @plugin.route('/stay')
 def stay():
@@ -58,11 +65,29 @@ def playvideo(url):
     plugin.set_resolved_url(stackurl)
 
 
+@plugin.route('/playvideo_other/<url>/<site>')
+def playvideo_other(url, site):
+    if site == 'qq':
+        resolver = video_from_qq
+    elif site == 'fun':
+        resolver = video_from_fun
+    elif site == 'iqiyi':
+        resolver = video_from_iqiyi
+    elif site == 'youku':
+        resolver = video_from_youku
+    else:
+        return
+
+    urls = resolver(httphead(url))
+
+    stackurl = 'stack://' + ' , '.join(urls)
+    plugin.set_resolved_url(stackurl)
+
+
 @plugin.route('/videolist/<name>/<url>')
 def videolist(name, url):
     plugin.set_content('TVShows')
     html = get_html(url)
-    html = re.sub('\r|\n|\t', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')
 
     surl = url.split('/')
@@ -180,6 +205,61 @@ def select(name, url):
     return videolist(name, url)
 
 
+def sohuvideolist(playlistid):
+    #listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
+    #listapi = 'http://pl.hd.sohu.com/videolist?playlistid=9395603&order=0&cnt=1&withLookPoint=1&preVideoRule=1'
+    listapi = 'http://pl.hd.sohu.com/videolist?playlistid=%s'
+
+    link = get_html(listapi % playlistid, decoded=False)
+    videos = loads(link.decode('gbk'))['videos']
+
+    items = []
+    for item in videos:
+        p_name = item['showName'].encode('utf-8')
+        p_thumb = item['largePicUrl'].encode('utf-8')
+        p_url = item['pageUrl'].encode('utf-8')
+        p_vid = str(item['vid']).encode('utf-8')
+        p_tvId = str(item['tvId']).encode('utf-8')
+        items.append({
+            'label': p_name,
+            'path': url_for('playvideo', url=p_url),
+            'thumbnail': p_thumb,
+            'is_playable': True,
+            'info': {
+                'title': p_name,
+                'duration': int(item['playLength']),
+                'plot': item['videoDesc'],
+                'episode': int(item['order'])
+            }
+        })
+    return items
+
+
+def othersite(link):
+    sitemap = {'qq': 'QQ', 'youku': '优酷', 'fun': '风行', 'iqiyi': '爱奇艺'}
+
+    tree = BeautifulSoup(link, 'html.parser')
+    soups = tree.findAll('div', {'class': 'episode cfix'})
+
+    items = []
+    for soup in soups:
+        lists = soup.findAll('a')
+        for item in lists:
+            spliturl = urlparse(item['href'])
+            site = spliturl.netloc.split('.')[1]
+            try:
+                siteinfo = sitemap[site]
+            except:
+                continue
+            items.append({
+                'label': item.text.encode('utf-8') + '(' + siteinfo + ')',
+                'path': url_for('playvideo_other', url = item['href'], site=site),
+                'is_playable': True,
+                'info': {'title': item.text.encode('utf-8')}
+            })
+    return items
+
+
 @plugin.route('/episodelist1/<url>')
 def episodelist1(url):
     plugin.set_content('TVShows')
@@ -190,32 +270,10 @@ def episodelist1(url):
 
     items = []
     if len(match0) > 0:
-        #listapi = 'http://hot.vrs.sohu.com/vrs_videolist.action?'
-        #listapi = 'http://pl.hd.sohu.com/videolist?playlistid=9395603&order=0&cnt=1&withLookPoint=1&preVideoRule=1'
-        listapi = 'http://pl.hd.sohu.com/videolist?playlistid=%s'
-
-        link = get_html(listapi % match0[0], decoded=False)
-        videos = loads(link.decode('gbk'))['videos']
-
-        for item in videos:
-            p_name = item['showName'].encode('utf-8')
-            p_thumb = item['largePicUrl'].encode('utf-8')
-            p_url = item['pageUrl'].encode('utf-8')
-            p_vid = str(item['vid']).encode('utf-8')
-            p_tvId = str(item['tvId']).encode('utf-8')
-            items.append({
-                'label': p_name,
-                'path': url_for('playvideo', url=p_url),
-                'thumbnail': p_thumb,
-                'is_playable': True,
-                'info': {
-                    'title': p_name,
-                    'duration': int(item['playLength']),
-                    'plot': item['videoDesc'],
-                    'episode': int(item['order'])
-                }
-            })
-
+        if match0[0] != '0':
+            items = sohuvideolist(match0[0])
+        else:
+            items = othersite(link)
     else:
         tree = BeautifulSoup(link, 'html.parser')
         soup2 = tree.find_all('ul', {'class': 'list list-120 cfix'})
@@ -401,7 +459,6 @@ def root():
 
     url = '/list_p1_p2_p3_p4_p5_p6_p7_p8_p9_p10_p11_p12_p13.html'
     html = get_html(LIST_URL + url)
-    html = re.sub('\r|\n|\t', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'sort-nav cfix'})
 
@@ -412,5 +469,7 @@ def root():
             'label': title,
             'path': url_for('videolist', name=title, url=httphead(prog['href']))
         }
+
+
 if __name__ == '__main__':
     plugin.run()
