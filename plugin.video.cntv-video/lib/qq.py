@@ -62,11 +62,11 @@ class QQ():
         return params
 
     def video_from_vid(self, vid, **kwargs):
-        level = kwargs.get('level', -1)
+        level = kwargs.get('level', 0)
 
         player_pid = uuid.uuid4().hex.upper()
         profile = 'sd'
-        for x in range(2):
+        for x in xrange(2):
             params = {
                 'fp2p': 1,
                 'pid': player_pid,
@@ -133,7 +133,7 @@ class QQ():
         urls =[]
 
         fns = filename.split('.')
-        for idx in range(1, items + 1):
+        for idx in xrange(1, items + 1):
             if num_clips:
                 filename = '%s.%s.%d.%s' % (fns[0], fns[1], idx, fns[2])
 
@@ -157,8 +157,10 @@ class QQ():
         return urls
 
     def video_from_url(self, url, **kwargs):
-        html = get_html(url)
-        vid = match1(html, 'vid:\s*\"([^\"]+)')
+        vid = match1(url, 'v.qq.com/x/page/(\w+).html')
+        if not vid:
+            html = get_html(url)
+            vid = match1(html, 'vid:\s*\"([^\"]+)')
         
         return self.video_from_vid(vid, **kwargs)
 

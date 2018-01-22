@@ -20,15 +20,15 @@ class IQiyi():
         macid=''
         chars = 'abcdefghijklnmopqrstuvwxyz0123456789'
         size = len(chars)
-        for i in range(32):
+        for i in xrange(32):
             macid += list(chars)[randrange(size)]
         return macid
 
     def get_vf(self, url_params):
         '''计算关键参数vf'''
         sufix=''
-        for j in range(8):
-            for k in range(4):
+        for j in xrange(8):
+            for k in xrange(4):
                 v4 = 13 * (66 * k + 27 * j) % 35
                 if ( v4 >= 10 ):
                     v8 = v4 + 88

@@ -3,8 +3,7 @@
 
 from json import loads
 import time
-from random import random
-import urlparse
+from urlparse import urlparse
 import re
 from common import get_html, r1
 
@@ -48,7 +47,7 @@ class Sohu():
     v_api2 = 'http://my.tv.sohu.com/play/videonew.do?vid=%s&referer=http://my.tv.sohu.com'
 
     def real_url(self, host, vid, new, clipURL, ck):
-        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t='+str(random())+'&rb=1'
+        url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t=0&rb=1'
         try:
             return loads(get_html(url))['url']
         except:
@@ -69,7 +68,7 @@ class Sohu():
         level = kwargs.get('level', 0)
         qtyp = vidlist[level]
 
-        #if re.match(r'http[s]://tv.sohu.com/', url):
+        #if re.match(r'http?://tv.sohu.com/', url):
             # if extractor_proxy:
             #     set_proxy(tuple(extractor_proxy.split(":")))
         try:
@@ -95,7 +94,7 @@ class Sohu():
         urls = []
         assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
         for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
-            clipURL = urlparse.urlparse(clip).path
+            clipURL = urlparse(clip).path
             url = self.real_url(host, vid, new, clipURL, ck)
             if url:
                 urls.append(url + '|RANGE=')

@@ -22,7 +22,7 @@ def get_timestamp():
 
 #@DEPRECATED
 def get_key(t):
-    for s in range(0, 8):
+    for s in xrange(8):
         e = 1 & t
         t >>= 1
         e <<= 31
@@ -39,12 +39,12 @@ class LeTV():
             loc2 = bytearray(data[5:])
             length = len(loc2)
             loc4 = [0] * (2 * length)
-            for i in range(length):
+            for i in xrange(length):
                 loc4[2 * i] = loc2[i] >> 4
                 loc4[2 * i + 1] = loc2[i] & 15
             loc6 = loc4[len(loc4) - 11:] + loc4[:len(loc4) - 11]
             loc7 = [0] * length
-            for i in range(length):
+            for i in xrange(length):
                 loc7[i] = (loc6[2 * i] << 4) + loc6[2 * i + 1]
             return ''.join([chr(i) for i in loc7])
         else:

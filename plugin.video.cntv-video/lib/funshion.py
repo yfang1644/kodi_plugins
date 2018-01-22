@@ -64,8 +64,13 @@ class Funshion():
             video_dic[i['code']] = i['http']
 
         level = kwargs.get('level', 0)
-        quality_preference_list = ['tv', 'dvd', 'hd', 'sdvd']
-        quality = quality_preference_list[level]
+        quality_preference_list = ('sdvd', 'hd', 'dvd', 'tv')
+        for q in quality_preference_list:
+            if q in video_dic:
+                quality = q
+                break
+        else:
+            quality = quality_preference_list[level]
 
         url = video_dic[quality]
         html = get_html(url)

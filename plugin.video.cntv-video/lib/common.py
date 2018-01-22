@@ -40,7 +40,7 @@ def match1(text, *patterns):
 
 
 def urlopen_with_retry(*args, **kwargs):
-    for i in range(10):
+    for i in xrange(10):
         try:
             return urllib2.urlopen(*args, **kwargs)
         except socket.timeout:
