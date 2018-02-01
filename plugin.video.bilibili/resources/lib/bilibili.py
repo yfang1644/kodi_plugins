@@ -390,7 +390,8 @@ class Bilibili():
         urls = []
         for durl in doc.getElementsByTagName('durl'):
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
-            urls.append(u + '|Referer=https://www.bilibili.com')
+            urls.append(u)
+            #urls.append(u + '|Referer=https://www.bilibili.com')
 
         return urls
 

@@ -204,7 +204,8 @@ def episodelist(url):
             'label': item['title'],
             'path': url_for('playvideo', url=httphead(item.a['href'])),
             'is_playable': True,
-            'info': {'title': item['title'], 'plot': intro.text}
+            'info': {'title': item['title'],
+                     'plot': intro.text if intro else ''}
         })
 
     # 相关视频
@@ -342,7 +343,7 @@ def videolist(url, filter):
 @plugin.route('/')
 def index():
     yield {
-        'label': '[COLOR green] 【优酷视频 - 搜索】[/COLOR]',
+        'label': '[COLOR green]【优酷视频 - 搜索】[/COLOR]',
         'path': url_for('search')
     }
 

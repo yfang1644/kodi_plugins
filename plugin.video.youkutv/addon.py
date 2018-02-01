@@ -5,19 +5,17 @@
 import xbmcgui
 import xbmcaddon
 import xbmc
-import json
+from json import loads
 import sys
 import urllib
 import urllib2
-import gzip
-import StringIO
 import re
 import os
 import time
 import threading
 import socket
-import base64
 import cookielib
+from common import get_html
 from youku import video_from_vid, video_title
 from video_concatenate import video_concatenate
 try:
@@ -99,30 +97,13 @@ ACTION_CONTEXT_MENU   = 117
 
 def GetHttpData(url):
     try:
-        req = urllib2.Request(url)
-        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) {0}{1}'.
-                       format('AppleWebKit/537.36 (KHTML, like Gecko) ',
-                              'Chrome/28.0.1500.71 Safari/537.36'))
-        req.add_header('Accept-encoding', 'gzip')
-        if (url.find('play.youku.com') != -1):
-            req.add_header('referer', 'http://static.youku.com')
-        response = urllib2.urlopen(req)
-        httpdata = response.read()
-        if response.headers.get('content-encoding', None) == 'gzip':
-            httpdata = gzip.GzipFile(fileobj=StringIO.StringIO(httpdata)).read()
-        response.close()
-        match = re.compile('encodingt=(.+?)"').findall(httpdata)
-        if len(match) <= 0:
-            match = re.compile('meta charset="(.+?)"').findall(httpdata)
-        if len(match) > 0:
-            charset = match[0].lower()
-            if (charset != 'utf-8') and (charset != 'utf8'):
-                httpdata = unicode(httpdata, charset).encode('utf8')
+        headers = {'referer': 'http://static.youku.com'}
+        httpdata = loads(get_html(url, headers=headers))
     except:
         if xbmcgui.Dialog().yesno('错误', '网络超时，是否继续？'):
             return GetHttpData(url)
         log('Frech fail')
-        httpdata = '{"status": "Fail"}'
+        httpdata = {'status': 'failed'}
 
     return httpdata
 
@@ -410,7 +391,6 @@ class FilterWindow(BaseWindowDialog):
             return
 
         data = GetHttpData(HOST + 'layout/smarttv/filter_order?' + IDS + '&cid=' + self.sdata['cid'] + '&type=show')
-        data = json.loads(data)
         if 'status' not in data:
             return
         if data['status'] != 'success':
@@ -461,7 +441,7 @@ class FilterWindow(BaseWindowDialog):
 
         for i in xrange(4):
             cl = self.getControl(1620 + i)
-            for index in xrange(0, cl.size()):
+            for index in xrange(cl.size()):
                 if cl.getListItem(index).isSelected():
                     if self.pdata[i]['cat'] == 'ob':
                         self.sdata[self.pdata[i]['cat']] = self.pdata[i]['items'][index]['value']
@@ -599,7 +579,6 @@ class MainWindow(BaseWindow):
             return
 
         data = GetHttpData(HOST + 'tv/main?' + IDS)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -641,7 +620,6 @@ class MainWindow(BaseWindow):
             return
 
         data = GetHttpData(HOST + 'tv/main/top?' + IDS)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -745,7 +723,6 @@ class TopWindow(BaseWindow):
 
         #Catagory
         data = GetHttpData(HOST + 'tv/top/menu?' + IDS + '&top_id=' + self.sdata)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -778,7 +755,6 @@ class TopWindow(BaseWindow):
                 url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -850,7 +826,6 @@ class ChannelWindow(BaseWindow):
 
         #Catagory
         data = GetHttpData(HOST + 'tv/v2_0/childchannel/list?' + IDS + '&cid=' + self.sdata)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -888,7 +863,6 @@ class ChannelWindow(BaseWindow):
                 url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
-            data = json.loads(data)
             if 'status' not in data:
                 self.hideBusy()
                 return
@@ -1003,7 +977,6 @@ class OtherWindow(BaseWindow):
 
         #Catagory
         data = GetHttpData(HOST + 'openapi-wireless/layout/smarttv/channellist?' + IDS)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -1038,7 +1011,6 @@ class OtherWindow(BaseWindow):
                 url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -1158,7 +1130,6 @@ class ResultWindow(BaseWindow):
 
         #Catagory
         data = GetHttpData(HOST + 'layout/android3_0/searchfilters?' + IDS)
-        data = json.loads(data)
 
         if data.get('status', '') != 'success':
             return
@@ -1204,7 +1175,6 @@ class ResultWindow(BaseWindow):
         url = HOST + 'layout/smarttv/showsearch?copyright_status=1&video_type=1&keyword=' + urllib.quote_plus(self.sdata) + '&' + IDS
 
         data = GetHttpData(url)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -1227,7 +1197,6 @@ class ResultWindow(BaseWindow):
                 url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -1375,7 +1344,6 @@ class SearchWindow(BaseWindow):
                 data = GetHttpData(HOST + 'openapi-wireless/keywords/suggest?' + IDS + '&keywords=' + urllib.quote_plus(self.keywords))
                 title_key = 'keyword'
 
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -1585,7 +1553,6 @@ class DetailWindow(BaseWindow):
 
         try:
             data = GetHttpData(HOST + 'layout/smarttv/play/detail?' + IDS + '&id=' + self.sdata)
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -1631,7 +1598,6 @@ class DetailWindow(BaseWindow):
             self.getControl(740).reset()
 
             data = GetHttpData(HOST + 'common/shows/relate?' + IDS + '&id=' + self.sdata)
-            data = json.loads(data)
             if data.get('status', '') != 'success':
                 self.hideBusy()
                 return
@@ -1706,7 +1672,6 @@ class SelectWindow(BaseWindow):
         self.getControl(801).setLabel('剧集:')
 
         data = GetHttpData(HOST + 'layout/smarttv/shows/' + self.sdata + '/series?' + IDS)
-        data = json.loads(data)
         if data.get('status', '') != 'success':
             return
 
@@ -1896,24 +1861,10 @@ def play(vid, playContinue=False):
         playlist = xbmc.PlayList(1)
         playlist.clear()
 
-        if settings_data['play_type'][settings['play']] == 'concatenate' and resolution_map[resolution] == 'flv':
-            vc.start(urls)
-            port = vc.get_port()
-            assert(port != 0)
-            listitem = xbmcgui.ListItem(v_title)
-            listitem.setInfo(type="Video", infoLabels={"Title": v_title})
-            playlist.add('http://127.0.0.1:%d' % port, listitem)
-        elif settings_data['play_type'][settings['play']] == 'list':
-            for i in xrange(len(urls)):
-                title = v_title + ' - 第 %d/%d 节' % (i+1, len(urls))
-                listitem = xbmcgui.ListItem(title)
-                listitem.setInfo(type="Video", infoLabels={"Title": title})
-                playlist.add(urls[i], listitem)
-        else:
-            playurl = 'stack://' + ' , '.join(urls)
-            listitem = xbmcgui.ListItem(v_title)
-            listitem.setInfo(type="Video", infoLabels={"Title": v_title})
-            playlist.add(playurl, listitem)
+        playurl = 'stack://' + ' , '.join(urls)
+        listitem = xbmcgui.ListItem(v_title)
+        listitem.setInfo(type="Video", infoLabels={"Title": v_title})
+        playlist.add(playurl, listitem)
     except:
         xbmc.executebuiltin("Dialog.Close(busydialog)")
         xbmcgui.Dialog().ok('提示框', '异常地址，无法播放')

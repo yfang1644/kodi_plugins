@@ -24,29 +24,6 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.youku2"
-    name="优酷视频2(YouKu2)" version="1.0.2"
-    provider-name="yfang1644">
-    <requires>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.8"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <language></language>
-        <summary lang="en">YouKu Video (plain version)</summary>
-        <summary lang="zh">优酷视频插件(平铺版)</summary>
-        <description lang="en">YouKu is china's largest video sharing site.</description>
-        <description lang="zh">优酷视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku2</source>
-		<email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
     version="1.8.0"
@@ -381,26 +358,6 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.youkutv"
-    name="YouKu TV" version="1.7.8"
-    provider-name="catro, yfang1644">
-    <requires>
-        <import addon="script.common.plugin.cache" version="0.9.1"/>
-        <import addon="plugin.video.cntv-video" version="1.0.8"/>
-    </requires>
-    <extension point="xbmc.python.script" library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <language></language>
-        <summary>优酷TV</summary>
-        <description>优酷视频是中国最大的视频分享网站</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.vide.youkutv</source>
-		<email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
     version="2.3.0"
@@ -567,23 +524,68 @@
 </addon>
 
 <addon id="plugin.video.youku"
-    name="优酷视频(YouKu)"
+    name="优酷视频"
     version="1.0.0"
     provider-name="yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="plugin.video.cntv-video" version="1.0.8"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">YouKu video plugin</summary>
-        <summary lang="zh">优酷网视频插件</summary>
+        <summary lang="en">YouKu Video (plain version)</summary>
+        <summary lang="zh">优酷视频插件(平铺版)</summary>
         <description lang="en">online video from youku.com</description>
         <description lang="zh">优酷(www.youku.com)在线网络视频</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
+</addon>
+
+<addon id="plugin.video.youku2"
+    name="优酷视频2(YouKu2)" version="1.0.3"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="plugin.video.cntv-video" version="1.0.8"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <language></language>
+        <summary lang="en">YouKu Video (plain version)</summary>
+        <summary lang="zh">优酷视频插件(平铺版)</summary>
+        <description lang="en">YouKu is china's largest video sharing site.</description>
+        <description lang="zh">优酷视频</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku2</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
+</addon>
+
+<addon id="plugin.video.youkutv"
+    name="YouKu TV" version="1.7.9"
+    provider-name="catro, yfang1644">
+    <requires>
+        <import addon="script.common.plugin.cache" version="0.9.1"/>
+        <import addon="plugin.video.cntv-video" version="1.0.8"/>
+    </requires>
+    <extension point="xbmc.python.script" library="addon.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <language></language>
+        <summary>优酷TV</summary>
+        <description>优酷视频是中国最大的视频分享网站</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.vide.youkutv</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
 </addon>
 
 <addon id="plugin.video.tudou"
