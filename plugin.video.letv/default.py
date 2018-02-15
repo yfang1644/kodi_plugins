@@ -1,20 +1,29 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xbmc
-import xbmcgui
+from xbmcswift2 import Plugin, xbmc, xbmcgui
 import xbmcplugin
 import xbmcaddon
 from urllib import quote_plus
-from urlparse import parse_qsl
 import re
-import sys
 import os
-import time
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html
-from letv import video_from_url
+from letv import video_from_vid
+
+plugin = Plugin()
+url_for = plugin.url_for
+
+def httphead(url):
+    if len(url) < 2:
+        return url
+    if url[0:2] == '//':
+        url = 'http:' + url
+    elif url[0] == '/':
+        url = LIST_URL + url
+
+    return url
 
 ########################################################################
 # 乐视网(LeTv) by cmeng
@@ -30,427 +39,34 @@ from letv import video_from_url
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
-__addonid__   = __addon__.getAddonInfo('id')
-__addonname__ = __addon__.getAddonInfo('name')
 __profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
-cookieFile = __profile__ + 'cookies.letv'
-
-UserAgent = 'Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.1; Trident/6.0)'
-UserAgent = 'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; ja-jp) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5'
 
 HOST_URL = 'https://www.le.com'
 LIST_URL = 'http://list.le.com'
 ALBULM_URL = 'http://d.api.m.le.com/play/getAllVideoList?id=%s&platform=pc'
 ALBULM_URL = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
 
-BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
-INDENT_FMT0 = '[COLOR FFDEB887]      %s[/COLOR]'
-INDENT_FMT1 = '[COLOR FFDEB8FF]      %s[/COLOR]'
-RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
-VIDEO_LIST = ['电影', '电视剧', '动漫', '综艺']
-UGC_LIST = ['体育', '娱乐', '音乐', '风尚', '纪录片',
-            '财经', '汽车', '旅游', '亲子', '热点']
 
-SERIES_LIST = ['电视剧', '动漫']
-MOVIE_LIST = ['电影', '综艺']
-COLOR_LIST = ['[COLOR FFFF0000]', '[COLOR FF00FF00]', '[COLOR FFFFFF00]', '[COLOR FF00FFFF]', '[COLOR FFFF00FF]']
-
-FLVCD_PARSER_PHP = 'http://www.flvcd.com/parse.php'
-FLVCD_DIY_URL = 'http://www.flvcd.com/diy/diy00'
-
-CFRAGMAX = [10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500]
-
-
-##################################################################################
-# LeTv player class
-##################################################################################
-class LetvPlayer(xbmc.Player):
-    def __init__(self):
-        xbmc.Player.__init__(self)
-
-    def play(self, name, thumb, v_urls=None):
-        self.name = name
-        self.thumb = thumb
-        self.v_urls_size = 0
-        self.curpos = 0
-        self.is_active = True
-        self.load_url_sync = False
-        self.xbmc_player_stop = False
-        self.title = name
-        self.mCheck = True
-        self.LOVS = 0
-
-        self.v_urls = v_urls
-        if (v_urls):    # single video file playback
-            self.curpos = int(__addon__.getSetting('video_fragmentstart')) * 10
-            self.v_urls_size = len(v_urls)
-        else:    # ugc playlist playback
-            self.curpos = int(name.split('.')[0]) - 1
-            # Get the number of video items in PlayList for ugc playback
-            self.playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-            self.psize = self.playlist.size()
-
-        self.videoplaycont = __addon__.getSetting('video_vplaycont')
-        self.maxfp = CFRAGMAX[int(__addon__.getSetting('video_cfragmentmax'))]
-
-        # Start filling first buffer video and start playback
-        self.geturl()
-
-    def geturl(self):
-        if (self.v_urls and (self.curpos < self.v_urls_size)):
-            # Use double buffering for smooth playback
-            x = (self.curpos / self.maxfp) % 2
-            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
-            fs = open(self.videourl, 'wb')
-
-            endIndex = min((self.curpos + self.maxfp), self.v_urls_size)
-            self.title = "%s - 第(%s~%s)/%s节" % (self.name, str(self.curpos+1), str(endIndex), str(self.v_urls_size))
-            # print "### Preparing: " + self.title
-            self.listitem = xbmcgui.ListItem(self.title, thumbnailImage=self.thumb)
-            self.listitem.setInfo(type="Video", infoLabels={"Title":self.title})
-
-            for i in range(self.curpos, endIndex):
-                # Stop further video loading and terminate if user stop playback
-                if (self.xbmc_player_stop or pDialog.iscanceled()):
-                    self.videourl = None
-                    i = self.v_urls_size
-                    break
-
-                if (not self.isPlayingVideo()):
-                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
-                    pDialog.update(((i - self.curpos) * 100 / self.maxfp), line2="### " + self.title)
-                else:
-                    pDialog.close()
-
-                v_url = self.v_urls[i]
-                bfile = get_html(v_url)
-                # give another trial if playback is active and bfile is invalid
-                if ((len(bfile) < 30) and self.isPlayingVideo()):
-                    bfile = get_html(v_url)
-                fs.write(bfile)
-
-                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
-                if (not self.isPlayingVideo() and (i < self.v_urls_size) and (((i - self.curpos) % 4) == 3)):
-                    pDialog.close()
-                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
-                    self.load_url_sync = False
-                    xbmc.Player.play(self, self.videourl, self.listitem)
-                    # give some time to xmbc to upate its player status before continue
-                    xbmc.sleep(100)
-                    # Only reset fragment start after successful playback
-                    __addon__.setSetting('video_fragmentstart', '0')
-
-            fs.close()
-            # print "### Last video file download fragment: " + str(i)
-            # set self.curpos to the next loading video index
-            self.curpos = i + 1
-
-            # Last of video segment loaded, enable play once only
-            if (self.curpos == self.v_urls_size):
-                self.LOVS = 1
-            else:    # reset
-                self.LOVS = 0
-
-            # Start next video segment loading if sync loading not enable
-            if (not self.load_url_sync and (self.curpos < self.v_urls_size)):
-                # Reset to sync loading on subsequent video segment
-                self.load_url_sync = True
-                self.playrun()
-
-        # ugc auto playback
-        elif ((self.v_urls is None) and (self.curpos < self.psize)):
-            if (self.mCheck and not self.isPlayingVideo()):
-                pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
-
-            # find next not play item in ugc playlist
-            for idx in range(self.curpos, self.psize):
-                p_item = self.playlist.__getitem__(idx)
-                p_url = p_item.getfilename(idx)
-                # p_url auto replaced with self.videourl by xbmc after played. To refresh, back and re-enter
-                if "http:" in p_url:
-                    p_list = p_item.getdescription(idx)
-                    self.listitem = p_item  # pass all li items including the embedded thumb image
-                    self.listitem.setInfo(type="Video", infoLabels={"Title":p_list})
-                    self.curpos = idx
-                    break
-
-            x = self.curpos % 2
-            self.videourl = __profile__ + 'vfile-' + str(x) + '.ts'
-            fs = open(self.videourl, 'wb')
-
-            v_urls = video_from_url(p_url, m3u8=__m3u8__)
-            self.v_urls_size = len(v_urls)
-            self.title = "UGC list @ %s (size = %s): %s" % (str(self.curpos), str(self.v_urls_size), p_list)
-            # print "### Preparing: " + self.title
-
-            for i, v_url in enumerate(v_urls):
-                if (self.xbmc_player_stop or pDialog.iscanceled()):
-                    self.videourl = None
-                    i = self.v_urls_size
-                    break
-
-                if (not self.isPlayingVideo()):
-                    pDialog.create('视频缓冲', '请稍候。下载视频文件 ....')
-                    pDialog.update((i * 100 / self.v_urls_size), line2=self.title)
-                else:
-                    pDialog.close()
-
-                bfile = get_html(v_url)
-                fs.write(bfile)
-
-                # Start playback after fetching 4th video files, restart every 4 fetches if playback aborted unless stop by user
-                if (not self.isPlayingVideo() and (i < self.v_urls_size) and ((i % 4) == 3)):
-                    pDialog.close()
-                    # Must stop sync loading to avoid overwritten current video when onPlayerStarted
-                    self.load_url_sync = False
-                    xbmc.Player.play(self, self.videourl, self.listitem)
-                    # give some time to xmbc to upate its player status before continue
-                    xbmc.sleep(100)
-            fs.close()
-            # print "### Last video file download total fragment: %s ==> %s" % (str(i), self.title)
-            # set self.curpos to the next loading ugc index
-            self.curpos += 1
-
-            # Last of video segment loaded, enable play once only
-            if (self.curpos == self.psize):
-                self.LOVS = 1
-            else:    # reset
-                self.LOVS = 0
-
-            # Start next video segment loading if sync loading not enable
-            if (not self.load_url_sync and (self.curpos < self.psize)):
-                # Do not display dialog on subsequent UGC list loading
-                self.mCheck = False
-
-                # Reset to sync loading on subsequent ugc item
-                self.load_url_sync = True
-                self.playrun()
-
-        # close dialog on all mode when fetching end
-        # pDialog.close()
-
-    def playrun(self):
-        if (self.videourl and not self.isPlayingVideo()):
-            # print "### Player resume: %s \n### %s" % (self.title, self.videourl)
-            pDialog.close()
-            # Next video segment loading must wait until player started to avoid race condition
-            self.load_url_sync = True
-            xbmc.Player.play(self, self.videourl, self.listitem)
-            xbmc.sleep(100)
-        elif ((self.curpos < self.v_urls_size) or self.videoplaycont):
-           # print "### Async fetch next video segment @ " + str(self.curpos)
-           self.geturl()
-
-    def onPlayBackStarted(self):
-        # may display next title to playback due to async
-        # print "### onPlayBackStarted Callback: " + self.title
-        pDialog.close()
-        if (self.load_url_sync):
-            if ((self.curpos < self.v_urls_size) or self.videoplaycont):
-                # print "### Sync fetch next video segment @ " + str(self.curpos)
-                self.geturl()
-        xbmc.Player.onPlayBackStarted(self)
-
-    def onPlayBackSeek(self, time, seekOffset):
-        # print "### Player seek forward: %s / %s" % (str(time), str(seekOffset))
-        xbmc.Player.onPlayBackSeek(self, time, seekOffset)
-
-    def onPlayBackSeekChapter(self, chapter):
-        # no effect, valid on playlist playback by xmbc
-        self.curpos += 1
-        # print "### Player seek next chapter: " + str(self.curpos)
-        xbmc.Player.onPlayBackSeek(self, chapter)
-
-    def onPlayBackEnded(self):
-        # Do not restart resume playback if video aborted due to starve network data
-        if (self.videourl and self.load_url_sync):
-        # if (self.videourl):
-            # print "### onPlayBackEnded callback: Continue next video playback !!! " + str(self.LOVS)
-            if (self.LOVS < 2):
-                self.playrun()
-            else:   # reset
-                self.LOVS = 0
-            # set flag to play last video segment once only
-            if (self.LOVS == 1):
-                self.LOVS += 1
-        else:
-            # print "### onPlayBackEnded callback: Ended-Deleted !!!"
-            ## self.delTsFile(10)
-            xbmc.Player.onPlayBackEnded(self)
-
-    def onPlayBackStopped(self):
-        # print "### onPlayBackStopped callback - Ending playback!!!"
-        self.is_active = False
-        self.xbmc_player_stop = True
-
-    def delTsFile(self, end_index):
-        for k in range(end_index):
-            tsfile = __profile__ + 'vfile-' + str(k) + '.ts'
-            if os.path.isfile(tsfile):
-                try:
-                    os.remove(tsfile)
-                except:
-                    pass
-
-##################################################################################
-# Continuous Player start playback from user selected video
-# User backspace to previous menu will not work - playlist = last selected
-##################################################################################
-def playVideoUgc(params):
-    pDialog.create('匹配视频', '请耐心等候! 尝试匹配视频文件 ...')
-    pDialog.update(0)
-    videom3u8 = __addon__.getSetting('video_m3u8')
-    
-    url = params['url']
-    name = params['name']
-    thumb = params['thumb']
-    v_urls = video_from_url(url, m3u8=__m3u8__)
-
-    pDialog.close()
-
-    if len(v_urls):
-        if videom3u8 == 'true':
-            listitem = xbmcgui.ListItem(name, thumbnailImage=thumb)
-            listitem.setInfo(type="Video", infoLabels={"Title": name})
-            xbmc.Player().play(__m3u8__, listitem)
-        else:
-            xplayer.play(name, thumb, v_urls)
-
-            # need xmbc.sleep(100) to make xbmc callback working properly
-            while xplayer.is_active:
-                xbmc.sleep(100)
-    else:
-        # if '解析失败' in link: (license constraint etc)
-        xbmcgui.Dialog().ok(__addonname__, '未匹配到视频文件')
-
-
-def mainMenu():
-    li = xbmcgui.ListItem('[COLOR FF00FF00] 【乐视网 - 搜索】[/COLOR]')
-    u = sys.argv[0] + '?mode=search'
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    url = LIST_URL + '/listn/c2_t-1_a-1_y-1_s1_md_o51_d1_p.html'
-    #url = 'http://list.le.com/listn/c2_t30024_a-1_y-1_s1_md_o20_d1_p.html'
+@plugin.route('/filter/<url>')
+def filter(url):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'channel_list'})
-
-    grp = soup[0].find_all('a')
-    for prog in grp:
-        title = prog.text
-        href = LIST_URL + prog['href']
-        li = xbmcgui.ListItem(title)
-        u = sys.argv[0] + '?url=%s&mode=videolist&name=%s' % (href, title)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def listSubMenu(params):
-    url = params['url']
-    name = params.get('name')
-    html = get_html(url)
-    html = re.sub('\t|\n|\r', '', html)
-    tree = BeautifulSoup(html, 'html.parser')
-
-    #  sort mode
-    soup = tree.find_all('div', {'class': 'sort_navy'})
-    soup = soup[0].find_all('a')
-
-    li = xbmcgui.ListItem(BANNER_FMT % (name + '[排序方式]'))
-    u = sys.argv[0] + '?url=' + url
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-    for grp in soup:
-        title = grp.text
-        order = grp['data-order']
-        href = re.sub('md_o\d+', 'md_'+order, url)
-        if order in url:
-            title = INDENT_FMT1 % title
-        else:
-            title = INDENT_FMT0 % title
-        li = xbmcgui.ListItem(title)
-        u = sys.argv[0] + '?url=' + href + '&mode=videolist'
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    #  filter by types
-    soup = tree.find_all('ul', {'class': 'label_list'})
-    filter = soup[0].find_all('dl')
-
-    title = u'[COLOR FFDEB887]分类过滤[/COLOR]|'
-    for item in filter:
-        typelist = item.h2.text.replace(' ', '')
-        curr = item.find('b', {'class': 'curr'})
-        try:
-            type = curr.text
-        except:
-            type = ''
-        title += typelist + '(' + type + ')' + '|'
-
-    li = xbmcgui.ListItem(title)
-    u = sys.argv[0] + '?url=' + url + '&mode=filter&name=' + quote_plus(name)
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    soup = tree.find_all('dl', {'class': 'dl_list'})
-    for prog in soup:
-        img = prog.img['src']
-        href = prog.a['href']
-        title = prog.a['title']
-        info = '[COLOR FFD00080]%s[/COLOR] %s' % (prog.i.text, prog.span.text)
-
-        li = xbmcgui.ListItem(title + '(' + info + ')',
-                              iconImage=img, thumbnailImage=img)
-        li.setInfo(type='Video', infoLabels={'Title': title})
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=episodelist&name=' + quote_plus(name)
-        u += '&title=%s&thumb=%s' % (title, img)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    page = re.compile('p(\d+?).html').findall(url)
-    if len(page) < 1:
-        page = ['1']
-    page = int(page[0])
-    if page > 1:
-        title = BANNER_FMT % '上一页'
-        aurl = re.sub('p\d*.html', 'p%d.html' % (page-1), url)
-        u = sys.argv[0] + '?url=%s&mode=videolist' % aurl
-        u += '&name=' + quote_plus(name)
-        liz = xbmcgui.ListItem(title)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
-
-    if page < 200:
-        title = BANNER_FMT % '下一页'
-        aurl = re.sub('p\d*.html', 'p%d.html' % (page+1), url)
-        u = sys.argv[0] + '?url=%s&mode=videolist' % aurl
-        u += '&name=' + quote_plus(name)
-        liz = xbmcgui.ListItem(title)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, liz, True)
-
-    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def normalSelect(params):
-    url = params.get('url')
-    del(params['url'])
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('ul', {'class': 'label_list'})
-
-    filter = soup[0].find_all('dl')
-
+    soup = tree.find_all('div', {'class': 'list_nav'})
     dialog = xbmcgui.Dialog()
 
     urlsplit = url.split('/')
     urltype = re.compile('\w{1}.+?_').findall(urlsplit[-1])
     marktype = []
-    for item in filter:
-        title = item.h2.text.replace(' ', '')
-        si = item.find_all('a')
-        sel = dialog.select(title, [x.text for x in si])
+    for item in soup:
+        typelist = item.span.text
+        title= re.sub('\r|\n|\t| ', '', typelist)
+        li = item.findAll('li')
+        sel = dialog.select(title, [x.text for x in li])
 
         if sel >= 0:
-            selurl = si[sel]['href'].split('/')
+            if 'href' not in li[sel]: li[sel]['href'] = url
+            selurl = li[sel]['href'].split('/')
             seltype = re.compile('\w{1}.+?_').findall(selurl[-1])
             for i in seltype:
                 if i not in urltype:
@@ -461,178 +77,36 @@ def normalSelect(params):
         u1 = re.sub(type[0] + '.+?_', type, u1)
     urlsplit[-1] = u1
     url = '/'.join(urlsplit)
-    params['url'] = url
-    listSubMenu(params)
+    return videolist(url=url, page=1)
 
 
-def educationSelect(params):
-    url = params.get('url')
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('ul', {'class': 'label_list first_condition'})
-
-    title = soup[0].h2.text
-    items = soup[0].find_all('a', {'class': 'j-tab'})
-    list1 = [x.b.text for x in items]
-
-    dialog = xbmcgui.Dialog()
-    sel = dialog.select(title, list1)
-
-    if sel < 0:
-        return
-
-    soup = tree.find_all('ul', {'class': 'label_list second_condition'})
-    items = soup[0].find_all('li', {'class': 'list-body j_con%d' % sel})
-    items = items[0].find_all('a')
-    list2 = [x.b.text for x in items]
-    href = [x['href'] for x in items]
-    sel = dialog.select(list1[sel], list2)
-    if sel >= 0:
-        params['url'] = LIST_URL + href[sel]
-    listSubMenu(params)
+@plugin.route('/playvideo/<vid>')
+def playvideo(vid):
+    v_urls = video_from_vid(vid, m3u8=__m3u8__, level=3)
+    xbmc.Player().play(__m3u8__)
 
 
-def changeList(params):
-    name = params['name']
-    if name == '教育':
-        educationSelect(params)
-    else:
-        normalSelect(params)
+@plugin.route('/episodelist/<vids>/<name>')
+def episodelist(vids, name):
+    plugin.set_content('TVShows')
+    items = []
+    vlist = vids.split(',')
+    for i, vid in enumerate(vlist):
+        title = name + '-' + str(i+1)
+        items.append({
+            'label': title,
+            'path': url_for('playvideo', vid=vid, name=title),
+            'is_playable': True,
+            'info': {'title': title}
+        })
+    return items
 
 
-def album2series(url):
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'col_4'})
-
-    for item in soup:
-        href = item.a['href']
-        title = item.dt.a['title']
-        pic = item.i['data-src']
-        info = item.find('dd', {'class': 'd_cnt'}).text
-        dur = item.find('span', {'class': 'video_info'}).text
-
-        duration = 0
-        for t in dur.split(':'):
-            duration = duration * 60 + int(t)
-    
-        info = {'title': title, 'plot': info, 'duration': duration}
-        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-        li.setInfo(type='Video', infoLabels=info)
-        u = sys.argv[0] + '?url=' + href
-        u += '&mode=playvideo&name=%s&thumb=%s' % (title, pic)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
-    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-def episodesList(params):
-    url = params['url']
-    name = params['name']
-    if name in ['电视剧', '自制']:
-        url = album2series(url)
-        return
-
-    if name in ['动漫', '综艺']:
-        html = get_html(url)
-        html = re.sub('\'', '', html)
-        match = re.compile('video:\s*{.+?vid:\s*(\d+)').findall(html)
-    else:
-        match = re.compile('http.+?(\d+).html').findall(url)
-    vid = match[0]
-
-    html = get_html(ALBULM_URL % (vid))
-    jsdata = loads(html)
-
-    album = jsdata['data']['episode']['videolist']
-    number = 0
-    for series in album:
-        number += 1
-        title = series['title']
-        pic = series['pic']
-        info = series['subTitle']
-        vid = series['vid']
-        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-        li.setInfo(type='Video',
-                   infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
-    try:
-        album = jsdata['data']['otherlist']['videolist']
-    except:
-        album = []
-    number = 0
-    for series in album:
-        number += 1
-        title = series['title']
-        pic = series['pic']
-        info = series['subTitle']
-        vid = series['vid']
-        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-        li.setInfo(type='Video',
-                   infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
-    try:
-        album = jsdata['data']['periodpoint']
-    except:
-        album = []
-    number = 0
-    for series in album:
-        number += 1
-        title = series['title']
-        pic = series['pic']
-        info = series['subTitle']
-        vid = series['vid']
-        li = xbmcgui.ListItem(title, iconImage=pic, thumbnailImage=pic)
-        li.setInfo(type='Video',
-                   infoLabels={'Title': title, 'Plot': info})
-        u = sys.argv[0] + '?url=' + url + '&vid=%d' % vid
-        u += '&mode=playvideo&name=%d.%s&thumb=%s' % (number, title, pic)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
-    '''
-    match = re.compile("pageid: 'www_play'").search(html)
-    if match is not None:    # play movie
-        playVideoLetv(params)
-        return
-
-    soup = tree.find_all('div', {'class': 'list active'})
-    for list in soup:
-        part = list.find_all('dl')
-        for item in part:
-            img = item.img.get('data-src')
-            if not img:
-                img = item.img.get('src')
-
-            info = item.find('p', {'class', 'p1'})
-            href = info.a['href']
-            title = info.a.text
-            info = item.find('p', {'class', 'p2'})
-            try:
-                info = info.text
-            except:
-                info = ''
-            li = xbmcgui.ListItem(title, iconImage=img, thumbnailImage=img)
-            li.setInfo(type='Video',
-                       infoLabels={'Title': title, 'Plot': info})
-            u = sys.argv[0] + '?url=' + href
-            u += '&mode=playvideo&name=%s&thumb=%s' % (title, img)
-            xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-    '''
-    xbmcplugin.setContent(int(sys.argv[1]), 'episodes')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
-
-
-##################################################################################
-# Routine to search LeTV site based on user given keyword for:
-##################################################################################
-def searchLeTV(params):
+###############################################################################
+# Search LeTV site based on keyword
+###############################################################################
+@plugin.route('/search')
+def search():
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     # keyboard.setHiddenInput(hidden)
     xbmc.sleep(1000)
@@ -641,23 +115,12 @@ def searchLeTV(params):
         return
 
     keyword = keyboard.getText()
-    params['page'] = '1'
 
-    page = params['page']
+    page = 1
     p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
     p_url = p_url + quote_plus(keyword)
     link = get_html(p_url)
-
-    li = xbmcgui.ListItem('[COLOR FFFF0000]当前搜索: 第' + page + '页[/COLOR][COLOR FFFFFF00] (' + keyword + ')[/COLOR]')
-    u = sys.argv[0] + "?name=" + quote_plus(keyword) + "&page=" + page
-    xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-
-    if link is None:
-        li = xbmcgui.ListItem(' 抱歉，没有找到[COLOR FFFF0000] ' + keyword + ' [/COLOR]的相关视频')
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, False)
-        xbmcplugin.endOfDirectory(int(sys.argv[1]))
-        return
-
+    items = []
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
 
@@ -680,36 +143,112 @@ def searchLeTV(params):
             info = info.text
         except:
             info = ''
-
-        li = xbmcgui.ListItem(title, iconImage='', thumbnailImage=img)
-        li.setInfo(type='Video',
-                   infoLabels={'Title': title, 'Plot': info})
-
-        u = sys.argv[0] + '?url=' + href + '&mode=episodelist'
-        u += '&name=' + quote_plus('电视剧')
-        u += '&thumb=' + quote_plus(img)
-        xbmcplugin.addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    xbmcplugin.setContent(int(sys.argv[1]), 'videos')
-    xbmcplugin.endOfDirectory(int(sys.argv[1]))
+        items.append({
+            'label': title,
+            'path': url_for('episodelist', vids=1, name=title.encode('utf-8')),
+            'thumbnail': img,
+            'info': {'title': title, 'plot': info}
+        })
+    return items
 
 
-# main programs goes here #########################################
-xplayer = LetvPlayer()
-pDialog = xbmcgui.DialogProgress()
+@plugin.route('/videolist/<url>/<page>')
+def videolist(url, page):
+    plugin.set_content('TVShows')
+    html = get_html(url)
+    frontUrl = re.compile("frontUrl: '(.+)'").findall(html)[0]
+    tree = BeautifulSoup(html, 'html.parser')
 
-params = sys.argv[2][1:]
-params = dict(parse_qsl(params))
+    items = []
 
-mode = params.get('mode')
+    # filter by types
+    soup = tree.find_all('div', {'class': 'list_nav'})
 
-runlist = {
-    None: 'mainMenu()',
-    'videolist': 'listSubMenu(params)',
-    'episodelist': 'episodesList(params)',
-    'playvideo': 'playVideoUgc(params)',
-    'search': 'searchLeTV(params)',
-    'filter': 'changeList(params)'
-}
+    title = u'[COLOR yellow]分类过滤[/COLOR]|'
+    for item in soup:
+        typelist = item.span.text
+        typelist = re.sub('\r|\n|\t| ', '', typelist)
+        li = item.findAll('li')
+        curr = item.find('li', {'class': 'cur'})
+        try:
+            type = curr.text
+        except:
+            type = ''
+        type = re.sub('\r|\n|\t| ', '', type)
+        title += typelist + '(' + type + ')' + '|'
 
-exec(runlist[mode])
+    items.append({
+        'label': title,
+        'path': url_for('filter', url=url)
+    })
+
+    page = int(page)
+    if page > 1:
+        items.append({
+            'label': '上一页',
+            'path': url_for('videolist', url=url, page=page-1)
+        })
+
+    newpage = '&pn=' + str(page)
+    frontUrl = re.sub('&pn=\d+', newpage, frontUrl)
+    html = get_html(frontUrl)
+    jsdata = loads(html)['data']['arr']
+    for item in jsdata:
+        vids = item.get('vids')
+        if vids is None:
+            vids = item.get('vid')
+        if ',' in vids:
+            items.append({
+                'label': item['name'],
+                'path': url_for('episodelist', vids=vids, name=item['name'].encode('utf-8')),
+                'thumbnail': item['imgUrl'],
+                'info': {'title': item['name'], 'plot': item['description']},
+            })
+        else:
+            items.append({
+                'label': item['name'],
+                'path': url_for('playvideo', vid=vids),
+                'is_playable': True,
+                'thumbnail': item['imgUrl'],
+                'info': {'title': item['name'], 'plot': item['description']},
+            })
+
+    items.append({
+        'label': '下一页',
+        'path': url_for('videolist', url=url, page=page+1)
+    })
+
+    return items
+
+
+@plugin.route('/')
+def index():
+    plugin.set_content('videos')
+    yield {
+        'label': '[COLOR green]【乐视网 - 搜索】[/COLOR]',
+        'path': url_for('search')
+    }
+
+    url = LIST_URL + '/listn/c2_t-1_a-1_y-1_s1_md_o7_d1_p.html'
+    html = get_html(url)
+    tree = BeautifulSoup(html, 'html.parser')
+    soup = tree.find_all('ul', {'class': 'list_cnt'})
+
+    grp = soup[0].find_all('li')
+    for prog in grp:
+        try:
+            href = prog.a['href']
+        except:
+            href = url
+        title = prog.text
+        title = re.sub('\n| ', '', title)
+        yield {
+            'label': title,
+            'path': url_for('videolist', url=httphead(href), page=1)
+        }
+
+
+if __name__ == '__main__':
+    plugin.run()
+
+#http://list.le.com/getLesoData?from=pc&src=1&stype=1&ps=30&pn=2&ph=420001&dt=1&cg=2&or=4&stt=1&vt=180001&sc=30024&yr=2017&s=1

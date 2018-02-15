@@ -1,6 +1,10 @@
 ﻿########################################################################
 # 乐视网(LeTv) by cmeng
 ########################################################################
+verson 2.0.0 2018.02.15
+- import xbmcswift2, rewrite
+
+
 # Version 1.6.1 2017-03-06 (taxigps)
 - Remove obsolete program 明星
 - Fixed can't get program list of 动漫
