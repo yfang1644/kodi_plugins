@@ -4,17 +4,35 @@
 import ssl
 import time
 import urllib2 as request
+import urllib
 from json import loads
 from common import get_html, match1
+import re
 
 ####################
 cookies = None
 
 def fetch_cna():
-    url = 'http://gm.mmstat.com/yt/ykcomment.play.commentInit?cna='
-    req = request.urlopen(url)
-    return req.info()['Set-Cookie'].split(';')[0].split('=')[1]
+    def quote_cna(val):
+        if '%' in val:
+            return val
+        return urllib.quote(val)
 
+    if cookies:
+        for cookie in cookies:
+            if cookie.name == 'cna' and cookie.domain == '.youku.com':
+                print('Found cna in imported cookies. Use it')
+                return quote_cna(cookie.value)
+    url = 'http://log.mmstat.com/eg.js'
+    req = request.urlopen(url)
+    header = req.info().dict
+    try:
+        n_v = header['set-cookie']
+        value = re.compile('cna=(.+?);').findall(n_v)[0]
+    except:
+        value = 'DOG4EdW4qzsCAbZyXbU+t7Jt'
+
+    return quote_cna(value)
 
 class Youku():
     name = "优酷 (Youku)"
@@ -33,7 +51,11 @@ class Youku():
     ]
 
     def __init__(self, *args):
-        self.ccode = '0514'
+        self.ccode = '0502'
+        # Found in http://g.alicdn.com/player/ykplayer/0.5.28/youku-player.min.js
+        # grep -oE '"[0-9a-zA-Z+/=]{256}"' youku-player.min.js
+        self.ckey = 'DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND'
+
         self.title = ''
 
     def video_from_vid(self, vid, **kwargs):
@@ -67,17 +89,21 @@ class Youku():
             self.download_playlist_by_url(self.url, **kwargs)
             exit(0)
 
-        api_url = 'https://ups.youku.com/ups/get.json?vid={}&ccode={}&client_ip=192.168.1.1&utid={}&client_ts={}'.format(self.vid, self.ccode, fetch_cna(), int(time.time()))
+        api_url = 'https://ups.youku.com/ups/get.json?'
+        api_url += 'vid=' + self.vid
+        api_url += '&ccode=' + self.ccode
+        api_url += '&client_ip=192.168.1.1'
+        api_url += '&utid=' + fetch_cna()
+        api_url += '&client_ts=' + str(int(time.time()))
+        api_url += '&ckey=' + urllib.quote(self.ckey)
+
         data = loads(get_html(
             api_url,
-            headers={'Referer': 'http://static.youku.com/'}
+            headers={'Referer': 'http://v.youku.com'}
             ))
-        assert data['e']['code'] == 0, data['e']['desc']
+
         data = data['data']
-        try:
-            self.title = data['video']['title']
-        except:
-            self.title = 'XXXXXXXXXX'
+        self.title = data['video'].get('title')
 
         streams = data['stream']
 
@@ -87,8 +113,8 @@ class Youku():
         if self.level > 0:
             self.level = min(len(streams)-1, self.level)
 
-        m3u8 = streams[self.level]['m3u8_url']
-        return [m3u8]
+        m3u8 = streams[self.level].get('m3u8_url')
+        #return [m3u8]
         # m3u8_url is complete, but mp4 not
         urls = []
         for s in streams[self.level].get('segs', ''):

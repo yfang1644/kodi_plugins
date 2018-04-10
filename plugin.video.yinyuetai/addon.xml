@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
-    version="1.8.0"
+    version="1.8.1"
     provider-name="yfang1644">
     <requires>
         <import addon="plugin.video.cntv-video" version="1.0.6"/>
     </requires>
     <extension
-        point="xbmc.python.pluginsource" library="addon.py">
+        point="xbmc.python.pluginsource"
+        library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">YinYueTai video plugin</summary>
         <summary lang="zh">音悦台视频插件</summary>
         <description lang="en">Online MV from yinyuetai.com</description>
-        <description lang="zh">观看音悦台在线MV</description>
+        <description lang="zh">音悦台在线MV</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yinyuetai</source>
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
