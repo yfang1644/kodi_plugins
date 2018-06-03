@@ -8,8 +8,7 @@ import xbmcaddon
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 from bs4 import BeautifulSoup
 from urlparse import urlparse
-from urllib import urlencode
-from json import loads, dumps
+from json import loads
 from common import get_html
 import re
 
@@ -48,25 +47,21 @@ def search():
 def play(url, m3u8):
     parsed = urlparse(url)
     server = parsed.scheme + '://' + parsed.netloc
-    if int(m3u8) == 0:
-        page = get_html(url)
-        redir = re.compile('var redirecturl.*"(.+)"').findall(page)[0]
-        token = re.compile('var requestToken.*"(.+)"').findall(page)[0]
-        server = parsed.scheme + '://' + redir
-        newurl = server + '/token/' + token
-        page = get_html(newurl)
-        jspage = loads(page)
-        url = server + jspage['main']
-    m3u8 = get_html(url)
-    videourl = re.compile('(\S.*m3u8)').findall(m3u8)
-    m3u8 = get_html(server + videourl[0])
-    print m3u8
-    m3u8 = re.sub('\n/', '\n'+server + '/', m3u8)
-    with open(m3u8_file, "wb") as m3u8File:
-        m3u8File.write(m3u8)
-        m3u8File.close()
+    page = get_html(url)
+    if int(m3u8) == 1:
+        videourl = re.compile('(\S.*m3u8)').findall(page)
+        m3u8 = get_html(server + videourl[0])
+        m3u8 = re.sub('\n/', '\n'+server + '/', m3u8)
+        with open(m3u8_file, "wb") as m3u8File:
+            m3u8File.write(m3u8)
+            m3u8File.close()
 
-    plugin.set_resolved_url(m3u8_file)
+        plugin.set_resolved_url(m3u8_file)
+    else:
+        redir = re.compile('var redirecturl.*"(.+)"').findall(page)[0]
+        mp4 = re.compile('var main.*"(.+)"').findall(page)[0]
+        movie = redir + mp4
+        plugin.set_resolved_url(movie)
 
 
 @plugin.route('/episodes/<url>')
