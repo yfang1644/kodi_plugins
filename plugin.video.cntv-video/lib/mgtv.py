@@ -7,15 +7,29 @@ from os.path import dirname
 from random import randrange
 import urlparse
 from common import get_html, match1
-
+import base64
+import uuid
+import time
+from string import maketrans
+from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 
 class MGTV():
+    def generate_did_tk2(self):
+        did = str(uuid.uuid4())
+        s = 'pno=1000|ver=0.3.0001|did={}|clit={}'.format(did, int(time.time()))
+        if not isinstance(s, bytes):
+            s = s.encode()
+        e = bytearray(base64.b64encode(s).translate(maketrans(b'+/=', b'_~-')))
+        e.reverse()
+        return did, str(e)
+
     def vid_from_url(self, url, **kwargs):
         """Extracts video ID from URL.
         """
-        vid = match1(url, 'http://www.mgtv.com/b/\d+/(\d+).html')
-        if not vid:
-            vid = match1(url, 'http://www.mgtv.com/hz/bdpz/\d+/(\d+).html')
+        vid = match1(url, 'http?://www.mgtv.com/b/\d+/(\d+).html')
+        if vid is None:
+            html = get_html(url)
+            vid = match1(html, 'vid.*(\d+)')
         return vid
 
     def get_mgtv_real_url(self, m3u_url, **kwargs):
@@ -41,11 +55,19 @@ class MGTV():
         return segment_list
 
     def video_from_vid(self, vid, **kwargs):
-        api_endpoint = 'http://pcweb.api.mgtv.com/player/video?video_id='
-        html = get_html(api_endpoint + vid)
+        handlers = [HTTPCookieProcessor()]
+        install_opener(build_opener(*handlers))
+        did, tk2 = self.generate_did_tk2()
+        api_info_url = 'https://pcweb.api.mgtv.com/player/video?video_id={}&did={}&tk2={}'.format(vid, did, tk2)
+        html = get_html(api_info_url)
         content = loads(html)
 
-        # title = content['data']['info']['title']
+        title = content['data']['info']['title']
+        pm2 = content['data']['atc']['pm2']
+
+        api_source_url = 'https://pcweb.api.mgtv.com/player/getSource?video_id={}&did={}&pm2={}&tk2={}'.format(vid, did, pm2, tk2)
+        html = get_html(api_source_url)
+        content = loads(html)
         streams = content['data']['stream']
         domains = content['data']['stream_domain']
         index = randrange(len(domains))
@@ -57,7 +79,7 @@ class MGTV():
             level = min(level, len(streams)-1)
         url = streams[level]['url']
 
-        url = domain + re.sub(r'(\&arange\=\d+)', '', url)  # Un-Hum
+        url = domain + url
         content = loads(get_html(url))
         url = content['info']
 
