@@ -5,6 +5,7 @@ from json import loads
 from random import random, randrange
 import base64
 import hashlib
+from urllib import urlencode
 import urllib2
 import time
 import re
@@ -59,8 +60,19 @@ class LeTV():
     def video_from_vid(self, vid, **kwargs):
         vparamap = {0: '1300', 1: '720p', 2: '1080p'}
 
-        url = 'http://player-pc.le.com/mms/out/video/playJson?id={}&platid=1&splatid=101&format=1&tkey={}&domain=www.le.com&region=cn&source=1000&accesyx=1'.format(vid, self.calcTimeKey(int(time.time())))
-        r = get_html(url)
+        url = 'http://player-pc.le.com/mms/out/video/playJson'
+        req = {
+            'id': vid,
+            'platid': 1,
+            'splatid': 105,
+            'format': 1,
+            'tkey': self.calcTimeKey(int(time.time())),
+            'domain': 'www.le.com',
+            'region': 'cn',
+            'source': 1000,
+            'accessyx': 1
+        }
+        r = get_html(url + '?' + urlencode(req))
         info = loads(r)
         playurl = info['msgs']['playurl']
 
