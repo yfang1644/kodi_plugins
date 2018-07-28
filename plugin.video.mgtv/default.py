@@ -2,18 +2,19 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-import xbmcaddon
 from urlparse import parse_qsl
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
 from mgtv import video_from_vid
 
+plugin = Plugin()
+url_for = plugin.url_for
+
 # Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonid__   = __addon__.getAddonInfo('id')
-__addonname__ = __addon__.getAddonInfo('name')
-__cwd__       = __addon__.getAddonInfo('path')
+__addonid__   = plugin.addon.getAddonInfo('id')
+__addonname__ = plugin.addon.getAddonInfo('name')
+__cwd__       = plugin.addon.getAddonInfo('path')
 
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 BANNER_FMT2 = '[COLOR FFDE0087]%s[/COLOR]'
@@ -25,9 +26,6 @@ HOST_URL = 'http://www.mgtv.com'
 
 RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
 
-plugin = Plugin()
-
-url_for = plugin.url_for
 
 def httphead(url):
     if len(url) < 2:

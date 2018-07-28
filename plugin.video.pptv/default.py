@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui, xbmc
-import xbmcaddon
 from bs4 import BeautifulSoup
 from urllib import urlencode
 import re
@@ -14,9 +13,6 @@ from pptv import video_from_url
 
 
 # Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonid__   = __addon__.getAddonInfo('id')
-__addonname__ = __addon__.getAddonInfo('name')
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -48,7 +44,7 @@ def tvstudio(url, page):
 
 @plugin.route('/playvideo/<url>')
 def playvideo(url):
-    quality = int(__addon__.getSetting('movie_quality'))
+    quality = int(plugin.addon.getSetting('movie_quality'))
 
     urls = video_from_url(url, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)

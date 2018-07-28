@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui, xbmc
-import xbmcaddon
 from urllib import quote_plus, urlencode
 from json import loads
 from common import get_html, match1
@@ -23,11 +22,6 @@ BASEIDS = {
 ########################################################################
 # 优酷 www.youku.com
 ########################################################################
-
-# Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonname__ = __addon__.getAddonInfo('name')
-
 
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 
@@ -52,7 +46,7 @@ def next_page(endpoint, page, total_page, **kwargs):
 
 @plugin.route('/playvideo/<videoid>')
 def playvideo(videoid):
-    level = int(__addon__.getSetting('resolution'))
+    level = int(plugin.addon.getSetting('resolution'))
 
     urls = video_from_vid(videoid, level=level)
 
@@ -198,7 +192,8 @@ def channel(cid, page, filter, filters):
     try:
         site = get_html(HOST + '/layout/smarttv/item_list?' + urlencode(req))
     except:
-        xbmcgui.Dialog().ok(__addonname__, '此功能尚未实现')
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
+                            '此功能尚未实现')
         return index()
 
     jsdata = loads(site)

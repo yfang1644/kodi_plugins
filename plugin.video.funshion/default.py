@@ -2,18 +2,17 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-import xbmcaddon
 import re
 from random import randrange
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
-from funshion import videos_from_url
+from funshion import video_from_url
 
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 EXTRA = '[COLOR FF8080FF]%s[/COLOR]'
 
-HOST_URL = 'http://www.fun.tv'
+HOST_URL = 'https://www.fun.tv'
 
 # get wrong IP from some local IP
 unusableIP = ("121.32.237.24",
@@ -35,8 +34,6 @@ usableIP = ("112.25.81.203",
 ########################################################################
 
 # Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonname__ = __addon__.getAddonInfo('name')
 
 RES_LIST = [['tv', '低清'],
             ['dvd', '标清'],
@@ -50,7 +47,7 @@ url_for = plugin.url_for
 
 
 def replaceServer(url):
-    server = __addon__.getSetting('pickserver')
+    server = plugin.addon.getSetting('pickserver')
     if server == 'true':
         return url
 
@@ -157,7 +154,7 @@ def playList(url):
 
 
 def relatedList(url):
-    vid = r1('http://www.fun.tv/vplay/.*g-(\d+)', url)
+    vid = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
     # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/media?isajax=1'
     rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
     link = get_html(rel_api % vid)
@@ -222,14 +219,15 @@ def singleVideo(url, title):
 
 ##########################################################################
 def seriesList(url, title):
-    id = r1('http://www.fun.tv/vplay/.*g-(\d+)', url)
+    id = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
     purl = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
     print "XXXXXXXXXXXXXXXXXXXXXX",purl % id
     link = get_html(purl % id)
     json_response = loads(link)
     if json_response['status'] == 404:
-        xbmcgui.Dialog().ok(__addonname__, '本片暂不支持网页播放')
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
+                            '本片暂不支持网页播放')
         return []
 
     items = []
@@ -266,7 +264,7 @@ def seriesList(url, title):
 
 ##############################################################################
 def selResolution():
-    resolution = int(__addon__.getSetting('resolution'))
+    resolution = int(plugin.addon.getSetting('resolution'))
     if resolution == 4:
         list = [x[1] for x in RES_LIST]
         sel = xbmcgui.Dialog().select('清晰度', list)
@@ -280,19 +278,20 @@ def selResolution():
 def movielist(url):
     resolution = selResolution()
 
-    v_urls = videos_from_url(url, level=resolution)
+    v_urls = video_from_url(url, level=resolution)
     if len(v_urls) > 0:
         v_url = replaceServer(v_urls[0])
         plugin.set_resolved_url(v_url)
     else:
-        xbmcgui.Dialog().ok(__addonname__, '没有可播放的视频')
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
+                            '没有可播放的视频')
 
 
 @plugin.route('/albumlist/<url>/<title>')
 def albumlist(url, title):
     plugin.set_content('TVShows')
-    sid = re.search('http://www.fun.tv/vplay/.*v-(\d+)', url)
-    vid = re.search('http://www.fun.tv/vplay/.*g-(\d+)', url)
+    sid = r1('https://www.fun.tv/vplay/.*v-(\d+)', url)
+    vid = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
     if sid:
         return singleVideo(url, title)    # play single video
     elif vid:
@@ -304,7 +303,7 @@ def albumlist(url, title):
 @plugin.route('/mainlist/<url>/<filtrs>')
 def mainlist(url, filtrs):
     html = get_html(url)
-    html = re.sub('\r|\t|\n', ' ', html)
+
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'mod-videos'})
 
@@ -371,7 +370,7 @@ def mainlist(url, filtrs):
 
 @plugin.route('/')
 def index():
-    html = get_html('http://www.fun.tv/retrieve/')
+    html = get_html(HOST_URL + '/retrieve/')
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'ls-nav-bar'})
     items = soup[0].find_all('li')
@@ -379,7 +378,8 @@ def index():
     for item in items:
         yield {
             'label': item.a.text,
-            'path': url_for('mainlist', url=httphead(item.a['href']), filtrs='0')
+            'path': url_for('mainlist', url=httphead(item.a['href']),
+                            filtrs='0')
         }
 
 

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-import xbmcaddon
 from urllib import quote_plus
 import re
 from json import loads
@@ -58,7 +57,7 @@ def playvideo(url):
     urls = video_from_url(url, level=level)
 
     if len(urls) < 1:
-        xbmcgui.Dialog().ok(xbmcaddon.Addon().getAddonInfo('name'), '节目暂不能播放')
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '节目暂不能播放')
         return
 
     stackurl = 'stack://' + ' , '.join(urls)

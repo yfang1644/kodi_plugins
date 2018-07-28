@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmcaddon
+from xbmcswift2 import Plugin
 import re
 from json import loads
 from bs4 import BeautifulSoup
@@ -11,10 +11,12 @@ from common import get_html
 # www.ximalaya.com
 ########################################################################
 
+plugin = Plugin()
+url_for = plugin.url_for
+
 # Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonid__   = __addon__.getAddonInfo('id')
-__addonname__ = __addon__.getAddonInfo('name')
+__addonid__   = plugin.addon.getAddonInfo('id')
+__addonname__ = plugin.addon.getAddonInfo('name')
 
 stream_types = [
     {'itag': '1', 'container': 'm4a', 'bitrate': 'default'},
@@ -23,9 +25,6 @@ stream_types = [
 ]
 
 HOST_URL = 'http://www.ximalaya.com'
-
-plugin = Plugin()
-url_for = plugin.url_for
 
 def url_from_id(id, stream_id=2):
     api = HOST_URL + '/tracks/%s.json' % id

@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-import xbmcplugin
-import xbmcaddon
 from urllib import quote_plus
 import re
 import os
@@ -38,8 +36,7 @@ def httphead(url):
 ########################################################################
 
 # Plugin constants
-__addon__     = xbmcaddon.Addon()
-__profile__   = xbmc.translatePath(__addon__.getAddonInfo('profile'))
+__profile__   = xbmc.translatePath(plugin.addon.getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
 
 HOST_URL = 'https://www.le.com'
