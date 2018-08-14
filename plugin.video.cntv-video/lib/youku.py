@@ -4,38 +4,24 @@
 import ssl
 import time
 import urllib2 as request
-import urllib
+from urllib import quote
 from json import loads
 from common import get_html, match1
-import re
 
 ####################
 cookies = None
 
 def fetch_cna():
-    def quote_cna(val):
-        if '%' in val:
-            return val
-        return urllib.quote(val)
-
-    if cookies:
-        for cookie in cookies:
-            if cookie.name == 'cna' and cookie.domain == '.youku.com':
-                print('Found cna in imported cookies. Use it')
-                return quote_cna(cookie.value)
-    url = 'http://log.mmstat.com/eg.js'
+    url = 'https://gm.mmstat.com/yt/ykcomment.play.commentInit?cna='
     req = request.urlopen(url)
-    header = req.info().dict
-    try:
-        n_v = header['set-cookie']
-        value = re.compile('cna=(.+?);').findall(n_v)[0]
-    except:
-        value = 'DOG4EdW4qzsCAbZyXbU+t7Jt'
-
-    return quote_cna(value)
+    cookies = req.info()['Set-Cookie']
+    cna = match1(cookies, "cna=([^;]+)")
+    return cna if cna else "oqikEO1b7CECAbfBdNNf1PM1"
 
 class Youku():
     name = "优酷 (Youku)"
+    ckey_default = quote("DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND")
+    ckey_mobile = quote("7B19C0AB12633B22E7FE81271162026020570708D6CC189E4924503C49D243A0DE6CD84A766832C2C99898FC5ED31F3709BB3CDD82C96492E721BDD381735026")
 
     # Last updated: 2015-11-24
     stream_types = [
@@ -51,10 +37,12 @@ class Youku():
     ]
 
     def __init__(self, *args):
-        self.ccode = '0519'
         # Found in http://g.alicdn.com/player/ykplayer/0.5.28/youku-player.min.js
         # grep -oE '"[0-9a-zA-Z+/=]{256}"' youku-player.min.js
-        self.ckey = 'DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND'
+        self.params = {
+            ('0808', self.ckey_mobile),
+            ('0590', self.ckey_default)
+        }
 
         self.title = ''
 
@@ -89,18 +77,22 @@ class Youku():
             self.download_playlist_by_url(self.url, **kwargs)
             exit(0)
 
-        api_url = 'https://ups.youku.com/ups/get.json?'
-        api_url += 'vid=' + self.vid
-        api_url += '&ccode=' + self.ccode
-        api_url += '&client_ip=192.168.1.1'
-        api_url += '&utid=' + fetch_cna()
-        api_url += '&client_ts=' + str(int(time.time()))
-        api_url += '&ckey=' + urllib.quote(self.ckey)
+        for ccode, ckey in self.params:
+            api_url = 'https://ups.youku.com/ups/get.json?'
+            api_url += 'vid=' + self.vid
+            api_url += '&ccode=' + ccode
+            api_url += '&client_ip=192.168.1.1'
+            api_url += '&utid=' + quote(fetch_cna())
+            api_url += '&client_ts=' + str(int(time.time()))
+            api_url += '&ckey=' + ckey
+            
+            data = loads(get_html(
+                api_url,
+                headers={'Referer': 'https://v.youku.com'}
+                ))
 
-        data = loads(get_html(
-            api_url,
-            headers={'Referer': 'http://v.youku.com'}
-            ))
+            if data['e']['code'] == 0 and 'stream' in data['data']:
+                break
 
         data = data['data']
         self.title = data['video'].get('title')

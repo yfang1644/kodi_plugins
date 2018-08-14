@@ -6,30 +6,21 @@ from json import loads
 from common import get_html, r1
 import base64
 from urlparse import urlparse, urljoin
+import string
 
-class KBaseMapping:
-    def __init__(self, base=62):
-        self.base = base
-        mapping_table = [str(num) for num in range(10)]
-        for i in range(26):
-            mapping_table.append(chr(i + ord('a')))
-        for i in range(26):
-            mapping_table.append(chr(i + ord('A')))
 
-        self.mapping_table = mapping_table[:self.base]
-
-    def mapping(self, num):
-        res = []
-        while num > 0:
-            res.append(self.mapping_table[num % self.base])
-            num = num // self.base
-        return ''.join(res[::-1])
+def mapping(num, base):
+    mapping_table = string.digits + string.ascii_letters
+    res = ''
+    while num > 0:
+        res = mapping_table[num % base] + res
+        num = num // base
+    return res
 
 class Funshion():
-    stream_types = [
-        'sdvd', 'sdvd_h265', 'hd', 'hd_h265',
-        'dvd', 'dvd_h265', 'tv', 'tv_h265'
-    ]
+    stream_types = ['sdvd', 'sdvd_h265', 'hd', 'hd_h265',
+                    'dvd', 'dvd_h265', 'tv', 'tv_h265'
+                   ]
     a_mobile_url = 'http://m.fun.tv/implay/?mid=302555'
     video_ep = 'http://pv.funshion.com/v7/video/play/?id={}&cl=mweb&uc=111'
     media_ep = 'http://pm.funshion.com/v7/media/play/?id={}&cl=mweb&uc=111'
@@ -78,10 +69,9 @@ class Funshion():
                 size = hit.group(3)
                 names = hit.group(4).split('|')
 
-                mapping = KBaseMapping(base=int(base))
                 sym_to_name = {}
                 for no in range(int(size), 0, -1):
-                    no_in_base = mapping.mapping(no)
+                    no_in_base = mapping(no, int(base))
                     val = names[no] if no < len(names) and names[no] else no_in_base
                     sym_to_name[no_in_base] = val
 
@@ -114,7 +104,7 @@ class Funshion():
                 res_list.append(n & 0xff)
                 pos += 2
     
-        return  str(bytearray(res_list))
+        return str(bytearray(res_list))
 
     def funshion_decrypt_str(self, a_str, coeff):
         if len(a_str) == 28 and a_str[-1] == '0':
@@ -123,7 +113,6 @@ class Funshion():
             return binascii.hexlify(clear.encode('utf8')).upper()
 
         data_bytes = base64.b64decode(a_str[2:])
-        x = self.funshion_decrypt(data_bytes, coeff)
         return self.funshion_decrypt(data_bytes, coeff)
 
     def checksum(self, sha1_str):
@@ -167,9 +156,7 @@ class Funshion():
         for s in stream['playinfo']:
             codec = 'h' + s['codec'][2:]    # h.264 -> h264
             for st in self.stream_types:
-                s_id = '{}_{}'.format(definition, codec)
-                if codec == 'h264':
-                    s_id = definition
+                s_id = definition if codec == 'h264' else '{}_{}'.format(definition, codec)
                 if s_id == st:
                     clear_info = self.dec_playinfo(s, self.coeff)
                     cdn_list = self.get_cdninfo(clear_info['hashid'])
@@ -186,12 +173,14 @@ class Funshion():
             return self.video_from_vid(vid, single_video=True, **kwargs)
         else:
             vid = r1(r'https://www.fun.tv/vplay/.*v-(\w+)', url)
-            epid = r1(r'https://www.fun.tv/vplay/.*g-(\w+)', url)
-            url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(vid)
-            html = get_html(url)
-            meta = loads(html)
-            if vid:
-                return self.video_from_vid(vid, **kwargs)
+            if not vid:
+                epid = r1(r'https://www.fun.tv/vplay/.*g-(\w+)', url)
+                url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(epid)
+                html = get_html(url)
+                meta = loads(html)
+                vid = meta['episodes'][0]['id']
+            return self.video_from_vid(vid, **kwargs)
+
 
 site = Funshion()
 video_from_url = site.video_from_url

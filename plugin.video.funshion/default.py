@@ -2,32 +2,21 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-import re
 from random import randrange
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
 from funshion import video_from_url
 
-BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
+BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 EXTRA = '[COLOR FF8080FF]%s[/COLOR]'
 
 HOST_URL = 'https://www.fun.tv'
 
-# get wrong IP from some local IP
-unusableIP = ("121.32.237.24",
-              "121.32.237.42",
-              "222.84.164.2",
-              "122.228.57.21")
-
-# followings are usable
-usableIP = ("112.25.81.203",
-            "111.63.135.120",
-            "122.72.64.198",
-            "183.203.12.197",
-            "223.82.247.101",
-            "222.35.249.3")
-
+profile_m = 'https://pm.funshion.com/v5/media/profile?id={}'
+profile_v = 'https://pv.funshion.com/v5/video/profile?id={}'
+episodes = 'https://pm.funshion.com/v5/media/episode?id={}'
+related =  'https://pm.funshion.com/v6/media/relate?id={}'
 
 ########################################################################
 # 风行视频(Funshion)"
@@ -46,24 +35,10 @@ plugin = Plugin()
 url_for = plugin.url_for
 
 
-def replaceServer(url):
-    server = plugin.addon.getSetting('pickserver')
-    if server == 'true':
-        return url
-
-    ip = re.compile('http://(\d+\.\d+\.\d+\.\d+)').findall(url)
-    if ip[0] not in usableIP:    # replace a usable IP
-        i_url = randrange(len(usableIP))
-        return re.sub('http://(\d+\.\d+\.\d+\.\d+)',
-                      'http://%s'%(usableIP[i_url]), url)
-    else:
-        return url
-
-
 def httphead(url):
-    if url[0:2] == '//':
+    if url.startswith('//'):
         url = 'http:' + url
-    elif url[0] == '/':
+    elif url.startswith('/'):
         url = HOST_URL + url
 
     return url
@@ -87,6 +62,11 @@ def mergeUrl(purl, curl):
 ##############################################################################
 # Routine to update video list as per user selected filtrs
 ##############################################################################
+@plugin.route('/stay')
+def stay():
+    pass
+
+
 @plugin.route('/vfilters/<url>/<filtrs>')
 def vfilters(url, filtrs):
     surl = url.split('/')
@@ -132,8 +112,9 @@ def playList(url):
 
     lists = tree.find_all('a', {'class': 'vd-list-item'})
 
-    if len(lists) < 1:
+    if lists is None:
         return []
+
     items = []
     for item in lists:
         p_thumb = item.img.get('src')
@@ -145,7 +126,7 @@ def playList(url):
             duration = duration * 60 + int(t)
         items.append({
             'label': item['title'],
-            'path': url_for('movielist', url=httphead(item['href'])),
+            'path': url_for('playvideo', url=httphead(item['href'])),
             'thumbnail': p_thumb,
             'is_playable': True,
             'info': {'title': item['title'], 'duration': duration}
@@ -154,76 +135,69 @@ def playList(url):
 
 
 def relatedList(url):
-    vid = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
+    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
+    if not epid:
+        epid = r1('https://www.fun.tv/vplay/v-(\w+)', url)
+
     # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/media?isajax=1'
-    rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
-    link = get_html(rel_api % vid)
-    tree = BeautifulSoup(link, 'html.parser')
+    # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
+    rel_api = 'https://pm.funshion.com/v6/media/relate?id=%s'
+    link = get_html(rel_api % epid)
+    jsdata = loads(link)
 
-    lists = tree.find_all('div', {'class': 'mod-vd-i'})
+    relates = jsdata['relates']
     items = []
-    for item in lists:
-        pic = item.find('div', {'class': 'pic'})
-        inf = item.find('div', {'class': 'info'})
-        try:
-            href = inf.a['href']
-        except:
-            continue
-        p_id = inf.a['data-id']
-        p_thumb = httphead(pic.img['_lazysrc'])
-        p_name = pic.img['alt']
 
-        p_name1 = p_name + ' '
-
-        score = inf.find('b', {'class': 'score'})
-        if score:
-            p_name1 += '[COLOR FFFF00FF][' + score.text + '][/COLOR]'
-
-        if item.find("class='ico-dvd spdvd'") > 0:
-            p_name1 += ' [COLOR FFFFFF00][超清][/COLOR]'
-        elif item.find("class='ico-dvd hdvd'") > 0:
-            p_name1 += ' [COLOR FF00FFFF][高清][/COLOR]'
-        info = {'title': p_name}
-        span = pic.find('span')
-        if span and len(span.text) > 0:
-            duration = 0
-            for t in span.text.split(':'):
-                duration = duration*60 + int(t)
-            info['duration'] = duration
-
-        desc = inf.find('p', {'class', 'desc'})
-        if desc:
-            p_name1 += ' (' + desc.text + ')'
-
+    for x in relates:
         items.append({
-            'label': p_name1,
-            'path': url_for('albumlist', url=httphead(href), title=p_name.encode('utf-8')),
-            'thumbnail': p_thumb,
-            'info': info
+            'label': BANNER_FMT % x['name'],
+            'path': url_for('stay')
         })
+        for y in x['contents']:
+            pic = y['poster'] if y['poster'] else y['still']
+            info = {}
+            dur = y.get('duration')
+            if dur:
+                duration = 0
+                for t in dur.split(':'):
+                    duration = duration * 60 + int(t)
+                info['duration'] = duration
+            info['tltle'] = y['name']
+            info['plot'] = y['aword']
+            if y['template'] == 'vplay':
+                items.append({
+                    'label': y['name'],
+                    'path': url_for('playvideo',
+                                    url=HOST_URL + '/vplay/v-' + y['id']),
+                    'thumbnail': pic,
+                    'is_playable': True,
+                    'info': info
+                })
+            else:
+                items.append({
+                    'label': y['name'],
+                    'path': url_for('albumlist',
+                                    url=HOST_URL + '/vplay/g-' + y['id']),
+                    'thumbnail': pic,
+                    'info': info
+                })
     return items
 
 
-def singleVideo(url, title):
-    items = [{
-        'label': BANNER_FMT % title,
-        'path': url_for('movielist', url=url),
-        'is_playable': True,
-    }]
-
-    items += playList(url)
-
+def singleVideo(url):
+    items = playList(url)
     items += relatedList(url)
     return items
 
 
 ##########################################################################
-def seriesList(url, title):
-    id = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
+def seriesList(url):
+    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
     purl = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
-    print "XXXXXXXXXXXXXXXXXXXXXX",purl % id
-    link = get_html(purl % id)
+    link = get_html(purl % epid)
+    intro = loads(get_html(profile_m.format(epid)))
+    poster = intro['poster'].encode('utf-8')
     json_response = loads(link)
     if json_response['status'] == 404:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
@@ -248,10 +222,11 @@ def seriesList(url, title):
             extra = ''
         items.append({
             'label': p_name + extra,
-            'path': url_for('movielist', url=p_url),
+            'path': url_for('playvideo', url=p_url),
             'thumbnail': p_thumb,
             'is_playable': True,
-            'info': { 'title': p_name, 'duration': seconds}
+            'info': {'title': p_name, 'duration': seconds,
+                     'plot': intro['description']}
         })
 
     # playlist
@@ -275,27 +250,26 @@ def selResolution():
         return resolution
 
 @plugin.route('/movielist/<url>')
-def movielist(url):
+def playvideo(url):
     resolution = selResolution()
 
     v_urls = video_from_url(url, level=resolution)
     if len(v_urls) > 0:
-        v_url = replaceServer(v_urls[0])
-        plugin.set_resolved_url(v_url)
+        plugin.set_resolved_url(v_urls[0])
     else:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
                             '没有可播放的视频')
 
 
-@plugin.route('/albumlist/<url>/<title>')
-def albumlist(url, title):
+@plugin.route('/albumlist/<url>')
+def albumlist(url):
     plugin.set_content('TVShows')
-    sid = r1('https://www.fun.tv/vplay/.*v-(\d+)', url)
-    vid = r1('https://www.fun.tv/vplay/.*g-(\d+)', url)
-    if sid:
-        return singleVideo(url, title)    # play single video
-    elif vid:
-        return seriesList(url, title)     # list series
+    vid = r1('https://www.fun.tv/vplay/v-(\w+)', url)
+    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
+    if vid:
+        return singleVideo(url)    # play single video
+    elif epid:
+        return seriesList(url)     # list series
     else:
         return []
 
@@ -326,7 +300,7 @@ def mainlist(url, filtrs):
         p_name1 = p_name + ' '
         span = pic.find('span')
         if span and len(span.text) > 0:
-            p_name1 += '[COLOR FF00FFFF](' + span.text + ')[/COLOR] '
+            p_name1 += '[COLOR FF00FFFF](' + span.text.strip() + ')[/COLOR] '
 
         score = inf.find('b', {'class': 'score'})
         if score:
@@ -347,7 +321,7 @@ def mainlist(url, filtrs):
 
         yield {
             'label': p_name1,
-            'path': url_for('albumlist', url=href ,title=p_name.encode('utf-8')),
+            'path': url_for('albumlist', url=href),
             'thumbnail': p_thumb,
             'info': info
         }
@@ -361,11 +335,10 @@ def mainlist(url, filtrs):
             href = page['href']
             if href == '###':
                 continue
-            else:
-                yield {
-                    'label': page.text,
-                    'path': url_for('mainlist', url=httphead(href), filtrs=filtrs)
-                }
+            yield {
+                'label': page.text,
+                'path': url_for('mainlist', url=httphead(href), filtrs=filtrs)
+            }
 
 
 @plugin.route('/')
