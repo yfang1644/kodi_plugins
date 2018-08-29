@@ -4,7 +4,6 @@
 from xbmcswift2 import Plugin, xbmc, xbmcgui
 from urllib import quote_plus
 import re
-import sys
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
@@ -310,7 +309,7 @@ def search():
             items.append({
                 'label': title,
                 'path': url_for('playfound', url=httphead(series.a['href']), title=title.encode('utf-8')),
-                'thumbnail': img,
+                'thumbnail': httphead(img),
                 'info': {'title': title, 'plot': info}
             })
 
@@ -396,7 +395,7 @@ def videolist(url):
         items.append({
             'label': title + extrainfo.strip(),
             'path': url_for('episodelist', albumId=albumId, page=1),
-            'thumbnail': img,
+            'thumbnail': httphead(img),
             'info': infoLabels,
         })
 
