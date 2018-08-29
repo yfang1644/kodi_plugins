@@ -40,9 +40,9 @@ class Youku():
         # Found in http://g.alicdn.com/player/ykplayer/0.5.28/youku-player.min.js
         # grep -oE '"[0-9a-zA-Z+/=]{256}"' youku-player.min.js
         self.params = {
-            ('0515', self.ckey_default),
+            ('0517', self.ckey_default),
             ('0516', self.ckey_default),
-            ('0517', self.ckey_default)
+            ('0515', self.ckey_default)
         }
 
         self.title = ''
@@ -107,7 +107,7 @@ class Youku():
             self.level = min(len(streams)-1, self.level)
 
         m3u8 = streams[self.level].get('m3u8_url')
-        #return [m3u8]
+        return [m3u8]
         # m3u8_url is complete, but mp4 not
         urls = []
         for s in streams[self.level].get('segs', ''):
