@@ -15,8 +15,6 @@ plugin = Plugin()
 url_for = plugin.url_for
 
 # Plugin constants
-__addonid__   = plugin.addon.getAddonInfo('id')
-__addonname__ = plugin.addon.getAddonInfo('name')
 
 stream_types = [
     {'itag': '1', 'container': 'm4a', 'bitrate': 'default'},

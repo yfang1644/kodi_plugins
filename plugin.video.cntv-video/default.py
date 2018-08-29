@@ -10,7 +10,18 @@ from urllib import quote_plus
 import re
 from bs4 import BeautifulSoup
 from json import loads
-from lib.common import get_html
+from common import get_html
+
+from lib.cntv import video_from_url as video_from_cntv
+
+from iqiyi import video_from_url as video_from_iqiyi
+from qq import video_from_url as video_from_qq
+from funshion import video_from_url as video_from_fun
+from youku import video_from_url as video_from_youku
+from pptv import video_from_url as video_from_pptv
+from mgtv import video_from_url as video_from_mgtv
+from letv import video_from_url as video_from_letv
+from sohu import video_from_url as video_from_sohu
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()
@@ -338,41 +349,37 @@ def PlayVideo(playurl, title, thumb):
     videoRes = int(__addon__.getSetting('resolution'))
 
     if ('le.com' in playurl) or ('letv.com' in playurl):
-        import lib.letv as letv
-        video = letv.LeTV()
-        videourl = video.video_from_url(playurl,
-                                        level=videoRes,
-                                        m3u8=__m3u8__)
+        videourl = video_from_letv(playurl,
+                                   level=videoRes,
+                                   m3u8=__m3u8__)
         li = ListItem(title, thumbnailImage=thumb)
         li.setInfo(type="Video", infoLabels={"Title": title})
         xbmc.Player().play(__m3u8__, li)
         return
 
     if 'sohu.com' in playurl:
-        from lib.sohu import video_from_url
+        videourl = video_from_sohu(playurl, level=videoRes)
 
     elif 'qq.com' in playurl:
-        from lib.qq import video_from_url
+        videourl = video_from_qq(playurl, level=videoRes)
 
     elif 'qiyi.com' in playurl:
-        from lib.iqiyi import video_from_url
+        videourl = video_from_iqiyi(playurl, level=videoRes)
 
     elif 'fun.tv' in playurl:
-        from lib.funshion import video_from_url
+        videourl = video_from_fun(playurl, level=videoRes)
 
     elif 'youku.com' in playurl:
-        from lib.youku import video_from_url
+        videourl = video_from_youku(playurl, level=videoRes)
 
     elif ('cntv.cn' in playurl) or ('cctv.com' in playurl):
-        from lib.cntv import video_from_url
+        videourl = video_from_cntv(playurl, level=videoRes)
 
     elif 'mgtv.com' in playurl:
-        from lib.mgtv import video_from_url
+        videourl = video_from_mgtv(playurl, level=videoRes)
 
     elif 'pptv.com' in playurl:
-        from lib.pptv import video_from_url
-
-    videourl = video_from_url(playurl, level=videoRes)
+        videourl = video_from_pptv(playurl, level=videoRes)
 
     ulen = len(videourl)
 

@@ -1,14 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import xbmc
-from xbmcswift2 import Plugin, xbmcgui
+from xbmcswift2 import Plugin, xbmc, xbmcgui
 from urllib import quote_plus
 import re
 from bs4 import BeautifulSoup
 from common import get_html, r1
 from youku import Youku
-from tudou import Tudou
+from lib.tudou import Tudou
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -97,6 +96,7 @@ def getyoukulist(url):
             'label': title,
             'path': url_for('playvideo', url=url),
             'is_playable': True,
+            'info': {'title': title},
         })
     else:
         for item in progs:
@@ -110,6 +110,7 @@ def getyoukulist(url):
                 'path': url_for('playvideo', url=item.a['href']),
                 'is_playable': True,
                 'thumbnail': item.img['src'],
+                'info': {'title': title}
             })
 
     soup = tree.find_all('div', {'class': 'items clearfix'})
@@ -291,16 +292,3 @@ def index():
 # main programs goes here #########################################
 if __name__ == '__main__':
     plugin.run()
-
-runlist = {
-    None: 'mainMenu()',
-    'videolist': 'listSubMenu(params)',
-    'videolist1': 'listSubMenu1(params)',
-    'videolist2': 'listSubMenu2(params)',
-    'albumlist': 'albumList(params)',
-    'codelist': 'relatedPlayList(params)',
-    'playvideo': 'PlayVideo(params)',
-    'search': 'searchInTudou(params)',
-    'select': 'normalSelect(params)'
-}
-

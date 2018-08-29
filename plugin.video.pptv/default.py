@@ -9,14 +9,12 @@ import time
 from random import random
 from json import loads
 from common import get_html
-from pptv import video_from_url
-
+from lib.pptv import video_from_url
 
 # Plugin constants
 
 plugin = Plugin()
 url_for = plugin.url_for
-
 
 PPTV_LIST = 'http://list.pptv.com/'
 PPTV_TV_LIST = 'http://live.pptv.com/list/tv_list'

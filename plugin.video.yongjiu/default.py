@@ -1,11 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf8 -*-
 
-import os
-import sys
-import xbmcaddon
-
-from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
+from xbmcswift2 import Plugin, ListItem, xbmc
 from bs4 import BeautifulSoup
 from urlparse import urlparse
 from json import loads

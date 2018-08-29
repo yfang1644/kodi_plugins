@@ -2,18 +2,19 @@
 <addons>
 <addon id="plugin.video.letv"
     name="乐视网 (LeTV)"
-    version="2.0.0"
+    version="2.1.0"
     provider-name="yfang1644">
   	<requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
         library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">LeTV video plugin</summary>
         <summary lang="zh">乐视网插件</summary>
@@ -27,36 +28,41 @@
 
 <addon id="plugin.video.yinyuetai"
     name="音悦台MV(YinYueTai)"
-    version="1.8.1"
+    version="1.9.0"
     provider-name="yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource" library="addon.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">YinYueTai video plugin</summary>
         <summary lang="zh">音悦台视频插件</summary>
         <description lang="en">Online MV from yinyuetai.com</description>
         <description lang="zh">观看音悦台在线MV</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.yinyuetai</source>
-		<email>yfang1644@gmail.com</email>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>
 
 <addon id="plugin.video.pptv"
     name="PPTV视频"
-    version="2.0.0"
+    version="2.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
 	</requires>
 	<extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">PPTV video plugin</summary>
         <summary lang="zh">PPTV视频插件</summary>
@@ -119,18 +125,23 @@
 
 <addon id="plugin.video.sohuvideo"
     name="搜狐视频(SoHu)"
-    version="2.5.1"
+    version="2.6.0"
     provider-name="Taxigps,yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.iqiyi" version="2.3.0"/>
+        <import addon="plugin.video.youku" version="1.0.0"/>
+        <import addon="plugin.video.qq" version="1.1.0"/>
+        <import addon="plugin.video.funshion" version="2.1.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
         library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">SoHu Video plugin</summary>
         <summary lang="zh">搜狐视频插件</summary>
@@ -251,13 +262,15 @@
 
 <addon id="plugin.audio.kuwo"
     name="酷我音乐"
-    version="2.2.4"
+    version="2.3.0"
     provider-name="yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension
-        point="xbmc.python.pluginsource" library="default.py">
+        point="xbmc.python.pluginsource" library="addon.py">
         <provides>audio</provides>
     </extension>
     <extension point="xbmc.addon.metadata">
@@ -295,12 +308,14 @@
     version="1.0.2"
     provider-name="yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Mangguo Video plugin</summary>
         <summary lang="zh">MGTV 视频插件</summary>
@@ -362,16 +377,17 @@
 
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
-    version="2.3.0"
+    version="2.4.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">IQIYI Video plugin</summary>
         <summary lang="zh">爱奇艺视频插件</summary>
@@ -415,44 +431,44 @@
 </addon>
 
 <addon id="plugin.video.tvonline"
-    name="地方电视台直播" version="1.0.0"
-    provider-name="yfang1644">
-	<requires>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-	</requires>
-	
-	<extension point="xbmc.python.pluginsource" library="default.py">
-		<provides>video</provides>
-	</extension>
-	
-	<extension point="xbmc.addon.metadata">
-		<summary lang="en">TV Live plugin</summary>
-		<summary lang="zh">地方电视台直播</summary>
-		<description lang="en">Stream live Nanjing TV and other local TV programs</description>
-		<description lang="zh">电视台直播</description>
-        <disclaimer lang="en">http://www.nbs.cn, http://www.haoqu.net/3/</disclaimer>
-		<language></language>
-		<license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
-		<forum></forum>
-		<website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tvonline</source>
-        <email>yfang1644@gmail.com</email>
-		<platform>all</platform>
-	</extension>
-</addon>
-
-<addon id="plugin.video.funshion"
-    name="风行视频(Funshion)"
-    version="2.0.1"
+    name="地方电视台直播" version="1.0.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.1.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">TV Live plugin</summary>
+        <summary lang="zh">地方电视台直播</summary>
+        <description lang="en">Stream live Nanjing TV and other local TV programs</description>
+        <description lang="zh">电视台直播</description>
+        <disclaimer lang="en">http://www.nbs.cn, http://www.haoqu.net/3/</disclaimer>
+        <language></language>
+        <license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tvonline</source>
+        <email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
+<addon id="plugin.video.funshion"
+    name="风行视频(Funshion)"
+    version="2.1.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Funshion Video plugin</summary>
         <summary lang="zh">风行网视频插件</summary>
@@ -466,15 +482,16 @@
 
 <addon id="plugin.video.qq"
     name="腾讯视频"
-    version="1.0.4"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Tencent Video plugin</summary>
         <summary lang="zh">QQ视频插件</summary>
@@ -488,15 +505,18 @@
 
 <addon id="plugin.video.rrsp"
        name="人人视频"
-       version="1.0.6"
+       version="1.1.0"
        provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
+        <import addon="plugin.video.letv" version="2.1.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="zh-CN">人人视频</summary>
         <description>人人视频</description>
@@ -527,22 +547,23 @@
 
 <addon id="plugin.video.youku"
     name="优酷视频"
-    version="1.0.0"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.8"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">YouKu Video (plain version)</summary>
         <summary lang="zh">优酷视频插件(平铺版)</summary>
         <description lang="en">online video from youku.com</description>
         <description lang="zh">优酷(www.youku.com)在线网络视频</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku</source>
-		<email>yfang1644@gmail.com</email>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>
@@ -553,7 +574,8 @@
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.8"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -571,15 +593,17 @@
 </addon>
 
 <addon id="plugin.video.youkutv"
-    name="YouKu TV" version="1.7.9"
+    name="YouKu TV" version="1.8.0"
     provider-name="catro, yfang1644">
     <requires>
         <import addon="script.common.plugin.cache" version="0.9.1"/>
-        <import addon="plugin.video.cntv-video" version="1.0.8"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
     </requires>
     <extension point="xbmc.python.script" library="addon.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <language></language>
         <summary>优酷TV</summary>
@@ -592,17 +616,20 @@
 
 <addon id="plugin.video.tudou"
     name="土豆(Tudou)"
-    version="1.0.1"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.9"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
         library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Tudou video plugin</summary>
         <summary lang="zh">土豆在线视频</summary>
@@ -653,15 +680,24 @@
 
 <addon id="plugin.video.cntv-video"
     name="CNTV 视频"
-    version="1.1.7"
+    version="1.2.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.iqiyi" version="2.4.0"/>
+        <import addon="plugin.video.qq" version="1.1.0"/>"
+        <import addon="plugin.video.funshion" version="2.1.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
+        <import addon="plugin.video.pptv" version="2.1.0"/>
+        <import addon="plugin.video.mgtv" version="1.1.0"/>
+        <import addon="plugin.video.letv" version="2.1.0"/>
+        <import addon="plugin.video.sohuvideo" version="2.6.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
-	<extension point="xbmc.python.module" library="lib" />
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">CNTV video plugin</summary>
         <summary lang="zh">CNTV 视频插件</summary>
@@ -679,7 +715,7 @@
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="addon.py">
         <provides>audio</provides>
@@ -737,12 +773,13 @@
 
 <addon id="plugin.video.bilibili"
     name="哔哩哔哩(bilibili)"
-    version="1.0.6"
-    provider-name="Catro,yfang1644">
+    version="1.1.0"
+    provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.qq" version="1.1.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -759,12 +796,12 @@
 
 <addon id="plugin.video.yongjiu"
        name="永久资源"
-       version="1.0.2"
+       version="1.1.0"
        provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
@@ -781,13 +818,15 @@
 
 <addon id="plugin.audio.baidu"
     name="百度音乐"
-    version="1.0.1"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.yinyuetai" version="1.9.0"/>
+        <import addon="plugin.video.iqiyi" version="2.4.0"/>
     </requires>
-
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>audio</provides>
     </extension>
@@ -804,12 +843,20 @@
 
 <addon id="plugin.video.baidu"
     name="百度视频"
-    version="1.0.0"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.iqiyi" version="2.4.0"/>
+        <import addon="plugin.video.qq" version="1.1.0"/>
+        <import addon="plugin.video.youku" version="1.1.0"/>
+        <import addon="plugin.video.pptv" version="2.1.0"/>
+        <import addon="plugin.video.sohuvideo" version="2.6.0"/>
+        <import addon="plugin.video.funshion" version="2.1.0"/>
+        <import addon="plugin.video.letv" version="2.1.0"/>
+        <import addon="plugin.video.mgtv" version="1.1.0"/>
     </requires>
 
     <extension point="xbmc.python.pluginsource" library="addon.py">

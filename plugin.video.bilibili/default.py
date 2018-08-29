@@ -2,9 +2,10 @@
 #coding=utf-8
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-from resources.lib.bilibili import Bilibili
-from resources.lib.subtitle import subtitle_offset
-from resources.lib.login_dialog import LoginDialog
+from lib.bilibili import Bilibili
+from lib.subtitle import subtitle_offset
+from lib.login_dialog import LoginDialog
+from lib.bilivideo import video_from_vid as bilivideo_from_vid
 import time
 import string, os
 from random import choice
@@ -181,7 +182,7 @@ def playmovie(cid, vid, name):
     if vid != '0':
         urls = video_from_vid(vid)
     else:
-        urls = bilibili.get_video_urls(cid)
+        urls = bilivideo_from_vid(cid)
 
     stack_url = 'stack://' + ' , '.join(urls)
     danmu = plugin.addon.getSetting('danmu')

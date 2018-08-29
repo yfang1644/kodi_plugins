@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.pptv"
     name="PPTV视频"
-    version="2.0.0"
+    version="2.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
-	</requires>
-	<extension
+        <import addon="script.module.geturl" version="1.0.0"/>
+    </requires>
+    <extension
         point="xbmc.python.pluginsource"
         library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">PPTV video plugin</summary>
         <summary lang="zh">PPTV视频插件</summary>
         <description lang="en">Watch online videos in www.pptv.com site.</description>
         <description lang="zh">观看 www.pptv.com 在线直播和点播视频.</description>
-		<license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
-		<forum></forum>
-		<website></website>
+        <license>GNU GENERAL PUBLIC LICENSE. Version 3, 29 June 2007</license>
+        <forum></forum>
+        <website></website>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.pptv</source>
-		<email>yfang1644@gmail.com</email>
+        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>

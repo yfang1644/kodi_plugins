@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
-    version="2.3.0"
+    version="2.4.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">IQIYI Video plugin</summary>
         <summary lang="zh">爱奇艺视频插件</summary>

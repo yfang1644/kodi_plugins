@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="plugin.video.qq"
     name="腾讯视频"
-    version="1.0.4"
+    version="1.1.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
+    <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
         <summary lang="en">Tencent Video plugin</summary>
         <summary lang="zh">QQ视频插件</summary>

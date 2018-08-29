@@ -6,7 +6,7 @@ from random import randrange
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
-from funshion import video_from_url
+from lib.funshion import video_from_url
 
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 EXTRA = '[COLOR FF8080FF]%s[/COLOR]'

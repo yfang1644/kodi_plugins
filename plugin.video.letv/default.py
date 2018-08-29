@@ -8,7 +8,7 @@ import os
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html
-from letv import video_from_vid
+from lib.letv import video_from_vid
 
 plugin = Plugin()
 url_for = plugin.url_for

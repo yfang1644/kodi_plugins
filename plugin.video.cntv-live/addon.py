@@ -23,7 +23,8 @@ mainList = {
 
 cityList = [{"area": "安徽", 'id': 'anhui', 'channel': []},
             {"area": "北京", 'id': 'beijing',
-             'channel': [{"btv2": "BTV文艺"},
+             'channel': [{"btv1": "BTV综合"},
+                         {"btv2": "BTV文艺"},
                          {"btv3": "BTV科教"},
                          {"btv4": "BTV影视"},
                          {"btv5": "BTV财经"},

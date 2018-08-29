@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.audio.xiami"
+    name="虾米音乐"
+    version="1.0.1"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.iqiyi" version="2.4.0"/>
+        <import addon="plugin.video.yinyuetai" version="1.9.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="addon.py">
+        <provides>audio</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary>Xiami audio plugin</summary>
+        <summary lang="zh">虾米音乐插件</summary>
+        <description>Xiami Music Kodi Plugin</description>
+        <description lang="zh">虾米音乐插件</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.xiami</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>

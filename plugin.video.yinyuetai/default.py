@@ -2,17 +2,14 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-import xbmcaddon
 from urllib import urlencode
 from json import loads
 from common import get_html
-from yinyuetai import video_from_vid
+from lib.yinyuetai import video_from_vid
 
 ##########################################################################
 # 音悦台MV
 ##########################################################################
-
-__addon__     = xbmcaddon.Addon()
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -51,7 +48,7 @@ def setfilters():
 @plugin.route('/videolist/<sid>/<tid>/<page>/<area>/<person>')
 def videolist(sid, tid, page, area, person):
     plugin.set_content('videos')
-    res = int(__addon__.getSetting('video_resolution'))
+    res = int(plugin.addon.getSetting('video_resolution'))
     reslist = ('hd', 'shd', 'sh')
 
     page = int(page)

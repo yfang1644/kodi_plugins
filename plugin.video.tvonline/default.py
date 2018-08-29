@@ -6,7 +6,6 @@ from xbmcgui import ListItem
 import xbmcplugin
 import xbmcaddon
 import urllib2
-import urllib
 import urlparse
 import re
 import sys

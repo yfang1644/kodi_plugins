@@ -1,16 +1,12 @@
 ﻿# -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin
-from urllib import quote_plus
-import urllib2
 from json import loads
+from bs4 import BeautifulSoup
+import re
 from common import get_html
 from iqiyi import video_from_vid as IQIYI_from_vid
 from yinyuetai import video_from_vid as YINYUETAI_from_vid
-from bs4 import BeautifulSoup
-import re
-
-__UserAgent = 'Mozilla/5.0 (X11; Linux x86_64; rv:6.0.2) Gecko/20100101 Firefox/6.0.2'
 
 plugin = Plugin()
 url_for = plugin.url_for

@@ -11,7 +11,7 @@ import re
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html
-from qq import video_from_url, video_from_vid
+from lib.qq import video_from_url, video_from_vid
 
 # Plugin constants
 __addon__     = xbmcaddon.Addon()

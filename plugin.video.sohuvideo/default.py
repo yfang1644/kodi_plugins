@@ -8,7 +8,7 @@ from json import loads
 from bs4 import BeautifulSoup
 from urlparse import urlparse
 from common import get_html
-from sohu import video_from_url, video_from_vid
+from lib.sohu import video_from_url
 
 from iqiyi import video_from_url as video_from_iqiyi
 from qq import video_from_url as video_from_qq

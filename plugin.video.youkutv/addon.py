@@ -7,7 +7,7 @@ import xbmcaddon
 import xbmc
 from json import loads
 import sys
-import urllib
+from urllib import quote_plus
 import urllib2
 import re
 import os
@@ -752,7 +752,7 @@ class TopWindow(BaseWindow):
         try:
             url = HOST + 'tv/top/shows?' + IDS + '&top_id=' + self.sdata
             for k in self.urlArgs:
-                url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
+                url = url + '&' + k + '=' + quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
             if data.get('status', '') != 'success':
@@ -860,7 +860,7 @@ class ChannelWindow(BaseWindow):
         try:
             url = HOST + 'layout/smarttv/item_list?' + IDS + '&cid=' + self.sdata
             for k in self.urlArgs:
-                url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
+                url = url + '&' + k + '=' + quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
             if 'status' not in data:
@@ -1008,7 +1008,7 @@ class OtherWindow(BaseWindow):
         try:
             url = HOST + 'layout/smarttv/item_list?' + IDS
             for k in self.urlArgs:
-                url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
+                url = url + '&' + k + '=' + quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
             if data.get('status', '') != 'success':
@@ -1172,7 +1172,7 @@ class ResultWindow(BaseWindow):
         if self.showInited:
             return
 
-        url = HOST + 'layout/smarttv/showsearch?copyright_status=1&video_type=1&keyword=' + urllib.quote_plus(self.sdata) + '&' + IDS
+        url = HOST + 'layout/smarttv/showsearch?copyright_status=1&video_type=1&keyword=' + quote_plus(self.sdata) + '&' + IDS
 
         data = GetHttpData(url)
         if data.get('status', '') != 'success':
@@ -1192,9 +1192,9 @@ class ResultWindow(BaseWindow):
         self.showBusy()
 
         try:
-            url = HOST + 'openapi-wireless/videos/search/' + urllib.quote_plus(self.sdata) + '?' + IDS
+            url = HOST + 'openapi-wireless/videos/search/' + quote_plus(self.sdata) + '?' + IDS
             for k in self.urlArgs:
-                url = url + '&' + k + '=' + urllib.quote_plus(self.urlArgs[k])
+                url = url + '&' + k + '=' + quote_plus(self.urlArgs[k])
 
             data = GetHttpData(url)
             if data.get('status', '') != 'success':
@@ -1341,7 +1341,7 @@ class SearchWindow(BaseWindow):
                 data = GetHttpData(HOST + 'openapi-wireless/keywords/recommend?' + IDS)
                 title_key = 'title'
             else:
-                data = GetHttpData(HOST + 'openapi-wireless/keywords/suggest?' + IDS + '&keywords=' + urllib.quote_plus(self.keywords))
+                data = GetHttpData(HOST + 'openapi-wireless/keywords/suggest?' + IDS + '&keywords=' + quote_plus(self.keywords))
                 title_key = 'keyword'
 
             if data.get('status', '') != 'success':

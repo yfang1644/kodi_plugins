@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-from urlparse import parse_qsl
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
-from mgtv import video_from_vid
+from lib.mgtv import video_from_vid
 
 plugin = Plugin()
 url_for = plugin.url_for

@@ -8,7 +8,7 @@ import sys
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
-from iqiyi import video_from_vid
+from lib.iqiyi import video_from_vid
 
 ########################################################################
 # 爱奇艺 list.iqiyi.com
@@ -80,11 +80,9 @@ def reference(tvId, vid, title):
     videos = json_response['mixinVideos']
     for series in videos:
         if tvId == series['tvId']:
-            mode = 'playvideo'
-            playable = True
+            mode, playable = 'playvideo', True
         else:
-            mode = 'reference'
-            playable = False
+            mode, playable = 'reference', False
         items.append({
             'label': series['name'],
             'path': url_for(mode, tvId=series['tvId'], vid=series['vid'], title=series['name'].encode('utf-8')),
@@ -172,15 +170,16 @@ def episodelist(albumId, page):
     tvId = item['tvId']
     vid = item['vid']
     title = item['tvName'].encode('utf-8')
-    items.append({
-        'label': BANNER_FMT % title,
-        'path': url_for('playvideo', tvId=tvId, vid=vid, title=title),
-        'thumbnail': item.get('tvPictureUrl', ''),
-        'is_playable': True,
-        'info': {'title': title, 'plot': item['tvDesc']}
-    })
-
-    if albumId != int(tvId):
+    isSeries = item['isSeries']
+    if isSeries == 0:
+        items.append({
+            'label': BANNER_FMT % title,
+            'path': url_for('playvideo', tvId=tvId, vid=vid, title=title),
+            'thumbnail': item.get('tvPictureUrl', ''),
+            'is_playable': True,
+            'info': {'title': title, 'plot': item['tvDesc']}
+        })
+    else:
         item1 = listType1(albumType, albumId)
         items += item1
         if not item1:
@@ -188,6 +187,8 @@ def episodelist(albumId, page):
 
     # recommend
     items += reference(tvId, vid, title)
+    if len(items) > 1 and items[0]['label'] == items[1]['label']:
+        del items[1]
     return items
 
 
@@ -204,6 +205,7 @@ def playfound(url, title):
     vid = r1(r'#curid=.+_(.*)$', url) or \
           r1(r'vid=([^&]+)', url) or \
           r1(r'data-player-videoid="([^"]+)"', link)
+
     if tvId is not None and vid is not None:
         items = [{
             'label': title,

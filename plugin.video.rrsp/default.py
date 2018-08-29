@@ -7,7 +7,7 @@ import xbmcaddon
 
 ADDON = xbmcaddon.Addon()
 ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
-sys.path.append(os.path.join(ADDON_PATH, 'resources', 'lib'))
+sys.path.append(os.path.join(ADDON_PATH, 'lib'))
 
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 

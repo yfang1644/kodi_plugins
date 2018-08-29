@@ -5,7 +5,7 @@ from xbmcswift2 import Plugin, xbmcgui, xbmc
 from urllib import quote_plus, urlencode
 from json import loads
 from common import get_html, match1
-from youku import video_from_vid
+from lib.youku import video_from_vid
 
 HOST = 'http://tv.api.3g.youku.com'
 BASEIDS = {
@@ -17,7 +17,6 @@ BASEIDS = {
     'network': 'WIFI',
     'launcher': 0
 }
-
 
 ########################################################################
 # 优酷 www.youku.com
@@ -49,7 +48,6 @@ def playvideo(videoid):
     level = int(plugin.addon.getSetting('resolution'))
 
     urls = video_from_vid(videoid, level=level)
-
     stackurl = 'stack://' + ' , '.join(urls)
     plugin.set_resolved_url(stackurl)
 
