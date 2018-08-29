@@ -5,7 +5,6 @@ from urllib import urlencode
 import urllib2
 from json import load
 
-
 LIST = ['为你推荐', '最热', '流行', '摇滚', '民谣', '原声',
         '轻音乐', '古典', '电子', '华语', '欧美', '日语',
         '粤语', '独立', '动漫', '新世纪', '中国摇滚', 'R&B']
