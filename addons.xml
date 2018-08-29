@@ -752,7 +752,7 @@
     provider-name="BirdZhang">
     <requires>
         <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
     </requires>
     <extension
         point="xbmc.python.pluginsource"
@@ -901,7 +901,10 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="plugin.video.cntv-video" version="1.0.6"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="plugin.video.iqiyi" version="2.4.0"/>
+        <import addon="plugin.video.yinyuetai" version="1.9.0"/>
     </requires>
 
     <extension point="xbmc.python.pluginsource" library="addon.py">
