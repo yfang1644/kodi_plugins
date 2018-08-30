@@ -3,11 +3,6 @@
 
 import os
 import sys
-import xbmcaddon
-
-ADDON = xbmcaddon.Addon()
-ADDON_PATH = ADDON.getAddonInfo('path').decode("utf-8")
-sys.path.append(os.path.join(ADDON_PATH, 'lib'))
 
 from xbmcswift2 import Plugin, ListItem, xbmc, xbmcgui
 
@@ -50,6 +45,9 @@ CATLIST = [
 
 plugin = Plugin()
 url_for = plugin.url_for
+
+ADDON_PATH = plugin.addon.getAddonInfo('path').decode("utf-8")
+sys.path.append(os.path.join(ADDON_PATH, 'lib'))
 
 conn = sqlite3.connect(ADDON_PATH + '/local.db')
 cur = conn.cursor()

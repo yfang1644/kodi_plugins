@@ -38,8 +38,8 @@ class MGTV():
         split = urlparse.urlsplit(m3u_url)
 
         base_url = "{scheme}://{netloc}{path}/".format(scheme=split[0],
-                                                   netloc=split[1],
-                                                   path=dirname(split[2]))
+                                                       netloc=split[1],
+                                                       path=dirname(split[2]))
 
         # get the REAL M3U url, maybe to be changed later?
         content = get_html(m3u_url)

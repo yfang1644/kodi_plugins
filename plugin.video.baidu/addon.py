@@ -1,30 +1,34 @@
 #!/usr/bin/python
 #coding=utf-8
 
-from xbmcswift2 import Plugin, xbmc, ListItem
+from xbmcswift2 import Plugin, xbmc, xbmcgui, ListItem
 import re
-from urllib import quote_plus, unquote_plus, urlencode
+import urlparse
+from urllib import unquote_plus, urlencode
 from common import get_html
 
-from iqiyi import IQiyi
-from qq import QQ
-from youku import Youku
-from pptv import PPTV
-from sohu import Sohu
-from funshion import Funshion
-from letv import LeTV
-from mgtv import MGTV
+from iqiyi import video_from_url as video_from_iqiyi
+from qq import video_from_url as video_from_qq
+from youku import video_from_url as video_from_youku
+from pptv import video_from_url as video_from_pptv
+from sohu import video_from_url as video_from_sohu
+from funshion import video_from_url as video_from_funshion
+from letv import video_from_url as video_from_letv
+from mgtv import video_from_url as video_from_mgtv
 
 from json import loads, dumps
 from bs4 import BeautifulSoup
-
-BANNER_FMT = '[COLOR gold]%s[/COLOR]'
-BANNER_FMT2 = '[COLOR pink][%s][/COLOR]'
 
 HOST = 'http://v.baidu.com'
 
 plugin = Plugin()
 url_for = plugin.url_for
+
+__cwd__  = plugin.addon.getAddonInfo('path')
+__m3u8__ = __cwd__ + '/temp.m3u8'
+BANNER_FMT = '[COLOR gold]%s[/COLOR]'
+BANNER_FMT2 = '[COLOR pink][%s][/COLOR]'
+
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -102,22 +106,32 @@ def play(link, title):
     page = get_html(link)
     playurl = re.compile('a href="(http.+?)\"').findall(page)[0]
 
-    if 'sohu.com' in playurl:
-        site = Sohu()
-    elif 'qq.com' in playurl:
-        site = QQ()
-    elif 'iqiyi.com' in playurl:
-        site = IQiyi()
-    elif 'fun.tv' in playurl:
-        site = Funshion()
-    elif 'youku.com' in playurl:
-        site = Youku()
-    elif 'mgtv.com' in playurl:
-        site = MGTV()
-    else:
-        pass
+    if ('le.com' in playurl) or ('letv.com' in playurl):
+        videourl = video_from_letv(playurl, m3u8=__m3u8__)
+        plugin.set_resolved_url(__m3u8__)
+        return
 
-    urls = site.video_from_url(playurl)
+    elif 'sohu.com' in playurl:
+        videourl = video_from_sohu
+    elif 'qq.com' in playurl:
+        videourl = video_from_qq
+    elif 'iqiyi.com' in playurl:
+        split = urlparse.urlsplit(playurl)
+        playurl = '{scheme}://{netloc}{path}/'.format(scheme=split[0],
+                                                      netloc=split[1],
+                                                      path=split[2])
+        videourl = video_from_iqiyi
+    elif 'fun.tv' in playurl:
+        videourl = video_from_funshion
+    elif 'youku.com' in playurl:
+        videourl = video_from_youku
+    elif 'mgtv.com' in playurl:
+        videourl = video_from_mgtv
+    else:
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '地址不能解析')
+        return
+
+    urls = videourl(playurl)
     stackurl = 'stack://' + ' , '.join(urls)
     li = ListItem(title, path=stackurl)
     li.set_info('video', {'title': title})
@@ -203,7 +217,6 @@ def channellist(url, info):
     page = req['pn']
     #'http://v.baidu.com/channel/amuse?format=json&pn=1'
     api = HOST + '/' + url + '?format=json&pn=' + str(page)
-    print "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",api
     html = get_html(api)
     data = loads(html)['data']
     videos = data['videos']

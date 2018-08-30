@@ -53,7 +53,7 @@ def playvideo(tvId, vid, title):
     sel = 1
     urls = video_from_vid(tvId, vid, level=sel)
     if urls is None:
-        xbmcgui.Dialog().ok(__addonname__, '无法播放此视频')
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
         return
 
     stackurl = 'stack://' + ' , '.join(urls)
@@ -327,7 +327,7 @@ def search():
 
 @plugin.route('/videolist/<url>')
 def videolist(url):
-    plugin.set_content('videos')
+    plugin.set_content('TVShows')
     html = get_html(url)
     html = re.sub('\t|\r|\n', ' ', html)
     tree = BeautifulSoup(html, 'html.parser')

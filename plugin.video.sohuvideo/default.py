@@ -101,7 +101,7 @@ def videolist(name, url):
     })
 
     vlists = tree.find_all('ul', {'class': 'st-list'})
-    lists = vlists[0].find_all('li')
+    lists = [] if len(vlists) == 0 else vlists[0].find_all('li')
 
     for item in lists:
         pic = item.find('div', {'class': 'st-pic'})
@@ -155,7 +155,7 @@ def videolist(name, url):
     })
 
     pages = tree.find_all('div', {'class': 'ssPages area'})
-    pages = pages[0].find_all('a')
+    pages = [] if len(pages) == 0 else pages[0].find_all('a')
     for page in pages:
         items.append({
             'label': page['title'].encode('utf-8'),
