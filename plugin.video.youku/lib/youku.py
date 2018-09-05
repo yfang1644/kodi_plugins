@@ -4,10 +4,16 @@
 import ssl
 import time
 import urllib2 as request
-from urllib import quote
+from urllib import urlencode
 from json import loads
 from common import get_html, match1
 
+from ctypes import c_int
+import hashlib
+import random
+import struct
+import hmac
+import base64
 ####################
 cookies = None
 
@@ -18,10 +24,28 @@ def fetch_cna():
     cna = match1(cookies, "cna=([^;]+)")
     return cna if cna else "oqikEO1b7CECAbfBdNNf1PM1"
 
+def hashCode(str):
+    res = c_int(0)
+    if not isinstance(str, bytes):
+        str = str.encode()
+    for i in bytearray(str):
+        res = c_int(c_int(res.value * 0x1f).value + i)
+    return res.value
+
+def generateUtdid():
+    timestamp = int(time.time()) - 60 * 60 * 8
+    i31 = random.randint(0, (1 << 31) - 1)
+    imei = hashCode(str(i31))
+    msg = struct.pack('!2i2bi', timestamp, i31, 3, 0, imei)
+    key = b'd6fc3a4a06adbde89223bvefedc24fecde188aaa9161'
+    data = hmac.new(key, msg, hashlib.sha1).digest()
+    msg += struct.pack('!i', hashCode(base64.standard_b64encode(data)))
+    return base64.standard_b64encode(msg)
+
 class Youku():
     name = "优酷 (Youku)"
-    ckey_default = quote("DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND")
-    ckey_mobile = quote("7B19C0AB12633B22E7FE81271162026020570708D6CC189E4924503C49D243A0DE6CD84A766832C2C99898FC5ED31F3709BB3CDD82C96492E721BDD381735026")
+    ckey_default = "DIl58SLFxFNndSV1GFNnMQVYkx1PP5tKe1siZu/86PR1u/Wh1Ptd+WOZsHHWxysSfAOhNJpdVWsdVJNsfJ8Sxd8WKVvNfAS8aS8fAOzYARzPyPc3JvtnPHjTdKfESTdnuTW6ZPvk2pNDh4uFzotgdMEFkzQ5wZVXl2Pf1/Y6hLK0OnCNxBj3+nb0v72gZ6b0td+WOZsHHWxysSo/0y9D2K42SaB8Y/+aD2K42SaB8Y/+ahU+WOZsHcrxysooUeND"
+    ckey_mobile = "7B19C0AB12633B22E7FE81271162026020570708D6CC189E4924503C49D243A0DE6CD84A766832C2C99898FC5ED31F3709BB3CDD82C96492E721BDD381735026"
 
     # Last updated: 2015-11-24
     stream_types = [
@@ -39,11 +63,11 @@ class Youku():
     def __init__(self, *args):
         # Found in http://g.alicdn.com/player/ykplayer/0.5.28/youku-player.min.js
         # grep -oE '"[0-9a-zA-Z+/=]{256}"' youku-player.min.js
-        self.params = {
-            ('0517', self.ckey_default),
+        self.params = (
+            ('0103010102', self.ckey_mobile),
             ('0516', self.ckey_default),
-            ('0515', self.ckey_default)
-        }
+            ('0517', self.ckey_default)
+        )
 
         self.title = ''
 
@@ -80,15 +104,18 @@ class Youku():
 
         for ccode, ckey in self.params:
             api_url = 'https://ups.youku.com/ups/get.json?'
-            api_url += 'vid=' + self.vid
-            api_url += '&ccode=' + ccode
-            api_url += '&client_ip=192.168.1.1'
-            api_url += '&utid=' + quote(fetch_cna())
-            api_url += '&client_ts=' + str(int(time.time()))
-            api_url += '&ckey=' + ckey
+            _utid = generateUtdid() if len(ccode)>4 else fetch_cna()
+            params = {
+                'vid': self.vid,
+                'ccode': ccode,
+                'utid': _utid,
+                'ckey': ckey,
+                'client_ip': '192.168.1.1',
+                'client_ts': int(time.time()),
+            }
             
             data = loads(get_html(
-                api_url,
+                api_url + urlencode(params),
                 headers={'Referer': 'https://v.youku.com'}
                 ))
 

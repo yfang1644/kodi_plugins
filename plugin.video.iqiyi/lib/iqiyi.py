@@ -10,10 +10,21 @@ from common import get_html, r1
 
 class IQiyi():
     name = '爱奇艺 (Iqiyi)'
-
+    stream_types = [
+        {'id': '4k', 'container': 'm3u8', 'video_profile': '4k'},
+        {'id': 'BD', 'container': 'm3u8', 'video_profile': '1080p'},
+        {'id': 'TD', 'container': 'm3u8', 'video_profile': '720p'},
+        {'id': 'TD_H265', 'container': 'm3u8', 'video_profile': '720p H265'},
+        {'id': 'HD', 'container': 'm3u8', 'video_profile': '540p'},
+        {'id': 'HD_H265', 'container': 'm3u8', 'video_profile': '540p H265'},
+        {'id': 'SD', 'container': 'm3u8', 'video_profile': '360p'},
+        {'id': 'LD', 'container': 'm3u8', 'video_profile': '210p'},
+    ]
+     
     ids = ['4k','BD', 'TD', 'HD', 'SD', 'LD']
     vd_2_id = {10: '4k', 19: '4k', 5:'BD', 18: 'BD', 14: 'HD', 21: 'HD', 2: 'HD', 4: 'TD', 17: 'TD', 96: 'LD', 1: 'SD'}
     id_2_profile = {'4k':'4k', 'BD': '1080p','TD': '720p', 'HD': '540p', 'SD': '360p', 'LD': '210p'}
+    idsize= {'4k':9, 'BD': 8,'TD': 7, 'HD': 6, 'SD': 5, 'LD': 4}
 
     def get_macid(self):
         '''获取macid,此值是通过mac地址经过算法变换而来,对同一设备不变'''
@@ -29,11 +40,8 @@ class IQiyi():
         sufix=''
         for j in xrange(8):
             for k in xrange(4):
-                v4 = 13 * (66 * k + 27 * j) % 35
-                if ( v4 >= 10 ):
-                    v8 = v4 + 88
-                else:
-                    v8 = v4 + 49
+                v4 = (13 * (66 * k + 27 * j)) % 35
+                v8 = v4 + (88 if v4 >= 10 else 49)
                 sufix += chr(v8)
         url_params += sufix
         m = hashlib.md5()
@@ -41,14 +49,24 @@ class IQiyi():
         vf = m.hexdigest()
         return vf
 
-    def getVMS(self, tvid, vid):
+    def getVMS1(self, tvid, vid):
+        t = int(time.time() * 1000)
+        src = '76f90cbd92f94a2e925d83e8ccd22cb7'
+        key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
+        m = hashlib.md5()
+        m.update(str(t) + key + vid)
+        sc = m.hexdigest()
+        vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
+        return loads(get_html(vmsreq))
+
+    def getVMS2(self, tvid, vid):
         host = 'http://cache.video.qiyi.com'
         src = '/vps?tvid=' + tvid
         src += '&vid=' + vid
         src += '&v=0&qypid=%s_12' % tvid
         src += '&src=01012001010000000000'
         src += '&t=%d' %  (time.time() * 1000)
-        src += '&k_tag=1&rs=1&k_uid=' + self.get_macid()
+        src += '&k_tag=1&k_uid=%s&r=1' % self.get_macid()
         req_url = host + src + '&vf=' + self.get_vf(src)
         html = get_html(req_url)
         return loads(html)
@@ -66,26 +84,42 @@ class IQiyi():
             return tvId, videoId
 
     def video_from_vid(self, tvId, videoId, **kwargs):
-        vps_data = self.getVMS(tvId, videoId)
-        if vps_data["code"] != 'A00000':  # can\'t play this video!!
-            return None
-
-        url_prefix = vps_data['data']['vp']['du']
-        stream = vps_data['data']['vp']['tkl'][0]
-        vs_array = stream['vs']
-
         level = kwargs.get('level', 0)
-        level = min(level , len(vs_array)-1)
+        try:
+            info = self.getVMS1(tvId, videoId)
+            assert info['code'] == 'A00000', 'can\'t play this video!!'
 
-        vs = vs_array[level]
-        bid = vs['bid']
-        fs_array = vs['fs']
-        real_urls = []
-        for seg_info in fs_array:
-            url = url_prefix + seg_info['l']
-            json_data = loads(get_html(url))
-            down_url = json_data['l']
-            real_urls.append(down_url)
+            streams = []
+            for stream in info['data']['vidl']:
+                stream_id = self.vd_2_id[stream['vd']]
+                if stream_id in self.stream_types:
+                    continue
+                stream_profile = self.idsize[stream_id]
+                streams.append((stream_profile, stream['m3u']))
+
+            streams.sort()
+            level = min(level, len(streams) - 1)
+
+            real_urls = [streams[level][1]]
+        except:
+            info = self.getVMS2(tvId, videoId)
+            assert info['code'] == 'A00000', 'can\'t play this video!!'
+            
+            url_prefix = info['data']['vp']['du']
+            stream = info['data']['vp']['tkl'][0]
+            vs_array = stream['vs']
+
+            level = min(level , len(vs_array)-1)
+
+            vs = vs_array[level]
+            fs_array = vs['fs']
+            real_urls = []
+            for seg_info in fs_array:
+                url = url_prefix + seg_info['l']
+                json_data = loads(get_html(url))
+                down_url = json_data['l']
+                real_urls.append(down_url)
+  
         return real_urls
 
     def video_from_url(self, url, **kwargs):

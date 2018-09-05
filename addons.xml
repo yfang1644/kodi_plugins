@@ -2,7 +2,7 @@
 <addons>
 <addon id="plugin.video.letv"
     name="乐视网 (LeTV)"
-    version="2.1.0"
+    version="2.1.1"
     provider-name="yfang1644">
   	<requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -381,7 +381,7 @@
 
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
-    version="2.4.0"
+    version="2.4.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -462,7 +462,7 @@
 
 <addon id="plugin.video.funshion"
     name="风行视频(Funshion)"
-    version="2.1.0"
+    version="2.1.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -551,7 +551,7 @@
 
 <addon id="plugin.video.youku"
     name="优酷视频"
-    version="1.1.0"
+    version="1.1.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>

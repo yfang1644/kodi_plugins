@@ -168,13 +168,13 @@ class Funshion():
     # Logics for single video until drama
     #----------------------------------------------------------------------
     def video_from_url(self, url, **kwargs):
-        vid = r1(r'https://www.fun.tv/vplay/v-(\w+)', url)
+        vid = r1(r'http?://www.fun.tv/vplay/v-(\w+)', url)
         if vid:
             return self.video_from_vid(vid, single_video=True, **kwargs)
         else:
-            vid = r1(r'https://www.fun.tv/vplay/.*v-(\w+)', url)
+            vid = r1(r'http?://www.fun.tv/vplay/.*v-(\w+)', url)
             if not vid:
-                epid = r1(r'https://www.fun.tv/vplay/.*g-(\w+)', url)
+                epid = r1(r'http?://www.fun.tv/vplay/.*g-(\w+)', url)
                 url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(epid)
                 html = get_html(url)
                 meta = loads(html)

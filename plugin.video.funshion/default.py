@@ -11,12 +11,9 @@ from lib.funshion import video_from_url
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 EXTRA = '[COLOR FF8080FF]%s[/COLOR]'
 
-HOST_URL = 'https://www.fun.tv'
+HOST_URL = 'http://www.fun.tv'
 
-profile_m = 'https://pm.funshion.com/v5/media/profile?id={}'
-profile_v = 'https://pv.funshion.com/v5/video/profile?id={}'
-episodes = 'https://pm.funshion.com/v5/media/episode?id={}'
-related =  'https://pm.funshion.com/v6/media/relate?id={}'
+profile_m = 'http://pm.funshion.com/v5/media/profile?id={}'
 
 ########################################################################
 # 风行视频(Funshion)"
@@ -135,13 +132,13 @@ def playList(url):
 
 
 def relatedList(url):
-    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
+    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
     if not epid:
-        epid = r1('https://www.fun.tv/vplay/v-(\w+)', url)
+        epid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)
 
     # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/media?isajax=1'
     # rel_api = 'http://api1.fun.tv/api_get_related_videos/%s/video?isajax=1'
-    rel_api = 'https://pm.funshion.com/v6/media/relate?id=%s'
+    rel_api = 'http://pm.funshion.com/v6/media/relate?id=%s'
     link = get_html(rel_api % epid)
     jsdata = loads(link)
 
@@ -192,7 +189,7 @@ def singleVideo(url):
 
 ##########################################################################
 def seriesList(url):
-    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
+    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
     # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
     purl = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
     link = get_html(purl % epid)
@@ -264,8 +261,8 @@ def playvideo(url):
 @plugin.route('/albumlist/<url>')
 def albumlist(url):
     plugin.set_content('TVShows')
-    vid = r1('https://www.fun.tv/vplay/v-(\w+)', url)
-    epid = r1('https://www.fun.tv/vplay/.*g-(\w+)', url)
+    vid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)
+    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
     if vid:
         return singleVideo(url)    # play single video
     elif epid:

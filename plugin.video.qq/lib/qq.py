@@ -10,7 +10,7 @@ from common import get_html, match1
 PLAYER_PLATFORM = 1          # default
 PLAYER_PLATFORM = 10901      # some VIP available but slow
 PLAYER_PLATFORM = 11         # ok, but limited
-PLAYER_VERSION = '3.2.18.286'
+PLAYER_VERSION = '3.2.19.333'
 
 
 class QQ():
@@ -138,17 +138,12 @@ class QQ():
                 filename = '%s.%s.%d.%s' % (fns[0], fns[1], idx, fns[2])
 
             params = {
-                'ran': random(),
                 'appver': PLAYER_VERSION,
                 'otype': 'json',
-                'encryptVer': '',
                 'platform': PLAYER_PLATFORM,
                 'filename': filename,
                 'vid': vid,
                 'vt': vt,
-                'charge': 0,
-                'format': fmt_id,
-                'ckey': ''
             }
             params = self.qq_get_params(fmt_name, type_name, fmt_br, params)
             form = urlencode(params)
@@ -157,20 +152,19 @@ class QQ():
         return urls
 
     def video_from_url(self, url, **kwargs):
-        vid = match1(url, 'v.qq.com/x/page/(\w+).html')
-        if not vid:
-            html = get_html(url)
-            vid = match1(html, 'vid:\s*\"([^\"]+)')
-        
-        return self.video_from_vid(vid, **kwargs)
+        vid = match1(url, 'vid=(\w+)', '/(\w+)\.html')
+        if vid and match1(url, '(^https?://film\.qq\.com)'):
+            url = 'http://v.qq.com/x/cover/%s.html' % vid
 
-    def prepare_list(self):
-        html = get_html(self.url)
-        vids = [a.strip('"') for a in match1(html, '\"vid\":\[([^\]]+)').split(',')]
-        return vids
+        if not vid or len(vid) != 11:
+            html = get_html(url)
+            vid = match1(html, '&vid=(\w+)', 'vid:\s*[\"\'](\w+)', 'vid\s*=\s*[\"\']\s*(\w+)')
+        for v in vid:
+            if v is not None:
+                break
+        return self.video_from_vid(v, **kwargs)
 
 
 site = QQ()
 video_from_url = site.video_from_url
 video_from_vid = site.video_from_vid
-#urls = video_from_url('https://v.qq.com/x/cover/z95vg0q79gz2cde.html')

@@ -77,10 +77,11 @@ def filter(url):
     return videolist(url=url, page=1)
 
 
-@plugin.route('/playvideo/<vid>')
-def playvideo(vid):
+@plugin.route('/playvideo/<vid>/<name>')
+def playvideo(vid, name):
     v_urls = video_from_vid(vid, m3u8=__m3u8__, level=3)
-    xbmc.Player().play(__m3u8__)
+    li = xbmcgui.ListItem(name)
+    xbmc.Player().play(__m3u8__, li)
 
 
 @plugin.route('/episodelist/<vids>/<name>')
@@ -204,7 +205,7 @@ def videolist(url, page):
         else:
             items.append({
                 'label': item['name'],
-                'path': url_for('playvideo', vid=vids),
+                'path': url_for('playvideo', vid=vids, name=item['name']),
                 'is_playable': True,
                 'thumbnail': item['imgUrl'],
                 'info': {'title': item['name'], 'plot': item['description']},
