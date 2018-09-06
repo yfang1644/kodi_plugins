@@ -199,7 +199,7 @@ def episodelist(url, page):
 
 @plugin.route('/playvideo/<vid>')
 def playvideo(vid):
-    level = int(__addon__.getSetting('resolution'))
+    level = int(plugin.addon.getSetting('resolution'))
 
     m3u_url = video_from_vid(vid, level=level)
     stackurl = 'stack://' + ' , '.join(m3u_url)
