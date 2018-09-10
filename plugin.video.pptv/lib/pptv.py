@@ -3,6 +3,7 @@
 
 import re
 import time
+from urllib import urlencode
 from random import random
 import binascii
 from xml.dom.minidom import parseString
@@ -215,14 +216,37 @@ class PPTV():
             {'itag': '0'},
     ]
 
-    def video_from_id(self, id, **kwargs):
-        api_url = 'http://web-play.pptv.com/webplay3-0-{}.xml'.format(id)
-        api_url += '?zone=8&version=4&username=&ppi=302c3333&type=ppbox.launcher&pageUrl=http%3A%2F%2Fv.pptv.com&o=0&referrer=&kk=&scver=1&appplt=flp&appid=pptv.flashplayer.vod&appver=3.4.3.3&nddp=1'
-        dom = parseString(get_html(api_url, decoded=False))
+    def video_from_vid(self, id, **kwargs):
+        api_url = 'http://web-play.pptv.com/webplay3-0-{}.xml?'.format(id)
+        req = {
+            'zone': 8,
+            'version': 4,
+            'username': '',
+            'ppi': '302c3532',
+            'type': 'ppbox.launcher',
+            'pageUrl': 'http://v.pptv.com',
+            'o': 0,
+            'referrer': '',
+            'kk': '',
+            'scver': 1,
+            'appplt': 'flp',
+            'appid': 'pptv.flashplayer.vod',
+            'appver': '3.4.3.3',
+            'nddp': 1
+        }
+        dom = parseString(get_html(api_url + urlencode(req), decoded=False))
         self.title, m_items, m_streams, m_segs = parse_pptv_xml(dom)
         xml_streams = merge_meta(m_items, m_streams, m_segs)
-        stream_id = str(kwargs.get('level', 0))
-        stream_data = xml_streams[stream_id]
+        stream_key = xml_streams.keys()
+        stream_key.sort()
+        list_streams = []
+        for x in stream_key:
+            list_streams += [xml_streams[x]]
+
+        level = int(kwargs.get('level', 0))
+        level = min(level, len(list_streams)-1)
+
+        stream_data = list_streams[level]
         src = make_url(stream_data)
         '''
         self.streams[stream_id] = {
@@ -240,8 +264,9 @@ class PPTV():
         id = r1(r'webcfg\s*=\s*{"id":\s*(\d+)', html)
         assert id
 
-        return self.video_from_id(id, **kwargs)
+        return self.video_from_vid(id, **kwargs)
 
 
 site = PPTV()
 video_from_url = site.video_from_url
+video_from_vid = site.video_from_vid

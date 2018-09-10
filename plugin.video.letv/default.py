@@ -180,6 +180,21 @@ def videolist(url, page):
         'path': url_for('filter', url=url)
     })
 
+    soup = tree.find_all('div', {'class': 'column_tite'})
+    sortmode = soup[0].find_all('li')
+    for x in sortmode:
+        try:
+            url = x.a['href']
+            title = x.text
+            title = re.sub('\n| ', '', title)
+        except:
+            continue
+        items.append({
+            'label': '[COLOR FFFF00FF]' + title + '[/COLOR]',
+            'path': url_for('videolist', url=httphead(url), page=page),
+
+        })
+
     page = int(page)
     if page > 1:
         items.append({
@@ -199,13 +214,13 @@ def videolist(url, page):
             items.append({
                 'label': item['name'],
                 'path': url_for('episodelist', vids=vids, name=item['name'].encode('utf-8')),
-                'thumbnail': item['imgUrl'],
+                'thumbnail': item.get('imgUrl'),
                 'info': {'title': item['name'], 'plot': item['description']},
             })
         else:
             items.append({
                 'label': item['name'],
-                'path': url_for('playvideo', vid=vids, name=item['name']),
+                'path': url_for('playvideo', vid=vids, name=item['name'].encode('utf-8')),
                 'is_playable': True,
                 'thumbnail': item['imgUrl'],
                 'info': {'title': item['name'], 'plot': item['description']},
@@ -227,7 +242,7 @@ def index():
         'path': url_for('search')
     }
 
-    url = LIST_URL + '/listn/c2_t-1_a-1_y-1_s1_md_o7_d1_p.html'
+    url = LIST_URL
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('ul', {'class': 'list_cnt'})

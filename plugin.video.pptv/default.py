@@ -9,7 +9,7 @@ import time
 from random import random
 from json import loads
 from common import get_html
-from lib.pptv import video_from_url
+from lib.pptv import video_from_vid
 
 # Plugin constants
 
@@ -18,6 +18,8 @@ url_for = plugin.url_for
 
 PPTV_LIST = 'http://list.pptv.com/'
 PPTV_TV_LIST = 'http://live.pptv.com/list/tv_list'
+VIP = '[COLOR FFFF00FF](VIP)[/COLOR]'
+NEW = u'[COLOR 808000FF](新)[/COLOR]'
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -40,11 +42,11 @@ def tvstudio(url, page):
     pass
 
 
-@plugin.route('/playvideo/<url>')
-def playvideo(url):
+@plugin.route('/playvideo/<vid>')
+def playvideo(vid):
     quality = int(plugin.addon.getSetting('movie_quality'))
 
-    urls = video_from_url(url, level=quality)
+    urls = video_from_vid(vid, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
     plugin.set_resolved_url(stackurl)
 
@@ -118,10 +120,13 @@ def episodelist(url):
         return []
 
     items = []
+    content = jsplay['share_content']
     for item in jsplay['playList']['data']['list']:
+        vip = '' if int(item['vip']) == 0 else VIP
+        new = NEW if item.get('isNew') else ''
         items.append({
-            'label': item['title'],
-            'path': url_for('playvideo', url=item['url']),
+            'label': item['title'] + vip + new,
+            'path': url_for('playvideo', vid=item['id']),
             'thumbnail': item['capture'],
             'is_playable': True,
             'info': {'title': item['title']},
