@@ -184,14 +184,14 @@ def videolist(url, page):
     sortmode = soup[0].find_all('li')
     for x in sortmode:
         try:
-            url = x.a['href']
+            sorturl = x.a['href']
             title = x.text
             title = re.sub('\n| ', '', title)
         except:
             continue
         items.append({
             'label': '[COLOR FFFF00FF]' + title + '[/COLOR]',
-            'path': url_for('videolist', url=httphead(url), page=page),
+            'path': url_for('videolist', url=httphead(sorturl), page=page),
 
         })
 
