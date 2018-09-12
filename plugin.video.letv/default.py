@@ -84,18 +84,27 @@ def playvideo(vid, name):
     xbmc.Player().play(__m3u8__, li)
 
 
-@plugin.route('/episodelist/<vids>/<name>')
-def episodelist(vids, name):
+@plugin.route('/episodelist/<aid>/<name>')
+def episodelist(aid, name):
     plugin.set_content('TVShows')
+    api = 'http://d.api.m.le.com/detail/episode?pid={}&platform=pc&page=1&pagesize=300'
+    html = get_html(api.format(aid))
+    js = loads(html)
+    list = js['data']['list']
     items = []
-    vlist = vids.split(',')
-    for i, vid in enumerate(vlist):
-        title = name + '-' + str(i+1)
+    for item in list:
+        title = item['title']
+        sub = item['sub_title']
+        if sub:
+            sub = '(' + item['sub_title'] + ')'
         items.append({
-            'label': title,
-            'path': url_for('playvideo', vid=vid, name=title),
+            'label': title + sub,
+            'path': url_for('playvideo', vid=item['vid'], name=title.encode('utf-8')),
+            'thumbnail': item['pic'],
             'is_playable': True,
-            'info': {'title': title}
+            'info': {'title': title,
+                     'plot': item['description'],
+                     'duration': item['duration']}
         })
     return items
 
@@ -204,25 +213,33 @@ def videolist(url, page):
 
     newpage = '&pn=' + str(page)
     frontUrl = re.sub('&pn=\d+', newpage, frontUrl)
+    print "UUUUUUUUUUUUUUUUUU",frontUrl
     html = get_html(frontUrl)
     jsdata = loads(html)['data']['arr']
     for item in jsdata:
-        vids = item.get('vids')
-        if vids is None:
-            vids = item.get('vid')
-        if ',' in vids:
+        aid = item.get('aid')   #album ID
+        eps = item.get('episodes', 0);
+        sub = item.get('subname', '')
+        if sub:
+            sub = '(' + sub + ')'
+        if eps == '' or int(eps) < 2:
+            vid = item.get('vids')
+            if vid:
+                vid = vid.split(',')[0]
+            else:
+                vid = item.get('vid')
             items.append({
-                'label': item['name'],
-                'path': url_for('episodelist', vids=vids, name=item['name'].encode('utf-8')),
-                'thumbnail': item.get('imgUrl'),
+                'label': item['name'] + sub,
+                'path': url_for('playvideo', vid=vid, name=item['name'].encode('utf-8')),
+                'is_playable': True,
+                'thumbnail': item['imgUrl'],
                 'info': {'title': item['name'], 'plot': item['description']},
             })
         else:
             items.append({
-                'label': item['name'],
-                'path': url_for('playvideo', vid=vids, name=item['name'].encode('utf-8')),
-                'is_playable': True,
-                'thumbnail': item['imgUrl'],
+                'label': item['name'] + sub,
+                'path': url_for('episodelist', aid=aid, name=item['name'].encode('utf-8')),
+                'thumbnail': item.get('imgUrl'),
                 'info': {'title': item['name'], 'plot': item['description']},
             })
 
