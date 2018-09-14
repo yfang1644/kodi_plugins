@@ -41,9 +41,10 @@ __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decod
 
 HOST_URL = 'https://www.le.com'
 LIST_URL = 'http://list.le.com'
-ALBULM_URL = 'http://d.api.m.le.com/play/getAllVideoList?id=%s&platform=pc'
-ALBULM_URL = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
-
+ALBUM_API = 'http://d.api.m.le.com/play/getAllVideoList?id={}&platform=pc'
+DYNAMIC_API = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
+TRAILER_API = 'http://d.api.m.le.com/detail/getVideoTrailer?pid={}&platform=pc'
+EPISODES_API = 'http://d.api.m.le.com/detail/episode?pid={}&pagesize=300&platform=pc'
 
 @plugin.route('/filter/<url>')
 def filter(url):
@@ -84,28 +85,46 @@ def playvideo(vid, name):
     xbmc.Player().play(__m3u8__, li)
 
 
-@plugin.route('/episodelist/<aid>/<name>')
-def episodelist(aid, name):
+@plugin.route('/episodelist/<aid>')
+def episodelist(aid):
     plugin.set_content('TVShows')
-    api = 'http://d.api.m.le.com/detail/episode?pid={}&platform=pc&page=1&pagesize=300'
-    html = get_html(api.format(aid))
+    html = get_html(EPISODES_API.format(aid))
     js = loads(html)
     list = js['data']['list']
     items = []
     for item in list:
-        title = item['title']
-        sub = item['sub_title']
+        title = item['title'].encode('utf-8')
+        sub = item['sub_title'].encode('utf-8')
         if sub:
-            sub = '(' + item['sub_title'] + ')'
+            sub = '({})'.format(sub)
         items.append({
             'label': title + sub,
-            'path': url_for('playvideo', vid=item['vid'], name=title.encode('utf-8')),
+            'path': url_for('playvideo', vid=item['vid'], name=title),
             'thumbnail': item['pic'],
             'is_playable': True,
             'info': {'title': title,
                      'plot': item['description'],
                      'duration': item['duration']}
         })
+
+    #trailer
+    html = get_html(TRAILER_API.format(aid))
+    js = loads(html)
+    list = js['data']
+    for item in list:
+        title = item['title'].encode('utf-8')
+        d = 0
+        for t in item['duration'].split(':'):
+            d = d * 60 + int(t)
+        items.append({
+            'label': title,
+            'path': url_for('playvideo', vid=item['id'], name=title),
+            'thumbnail': item['pic'],
+            'is_playable': True,
+            'info': {'title': title, 'duration': d}
+
+        })
+
     return items
 
 
@@ -114,6 +133,7 @@ def episodelist(aid, name):
 ###############################################################################
 @plugin.route('/search')
 def search():
+    plugin.set_content('TVShows')
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     # keyboard.setHiddenInput(hidden)
     xbmc.sleep(1000)
@@ -124,38 +144,43 @@ def search():
     keyword = keyboard.getText()
 
     page = 1
-    p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
-    p_url = p_url + quote_plus(keyword)
-    link = get_html(p_url)
+    #p_url = 'http://so.le.com/s?hl=1&dt=2&ph=420001&from=pcjs&ps=30&wd='
+    p_url = 'http://suggest.letv.cn/suggestion?jf=3&q='
+    link = get_html(p_url + quote_plus(keyword))
     items = []
+
+    lists = loads(link)
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
 
-    soup = content.find_all('li', {'class': 'list_item'})
-    soup1 = content.find_all('div', {'class': 'So-detail Movie-so'})
-    soup2 = content.find_all('div', {'class': 'So-detail Tv-so'})
-    for item in soup1 + soup2:
+    for item in lists['data_list']:
         try:
-            href = item.a['href']
+            aid = item['aid']
         except:
             continue
-        title = item.a['title']
-        try:
-            img = item.a['src']
-        except:
-            img = item.img['src']
 
-        info = item.find('div', {'class': 'info-cnt'})
-        try:
-            info = info.text
-        except:
-            info = ''
+        title = item['name'].encode('utf-8')
+        cate = item.get('sub_category_name', '')
+        if cate:
+            cate = '({})'.format(cate.encode('utf-8'))
+        eps = item.get('episodes', 0)
+        img = item.get('post_st', '')
+        #if eps == '' or int(eps) < 2:
+        #    items.append({
+        #        'label': title + cate,
+        #        'path': url_for('playvideo', vid=aid, name=title),
+        #        'thumbnail': img,
+        #        'is_playable': True,
+        #        'info': {'title': title}
+        #    })
+        #else:
         items.append({
-            'label': title,
-            'path': url_for('episodelist', vids=1, name=title.encode('utf-8')),
-            'thumbnail': img,
-            'info': {'title': title, 'plot': info}
+                'label': title + cate,
+                'path': url_for('episodelist', aid=aid),
+                'thumbnail': img,
+                'info': {'title': title}
         })
+
     return items
 
 
@@ -220,8 +245,9 @@ def videolist(url, page):
         aid = item.get('aid')   #album ID
         eps = item.get('episodes', 0);
         sub = item.get('subname', '')
+        title = item['name'].encode('utf-8')
         if sub:
-            sub = '(' + sub + ')'
+            sub = '({})'.format(sub.encode('utf-8'))
         if eps == '' or int(eps) < 2:
             vid = item.get('vids')
             if vid:
@@ -229,18 +255,18 @@ def videolist(url, page):
             else:
                 vid = item.get('vid')
             items.append({
-                'label': item['name'] + sub,
-                'path': url_for('playvideo', vid=vid, name=item['name'].encode('utf-8')),
+                'label': title + sub,
+                'path': url_for('playvideo', vid=vid, name=title),
                 'is_playable': True,
                 'thumbnail': item['imgUrl'],
-                'info': {'title': item['name'], 'plot': item['description']},
+                'info': {'title': title, 'plot': item['description']},
             })
         else:
             items.append({
-                'label': item['name'] + sub,
-                'path': url_for('episodelist', aid=aid, name=item['name'].encode('utf-8')),
+                'label': title + sub,
+                'path': url_for('episodelist', aid=aid),
                 'thumbnail': item.get('imgUrl'),
-                'info': {'title': item['name'], 'plot': item['description']},
+                'info': {'title': title, 'plot': item['description']},
             })
 
     items.append({
