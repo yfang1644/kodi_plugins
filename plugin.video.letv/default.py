@@ -238,16 +238,15 @@ def videolist(url, page):
 
     newpage = '&pn=' + str(page)
     frontUrl = re.sub('&pn=\d+', newpage, frontUrl)
-    print "UUUUUUUUUUUUUUUUUU",frontUrl
+
     html = get_html(frontUrl)
     jsdata = loads(html)['data']['arr']
     for item in jsdata:
         aid = item.get('aid')   #album ID
         eps = item.get('episodes', 0);
-        sub = item.get('subname', '')
+        sub = item.get('subname')
         title = item['name'].encode('utf-8')
-        if sub:
-            sub = '({})'.format(sub.encode('utf-8'))
+        sub = '({})'.format(sub.encode('utf-8')) if sub else ''
         if eps == '' or int(eps) < 2:
             vid = item.get('vids')
             if vid:
