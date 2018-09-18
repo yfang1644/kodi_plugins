@@ -37,7 +37,7 @@ def httphead(url):
 
 # Plugin constants
 __profile__   = xbmc.translatePath(plugin.addon.getAddonInfo('profile'))
-__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8')).decode("utf-8")
+__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8'))
 
 HOST_URL = 'https://www.le.com'
 LIST_URL = 'http://list.le.com'
@@ -78,11 +78,11 @@ def filter(url):
     return videolist(url=url, page=1)
 
 
-@plugin.route('/playvideo/<vid>/<name>')
-def playvideo(vid, name):
-    v_urls = video_from_vid(vid, m3u8=__m3u8__, level=3)
-    li = xbmcgui.ListItem(name)
-    xbmc.Player().play(__m3u8__, li)
+@plugin.route('/playvideo/<vid>')
+def playvideo(vid):
+    level = int(plugin.addon.getSetting('resolution'))
+    v_urls = video_from_vid(vid, m3u8=__m3u8__, level=level)
+    plugin.set_resolved_url(__m3u8__)
 
 
 @plugin.route('/episodelist/<aid>')
@@ -99,7 +99,7 @@ def episodelist(aid):
             sub = '({})'.format(sub)
         items.append({
             'label': title + sub,
-            'path': url_for('playvideo', vid=item['vid'], name=title),
+            'path': url_for('playvideo', vid=item['vid']),
             'thumbnail': item['pic'],
             'is_playable': True,
             'info': {'title': title,
@@ -118,7 +118,7 @@ def episodelist(aid):
             d = d * 60 + int(t)
         items.append({
             'label': title,
-            'path': url_for('playvideo', vid=item['id'], name=title),
+            'path': url_for('playvideo', vid=item['id']),
             'thumbnail': item['pic'],
             'is_playable': True,
             'info': {'title': title, 'duration': d}
@@ -168,7 +168,7 @@ def search():
         #if eps == '' or int(eps) < 2:
         #    items.append({
         #        'label': title + cate,
-        #        'path': url_for('playvideo', vid=aid, name=title),
+        #        'path': url_for('playvideo', vid=aid),
         #        'thumbnail': img,
         #        'is_playable': True,
         #        'info': {'title': title}
@@ -255,7 +255,7 @@ def videolist(url, page):
                 vid = item.get('vid')
             items.append({
                 'label': title + sub,
-                'path': url_for('playvideo', vid=vid, name=title),
+                'path': url_for('playvideo', vid=vid),
                 'is_playable': True,
                 'thumbnail': item['imgUrl'],
                 'info': {'title': title, 'plot': item['description']},
