@@ -5,8 +5,6 @@ from xbmcswift2 import Plugin, xbmcgui, xbmc
 from bs4 import BeautifulSoup
 from urllib import urlencode
 import re
-import time
-from random import random
 from json import loads
 from common import get_html
 from lib.pptv import video_from_vid

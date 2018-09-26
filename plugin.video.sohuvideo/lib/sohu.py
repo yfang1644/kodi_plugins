@@ -3,7 +3,7 @@
 
 from json import loads
 import time
-from urlparse import urlparse
+from urllib import urlencode
 import re
 from common import get_html, r1
 
@@ -46,12 +46,29 @@ class Sohu():
     v_api1 = 'http://hot.vrs.sohu.com/vrs_flash.action?vid=%s'
     v_api2 = 'http://my.tv.sohu.com/play/videonew.do?vid=%s&referer=http://my.tv.sohu.com'
 
-    def real_url(self, host, vid, new, clipURL, ck):
+    def real_url0(self, host, vid, new, clipURL, ck):
         url = 'http://'+host+'/?prot=9&prod=flash&pt=1&file='+clipURL+'&new='+new +'&key='+ck+'&vid='+str(vid)+'&uid='+str(int(time.time()*1000))+'&t=0&rb=1'
         try:
             return loads(get_html(url))['url']
         except:
             return ''
+
+
+    def real_url(self, fileName, key, ch):
+        api = 'https://data.vod.itc.cn/ip?'
+        req = {
+            'new': fileName,
+            'num': 1,
+            'key': key,
+            'ch': ch,
+            'pt': 1,
+            'pg': 2,
+            'prod': 'h5n'
+        }
+        html = get_html(api + urlencode(req))
+        print loads(html)['servers']
+        return loads(html)['servers'][0]['url']
+
 
     def video_from_url(self, url, **kwargs):
         if re.match(r'http://share.vrs.sohu.com', url):
@@ -64,7 +81,7 @@ class Sohu():
         return self.video_from_vid(vid, **kwargs)
 
     def video_from_vid(self, vid, **kwargs):
-        vidlist = ['oriVid', 'superVid', 'highVid', 'norVid', 'relativeId']
+        vidlist = ['norVid', 'relativeId', 'highVid', 'superVid','oriVid']
         level = kwargs.get('level', 0)
         qtyp = vidlist[level]
 
@@ -74,10 +91,7 @@ class Sohu():
         try:
             info = loads(get_html(self.v_api1 % vid))
 
-            if 'data' in info:
-                hqvid = info['data'][qtyp]
-            else:
-                hqvid = info[qtyp]
+            hqvid = info['data'][qtyp] if 'data' in info else info[qtyp]
             if hqvid != 0 and hqvid != vid:
                 info = loads(get_html(self.v_api1 % hqvid))
             # if extractor_proxy:
@@ -91,13 +105,13 @@ class Sohu():
         data = info['data']
         title = data['tvName']
         size = sum(map(int, data['clipsBytes']))
+        print size
         urls = []
         assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
-        for new, clip, ck, in zip(data['su'], data['clipsURL'], data['ck']):
-            clipURL = urlparse(clip).path
-            url = self.real_url(host, vid, new, clipURL, ck)
+        for fileName, key, ch, in zip(data['su'], data['ck'], data['ch']):
+            url = self.real_url(fileName, key, ch)
             if url:
-                urls.append(url + '|RANGE=')
+                urls.append(url)
             # assert data['clipsURL'][0].endswith('.mp4')
 
         return urls
