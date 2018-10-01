@@ -54,15 +54,13 @@ class Sohu():
             return ''
 
 
-    def real_url(self, fileName, key, ch):
+    def real_url(self, fileName, key):
         api = 'https://data.vod.itc.cn/ip?'
         req = {
             'new': fileName,
             'num': 1,
             'key': key,
-            'ch': ch,
             'pt': 1,
-            'pg': 2,
             'prod': 'h5n'
         }
         html = get_html(api + urlencode(req))
@@ -101,15 +99,15 @@ class Sohu():
 
         host = info['allot']
         prot = info['prot']
-        tvId = info['tvid']
+        tvid = info['tvid']
         data = info['data']
         title = data['tvName']
         size = sum(map(int, data['clipsBytes']))
         print size
         urls = []
         assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
-        for fileName, key, ch, in zip(data['su'], data['ck'], data['ch']):
-            url = self.real_url(fileName, key, ch)
+        for fileName, key, in zip(data['su'], data['ck']):
+            url = self.real_url(fileName, key)
             if url:
                 urls.append(url)
             # assert data['clipsURL'][0].endswith('.mp4')
