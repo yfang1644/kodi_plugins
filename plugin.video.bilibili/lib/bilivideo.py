@@ -46,15 +46,15 @@ class BiliBase():
         ext = doc.getElementsByTagName('format')[0].firstChild.nodeValue
         for durl in doc.getElementsByTagName('durl'):
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
-        #    urls.append(u + '|referer=https://www.bilibili.com')
-            urls.append(u)
+            urls.append(u + '|Referer=https://www.bilibili.com')
         return urls, ext
 
     def video_from_vid(self, vid, **kwargs):
         level = kwargs.get('level', 0)
         self.vid = vid
         api_url = self.get_api_url(level + 1)
-        html = get_html(api_url, headers=self.headers)
+        self.headers['Referer'] = self.url
+        html = get_html(api_url)
         code = match1(html, '<code>([^<])')
         assert not code, "can't play this video: {}".format(match1(html, 'CDATA\[([^\]]+)'))
         urls, ext = self.parse_cid_playurl(html)
@@ -113,7 +113,7 @@ class BiliBan(BiliBase):
 
 class BiliVideo(BiliBase):
     name = u'哔哩哔哩 (Bilibili)'
-
+    url = ''
     def get_vid_title(self):
         if "#page=" in self.url:
             page_index = match1(self.url, '#page=(\d+)')
@@ -127,9 +127,10 @@ class BiliVideo(BiliBase):
         return vid, title
 
     def get_api_url(self, q):
-        SECRETKEY_MINILOADER = '1c15888dc316e05a15fdd0a02ed6584f'
-        sign_this = hashlib.md5('cid={}&from=miniplay&player=1&quality={}{}'.format(self.vid, q, SECRETKEY_MINILOADER)).hexdigest()
-        return 'http://interface.bilibili.com/playurl?cid={}&player=1&quality={}&from=miniplay&sign={}'.format(self.vid, q, sign_this)
+        SECRETKEY = '1c15888dc316e05a15fdd0a02ed6584f'
+        params_str = 'cid={}&player=1&qn={}'.format(self.vid, q)
+        encrypt = hashlib.md5(params_str+SECRETKEY).hexdigest()
+        return 'http://interface.bilibili.com/v2/playurl?' + params_str + '&sign=' + encrypt
 
     def prepare_list(self):
         html = get_html(self.url)

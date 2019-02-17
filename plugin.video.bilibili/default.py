@@ -102,6 +102,9 @@ CATEGORY = {
     '183': '影视剪辑',
     '184': '预告·资讯',
     '176': '汽车',
+    '185': '国产剧',
+    '187': '海外剧',
+    '188': '数码',
 }
 
 #hotapi = 'https://www.bilibili.com/index/tag/145/17046/rank.json'
@@ -177,7 +180,7 @@ def stay():
     pass
 
 
-@plugin.route('/playmovie/<cid>/<vid>/<name>')
+@plugin.route('/playmovie/<cid>/<vid>/<name>/')
 def playmovie(cid, vid, name):
     if vid != '0':
         urls = video_from_vid(vid)
@@ -564,7 +567,7 @@ def category_tag(tid):
         })
         for x in range(numbers):
             items.append({
-                'label': CATEGORY.get(str(tags[x]['rid']), 'u'),
+                'label': CATEGORY.get(str(tags[x]['rid']), str(x)),
                 'path': plugin.url_for('category_tag', tid=tags[x]['rid'])
             })
     else:
@@ -587,10 +590,14 @@ def category(tid):
     results = loads(get_html(api))
     lists = results['data']['region_count']
     for data in lists:
-        items.append({
-            'label': CATEGORY[data],
-            'path': plugin.url_for('category_tag', tid=data)
-        })
+        try:
+            items.append({
+                'label': CATEGORY[data],
+                'path': plugin.url_for('category_tag', tid=data)
+            })
+        except:
+            continue
+
     return items
 
 

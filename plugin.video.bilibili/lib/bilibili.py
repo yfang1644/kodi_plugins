@@ -27,7 +27,6 @@ class Bilibili():
 
     api_url = 'http://interface.bilibili.com/playurl?'
     bangumi_api_url = 'http://bangumi.bilibili.com/player/web_api/playurl?'
-    #SEC1 = '1c15888dc316e05a15fdd0a02ed6584f'
     SEC1 = '94aba54af9065f71de72f5508f1cd42e'
     SEC2 = '9b288147e5474dd2aa67085f716c560d'
     supported_stream_profile = [u'流畅', u'高清', u'超清']
@@ -356,7 +355,8 @@ class Bilibili():
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
             if re.match(r'.*\.qqvideo\.tc\.qq\.com', url):
                 re.sub(r'.*\.qqvideo\.tc', 'http://vsrc.store', u)
-            urls.append(u + '|Referer=https://www.bilibili.com')
+            urls.append(u)
+            #urls.append(u + '|Referer={}'.format(urllib.quote('https://www.bilibili.com/')))
 
         return urls
 
@@ -391,8 +391,8 @@ class Bilibili():
         urls = []
         for durl in doc.getElementsByTagName('durl'):
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
-            urls.append(u)
-            #urls.append(u + '|Referer=https://www.bilibili.com')
+            #urls.append(u)
+            urls.append(urllib.quote_plus(u + '|Referer=https://www.bilibili.com'))
 
         return urls
 
