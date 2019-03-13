@@ -75,10 +75,14 @@ class IQiyi():
         link = get_html(url)
         tvId = r1(r'#curid=(.+)_', url) or \
                 r1(r'tvid=([^&]+)', url) or \
-                r1(r'data-player-tvid="([^"]+)"', link)
+                r1(r'data-player-tvid="([^"]+)"', link) or \
+                r1(r'tv(?:i|I)d=(.+?)\&', link) or \
+                r1(r'param\[\'tvid\'\]\s*=\s*"(.+?)"', link)
         videoId = r1(r'#curid=.+_(.*)$', url) or \
                 r1(r'vid=([^&]+)', url) or \
-                r1(r'data-player-videoid="([^"]+)"', link)
+                r1(r'data-player-videoid="([^"]+)"', link) or \
+                r1(r'vid=(.+?)\&', link) or \
+                r1(r'param\[\'vid\'\]\s*=\s*"(.+?)"', link)
 
         if tvId is not None and videoId is not None:
             return tvId, videoId
@@ -86,22 +90,6 @@ class IQiyi():
     def video_from_vid(self, tvId, videoId, **kwargs):
         level = kwargs.get('level', 0)
         try:
-            info = self.getVMS1(tvId, videoId)
-            assert info['code'] == 'A00000', 'can\'t play this video!!'
-
-            streams = []
-            for stream in info['data']['vidl']:
-                stream_id = self.vd_2_id[stream['vd']]
-                if stream_id in self.stream_types:
-                    continue
-                stream_profile = self.idsize[stream_id]
-                streams.append((stream_profile, stream['m3u']))
-
-            streams.sort()
-            level = min(level, len(streams) - 1)
-
-            real_urls = [streams[level][1]]
-        except:
             info = self.getVMS2(tvId, videoId)
             assert info['code'] == 'A00000', 'can\'t play this video!!'
             
@@ -119,6 +107,22 @@ class IQiyi():
                 json_data = loads(get_html(url))
                 down_url = json_data['l']
                 real_urls.append(down_url)
+        except:
+            info = self.getVMS1(tvId, videoId)
+            assert info['code'] == 'A00000', 'can\'t play this video!!'
+
+            streams = []
+            for stream in info['data']['vidl']:
+                stream_id = self.vd_2_id[stream['vd']]
+                if stream_id in self.stream_types:
+                    continue
+                stream_profile = self.idsize[stream_id]
+                streams.append((stream_profile, stream['m3u']))
+
+            streams.sort()
+            level = min(level, len(streams) - 1)
+
+            real_urls = [streams[level][1]]
   
         return real_urls
 

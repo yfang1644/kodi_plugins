@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui, xbmc
+from xbmcgui import ListItem
 from bs4 import BeautifulSoup
 from urllib import urlencode
 import re
@@ -40,13 +41,23 @@ def tvstudio(url, page):
     pass
 
 
-@plugin.route('/playvideo/<vid>')
-def playvideo(vid):
+@plugin.route('/liveplay/<data>/')
+def liveplay(data):
+    url = 'http://player.pplive.cn/live/2.12.29/player4live2.swf'
+    playurl = url + '?' + data
+    plugin.set_resolved_url(playurl)
+
+
+@plugin.route('/playvideo/<vid>/<name>/<image>')
+def playvideo(vid, name, image):
     quality = int(plugin.addon.getSetting('movie_quality'))
 
     urls = video_from_vid(vid, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
-    plugin.set_resolved_url(stackurl)
+    list_item = ListItem(name, thumbnailImage=image)
+    xbmc.Player().play(stackurl, list_item)
+
+    #plugin.set_resolved_url(stackurl)
 
 
 @plugin.route('/search')
@@ -110,8 +121,9 @@ def select(url):
 
 @plugin.route('/episodelist/<url>')
 def episodelist(url):
+    plugin.set_content('TVShows')
     html = get_html(url)
-    playcfg = re.compile('var webcfg\s*=\s*({.+?);\n').findall(html)
+    playcfg = re.compile('var webcfg\s?=\s?({.+?);\n').findall(html)
     if playcfg:
         jsplay = loads(playcfg[0])
     else:
@@ -124,7 +136,9 @@ def episodelist(url):
         new = NEW if item.get('isNew') else ''
         items.append({
             'label': item['title'] + vip + new,
-            'path': url_for('playvideo', vid=item['id']),
+            'path': url_for('playvideo', vid=item['id'],
+                           name=item['title'].encode('utf-8'),
+                           image=item['capture'].encode('utf-8')),
             'thumbnail': item['capture'],
             'is_playable': True,
             'info': {'title': item['title']},
@@ -174,6 +188,7 @@ def videolist(url, page):
 
 @plugin.route('/')
 def root():
+    plugin.set_content('TVShows')
     # show search entry
     #yield {
     #    'label': '[COLOR FF00FFFF]<搜索...>[/COLOR]',
