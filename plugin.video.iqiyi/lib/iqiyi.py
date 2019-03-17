@@ -6,6 +6,7 @@ import time
 from random import randrange
 from json import loads
 from common import get_html, r1
+from urllib import urlencode
 
 
 class IQiyi():
@@ -37,13 +38,13 @@ class IQiyi():
 
     def get_vf(self, url_params):
         '''计算关键参数vf'''
-        sufix=''
-        for j in xrange(8):
-            for k in xrange(4):
-                v4 = (13 * (66 * k + 27 * j)) % 35
-                v8 = v4 + (88 if v4 >= 10 else 49)
-                sufix += chr(v8)
-        url_params += sufix
+        #sufix=''
+        #for j in xrange(8):
+        #    for k in xrange(4):
+        #        v4 = (13 * (66 * k + 27 * j)) % 35
+        #        v8 = v4 + (88 if v4 >= 10 else 49)
+        #        sufix += chr(v8)
+        url_params += '1j2k2k3l3l4m4m5n5n6o6o7p7p8q8q9r'
         m = hashlib.md5()
         m.update(url_params.encode('utf-8'))
         vf = m.hexdigest()
@@ -56,20 +57,26 @@ class IQiyi():
         m = hashlib.md5()
         m.update(str(t) + key + vid)
         sc = m.hexdigest()
-        vmsreq = 'http://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
+        vmsreq = 'https://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
         return loads(get_html(vmsreq))
 
     def getVMS2(self, tvid, vid):
-        host = 'http://cache.video.qiyi.com'
-        src = '/vps?tvid=' + tvid
-        src += '&vid=' + vid
-        src += '&v=0&qypid=%s_12' % tvid
-        src += '&src=01012001010000000000'
-        src += '&t=%d' %  (time.time() * 1000)
-        src += '&k_tag=1&k_uid=%s&r=1' % self.get_macid()
+        host = 'https://cache.video.iqiyi.com'
+        tm = int(time.time() * 1000)
+        params = {
+            'tvid': tvid,
+            'vid': vid,
+            'v': 0,
+            'qypid': '{}_12'.format(tvid),
+            'src': '01012001010000000000',
+            't': tm,
+            'k_tag': 1,
+            'k_uid': self.get_macid(),
+            'rs': 1,
+        }
+        src = '/vps?{}'.format(urlencode(params))
         req_url = host + src + '&vf=' + self.get_vf(src)
-        html = get_html(req_url)
-        return loads(html)
+        return loads(get_html(req_url))
 
     def vid_from_url(self, url, **kwargs):
         link = get_html(url)
@@ -90,6 +97,21 @@ class IQiyi():
     def video_from_vid(self, tvId, videoId, **kwargs):
         level = kwargs.get('level', 0)
         try:
+            info = self.getVMS1(tvId, videoId)
+            assert info['code'] == 'A00000', 'can\'t play this video!!'
+
+            streams = []
+            for stream in info['data']['vidl']:
+                stream_id = self.vd_2_id[stream['vd']]
+                if stream_id in self.stream_types:
+                    continue
+                stream_profile = self.idsize[stream_id]
+                streams.append((stream_profile, stream['m3u']))
+
+            streams.sort()
+            level = min(level, len(streams) - 1)
+            real_urls = [streams[level][1]]
+        except:
             info = self.getVMS2(tvId, videoId)
             assert info['code'] == 'A00000', 'can\'t play this video!!'
             
@@ -107,22 +129,6 @@ class IQiyi():
                 json_data = loads(get_html(url))
                 down_url = json_data['l']
                 real_urls.append(down_url)
-        except:
-            info = self.getVMS1(tvId, videoId)
-            assert info['code'] == 'A00000', 'can\'t play this video!!'
-
-            streams = []
-            for stream in info['data']['vidl']:
-                stream_id = self.vd_2_id[stream['vd']]
-                if stream_id in self.stream_types:
-                    continue
-                stream_profile = self.idsize[stream_id]
-                streams.append((stream_profile, stream['m3u']))
-
-            streams.sort()
-            level = min(level, len(streams) - 1)
-
-            real_urls = [streams[level][1]]
   
         return real_urls
 

@@ -50,14 +50,17 @@ def stay():
 
 @plugin.route('/playvideo/<tvId>/<vid>/<title>')
 def playvideo(tvId, vid, title):
-    sel = 1
+    sel = int(plugin.addon.getSetting('resolution'))
     urls = video_from_vid(tvId, vid, level=sel)
     if urls is None:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
         return
 
-    stackurl = 'stack://' + ' , '.join(urls)
-    plugin.set_resolved_url(stackurl)
+    if len(urls) > 1:
+        stackurls = 'stack://' + ' , '.join(urls)
+    else:
+        stackurls = urls[0]
+    plugin.set_resolved_url(stackurls)
 
 
 @plugin.route('/reference/<tvId>/<vid>/<title>')
