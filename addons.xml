@@ -959,4 +959,27 @@
     <email>yfang1644@gmail.com</email>
   </extension>
 </addon>
+
+<addon id="plugin.video.wytv"
+       name="午夜影院"
+       version="0.1.0"
+       provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="zh-CN">午夜影院</summary>
+        <description>最新热播影视</description>
+        <forum></forum>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.wytv</source>
+		<email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+  </extension>
+</addon>
+
 </addons>
