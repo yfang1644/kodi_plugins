@@ -51,7 +51,9 @@ def stay():
 @plugin.route('/playvideo/<tvId>/<vid>/<title>')
 def playvideo(tvId, vid, title):
     sel = int(plugin.addon.getSetting('resolution'))
-    urls = video_from_vid(tvId, vid, level=sel)
+    m3u8set = plugin.addon.getSetting('m3u8')
+    playmode = 1 if m3u8set == 'true' else None
+    urls = video_from_vid(tvId, vid, level=sel, m3u8=playmode)
     if urls is None:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
         return

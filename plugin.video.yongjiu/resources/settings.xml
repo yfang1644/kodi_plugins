@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <category label="normal">
-      <setting id="page_rows" type="slider" label="每页数量" default="20" range="12,4,100" option="int"/>
-      <setting id="quality" type="labelenum"  label="清晰度" values="max|super|high|low" lvalues="最高|高清|标清|低清" default="super"/>
-      <setting id="auto_next" type="bool" label="自动连播" default="true"/>
-      <setting id="expired_time" type="text" label="expiredTime" visible="false"/>
-    </category>
-</settings>

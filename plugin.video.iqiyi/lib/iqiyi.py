@@ -96,7 +96,8 @@ class IQiyi():
 
     def video_from_vid(self, tvId, videoId, **kwargs):
         level = kwargs.get('level', 0)
-        try:
+        m3umode = kwargs.get('m3u8')
+        if m3umode is not None:
             info = self.getVMS1(tvId, videoId)
             assert info['code'] == 'A00000', 'can\'t play this video!!'
 
@@ -111,7 +112,7 @@ class IQiyi():
             streams.sort()
             level = min(level, len(streams) - 1)
             real_urls = [streams[level][1]]
-        except:
+        else:
             info = self.getVMS2(tvId, videoId)
             assert info['code'] == 'A00000', 'can\'t play this video!!'
             
