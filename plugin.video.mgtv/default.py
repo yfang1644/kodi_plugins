@@ -202,7 +202,7 @@ def playvideo(vid):
     level = int(plugin.addon.getSetting('resolution'))
 
     m3u_url = video_from_vid(vid, level=level)
-    stackurl = 'stack://' + ' , '.join(m3u_url)
+    stackurl = 'stack://' + ' , '.join(m3u_url) if len(m3u_url) > 1 else m3u_url[0]
     plugin.set_resolved_url(stackurl)
 
 
