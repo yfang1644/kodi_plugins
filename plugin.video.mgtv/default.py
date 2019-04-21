@@ -138,7 +138,7 @@ def mainlist(url, filter):
 
 @plugin.route('/episodelist/<url>/<page>')
 def episodelist(url, page):
-    plugin.set_content('video')
+    plugin.set_content('TVShows')
     episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
     episode_api = 'http://pcweb.api.mgtv.com/episode/list'
     episode_api += '?video_id=%s&page=%d&size=40'
