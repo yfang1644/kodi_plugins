@@ -30,14 +30,23 @@ def httphead(url):
     if len(url) < 2:
         return url
     if url[:2] == '//':
-        url = LIST_URL + url
+        url = 'https:' + url
     elif url[0] == '/':
         url = LIST_URL + url
 
     return url
 
 
-@plugin.route('/changeList/<url>')
+@plugin.route('/playvideo/<vid>/')
+def playvideo(vid):
+    level = int(plugin.addon.getSetting('resolution'))
+
+    m3u_url = video_from_vid(vid, level=level)
+    stackurl = 'stack://' + ' , '.join(m3u_url) if len(m3u_url) > 1 else m3u_url[0]
+    plugin.set_resolved_url(stackurl)
+
+
+@plugin.route('/changeList/<url>/')
 def changeList(url):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
@@ -72,71 +81,8 @@ def changeList(url):
     url = '/'.join(surl)
     mainlist(url, filter)
 
-@plugin.route('/mainlist/<url>/<filter>')
-def mainlist(url, filter):
-    filtitle = '' if filter == '0' else filter
-    items = [{
-        'label': BANNER_FMT % (u'[分类过滤]' + filtitle),
-        'path': url_for('changeList', url=url)
-    }]
 
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-
-    soups = tree.find_all('div', {'class': 'm-result-list'})
-
-    soup= soups[0].find_all('li', {'class': 'm-result-list-item'})
-    for item in soup:
-        thumb = item.img['src']
-        t = item.find('a', {'class': 'u-title'})
-        title = t.text
-        href = t['href']
-        t = item.find('a', {'class': 'u-video'})
-        try:
-            exinfo = '(' + item.em.text + ')'
-        except:
-            exinfo = ''
-
-        # pay info
-        pay = item.find('i', {'class': 'v-mark-v5'})
-        if pay:
-            pay = BANNER_FMT2 % ('(' + pay.text + ')')
-        else:
-            pay = ''
-
-        pinfo = item.find('span', {'class': 'u-desc'})
-        info = pinfo.text.replace(' ', '')
-        info = info.replace('\t', '')
-        items.append({
-            'label': title + exinfo + pay,
-            'path': url_for('episodelist', url=href, page=0),
-            'thumbnail': item.img['src'],
-            'info': {'title': title, 'plot': info}
-        })
-
-    # multiple pages
-    setpage = tree.find_all('div', {'class': 'w-pages'})
-    try:
-        pages = setpage[0].find_all('li')
-        for page in pages:
-            try:
-                title = page.a['title']
-            except:
-                continue
-            href = page.a['href']
-            if href == 'javascript:;':
-                continue
-            else:
-                href = httphead(href)
-            items.append({
-                'label': BANNER_FMT % title,
-                'path': url_for('mainlist', url=href, filter=filter)
-            })
-    except:
-        pass
-    return items
-
-@plugin.route('/episodelist/<url>/<page>')
+@plugin.route('/episodelist/<url>/<page>/')
 def episodelist(url, page):
     plugin.set_content('TVShows')
     episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
@@ -170,7 +116,7 @@ def episodelist(url, page):
             'label': title + pay,
             'path': url_for('playvideo', vid=series['video_id']),
             'is_playable': True,
-            'thumbnail': series['img'],
+            'thumbnail': httphead(series['img']),
             'info': {'title': title}
         }
 
@@ -188,23 +134,78 @@ def episodelist(url, page):
     related = data.get('related')
     if related:
         title = related['t1'] + ' ' + related['t2']
-        img = related['img']
         href = httphead(related['url'])
         yield {
             'label': BANNER_FMT2 % title,
             'path': url_for('episodelist', url=href, page=page),
-            'thumbnail': img,
+            'thumbnail': httphead(related['img']),
             'info': {'title': title}
         }
 
-@plugin.route('/playvideo/<vid>')
-def playvideo(vid):
-    level = int(plugin.addon.getSetting('resolution'))
 
-    m3u_url = video_from_vid(vid, level=level)
-    stackurl = 'stack://' + ' , '.join(m3u_url) if len(m3u_url) > 1 else m3u_url[0]
-    plugin.set_resolved_url(stackurl)
+@plugin.route('/mainlist/<url>/<filter>')
+def mainlist(url, filter):
+    plugin.set_content('TVShows')
+    filtitle = '' if filter == '0' else filter
+    items = [{
+        'label': BANNER_FMT % (u'[分类过滤]' + filtitle),
+        'path': url_for('changeList', url=url)
+    }]
 
+    html = get_html(url)
+    tree = BeautifulSoup(html, 'html.parser')
+
+    soups = tree.find_all('div', {'class': 'm-result-list'})
+
+    soup= soups[0].find_all('li', {'class': 'm-result-list-item'})
+    for item in soup:
+        t = item.find('a', {'class': 'u-title'})
+        title = t.text
+        href = t['href']
+        t = item.find('a', {'class': 'u-video'})
+        try:
+            exinfo = '(' + item.em.text + ')'
+        except:
+            exinfo = ''
+
+        # pay info
+        pay = item.find('i', {'class': 'v-mark-v5'})
+        if pay:
+            pay = BANNER_FMT2 % ('(' + pay.text + ')')
+        else:
+            pay = ''
+
+        pinfo = item.find('span', {'class': 'u-desc'})
+        info = pinfo.text.replace(' ', '')
+        info = info.replace('\t', '')
+        items.append({
+            'label': title + exinfo + pay,
+            'path': url_for('episodelist', url=href, page=0),
+            'thumbnail': httphead(item.img['src']),
+            'info': {'title': title, 'plot': info}
+        })
+
+    # multiple pages
+    setpage = tree.find_all('div', {'class': 'w-pages'})
+    try:
+        pages = setpage[0].find_all('li')
+        for page in pages:
+            try:
+                title = page.a['title']
+            except:
+                continue
+            href = page.a['href']
+            if href == 'javascript:;':
+                continue
+            else:
+                href = httphead(href)
+            items.append({
+                'label': BANNER_FMT % title,
+                'path': url_for('mainlist', url=href, filter=filter)
+            })
+    except:
+        pass
+    return items
 
 @plugin.route('/')
 def root():
