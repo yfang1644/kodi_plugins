@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf8" standalone="yes"?>
 <settings>
-	<setting id="resolution" type="enum" label="点播视频清晰度" values="每次询问|4K|1080P|720P|超清|标清|流畅|极速" default="0"/>
+	<setting id="resolution" type="enum" label="点播视频清晰度" values="极速|流畅|标清|超清|720P|1080P|4K|每次询问" default="0"/>
 	<setting id="m3u8" type="bool" label="播放M3U8" default="true"/>
 </settings>

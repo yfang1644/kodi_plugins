@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <settings>
     <setting id="resolution" type="enum" label="清晰度选择"
-        values="超清|高清|普清|流畅" default="2"/>
+        values="流畅|标清|高清|超清" default="2"/>
 	<setting id="video_m3u8" type="bool" label="直接播放m3u8" default="true"/>
 </settings>

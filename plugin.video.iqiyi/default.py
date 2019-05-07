@@ -15,8 +15,8 @@ from lib.iqiyi import video_from_vid
 
 plugin = Plugin()
 url_for = plugin.url_for
-
 LIST_URL = 'http://list.iqiyi.com'
+PCW_API = 'http://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&mode={}&pageNum={}&pageSize=30&without_qipu=1&is_purchase=0'
 
 BANNER_FMT =  '[COLOR FFDEB887][%s][/COLOR]'
 INDENT_FMT0 = '[COLOR   red]    %s[/COLOR]'
@@ -48,7 +48,7 @@ def stay():
     pass
 
 
-@plugin.route('/playvideo/<tvId>/<vid>/<title>')
+@plugin.route('/playvideo/<tvId>/<vid>/<title>/')
 def playvideo(tvId, vid, title):
     sel = int(plugin.addon.getSetting('resolution'))
     m3u8set = plugin.addon.getSetting('m3u8')
@@ -65,7 +65,7 @@ def playvideo(tvId, vid, title):
     plugin.set_resolved_url(stackurls)
 
 
-@plugin.route('/reference/<tvId>/<vid>/<title>')
+@plugin.route('/reference/<tvId>/<vid>/<title>/')
 def reference(tvId, vid, title):
     plugin.set_content('TVShows')
     # recommend
@@ -156,7 +156,7 @@ def listType2(albumId, page):
     return items
 
 
-@plugin.route('/episodelist/<albumId>/<page>')
+@plugin.route('/episodelist/<albumId>/<page>/')
 def episodelist(albumId, page):
     plugin.set_content('TVShows')
     url = 'http://cache.video.qiyi.com/a/%s' % albumId
@@ -196,20 +196,15 @@ def episodelist(albumId, page):
     return items
 
 
-@plugin.route('/playfound/<url>/<title>')
+@plugin.route('/playfound/<url>/<title>/')
 def playfound(url, title):
     items = []
     if not url.startswith('http'):
         return []
 
     link = get_html(url)
-    tvId = r1(r'#curid=(.+)_', url) or \
-           r1(r'tvid=([^&]+)', url) or \
-           r1(r'data-player-tvid="([^"]+)"', link)
-    vid = r1(r'#curid=.+_(.*)$', url) or \
-          r1(r'vid=([^&]+)', url) or \
-          r1(r'data-player-videoid="([^"]+)"', link)
-
+    tvId = r1(r'param\[\'tvid\'\]\s*=\s*"(.+)"', link)
+    vid = r1(r'param\[\'vid\'\]\s*=\s*"(.+)"', link)
     if tvId is not None and vid is not None:
         items = [{
             'label': title,
@@ -224,7 +219,7 @@ def playfound(url, title):
     return items
 
 
-@plugin.route('/filter/<url>')
+@plugin.route('/filter/<url>/')
 def filter(url):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
@@ -266,7 +261,7 @@ def filter(url):
 ###########################################################################
 # search in http://so.iqiyi.com/so/q_%s?source=hot
 ############################################################################
-@plugin.route('/search')
+@plugin.route('/search/')
 def search():
     items = []
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
@@ -330,7 +325,7 @@ def search():
     return items
 
 
-@plugin.route('/videolist/<url>')
+@plugin.route('/videolist/<url>/')
 def videolist(url):
     plugin.set_content('TVShows')
     html = get_html(url)
@@ -419,6 +414,72 @@ def videolist(url):
     return items
 
 
+orderlist=[{"id":24,"name":"综合排序"},
+           {"id":11,"name":"热播榜"},
+           {"id":4,"name":"新上线"}]
+
+@plugin.route('/category/<order>/<cid>/<page>/')
+def category(order, cid, page):
+    plugin.set_content('TVShows')
+    for x in orderlist:
+        if int(x['id']) == int(order):
+            style = '[COLOR red]{}[/COLOR]'.format(x['name'])
+        else:
+            style = '[COLOR yellow]{}[/COLOR]'.format(x['name'])
+        yield {
+            'label': style,
+            'path': url_for('category', order=x['id'], cid=cid, page=page)
+        }
+
+    api = PCW_API.format(cid, order, page)
+    jdata = loads(get_html(api))
+    for item in jdata['data']['list']:
+        album = True if '/a_' in item['playUrl'] else False
+        if album:
+            yield {
+                'label': item['name'],
+                'path': url_for('episodelist', albumId=item['albumId'], page=1),
+                'thumbnail': item['imageUrl'],
+                'info': {'title': item['name'], 'plot': item.get('description')}
+            }
+        else:
+            yield {
+                'label': item['name'],
+                'path': url_for('playfound', url=item['playUrl'], title=item['name'].encode('utf-8')),
+                'thumbnail': item['imageUrl'],
+                'info': {'title': item['name'], 'plot': item.get('description')}
+            }
+
+
+channellist=[{"cid":2,"name":"电视剧"},
+             {"cid":1,"name":"电影"},
+             {"cid":6,"name":"综艺"},
+             {"cid":4,"name":"动漫"},
+             {"cid":3,"name":"纪录片"},
+             {"cid":8,"name":"游戏"},
+             {"cid":25,"name":"资讯"},
+             {"cid":7,"name":"娱乐"},
+             {"cid":24,"name":"财经"},
+             {"cid":16,"name":"网络电影"},
+             {"cid":10,"name":"片花"},
+             {"cid":5,"name":"音乐"},
+             {"cid":28,"name":"军事"},
+             {"cid":12,"name":"教育"},
+             {"cid":17,"name":"体育"},
+             {"cid":15,"name":"儿童"},
+             {"cid":9,"name":"旅游"},
+             {"cid":13,"name":"时尚"},
+             {"cid":21,"name":"生活"},
+             {"cid":26,"name":"汽车"},
+             {"cid":22,"name":"搞笑"},
+             {"cid":20,"name":"广告"},
+             {"cid":27,"name":"原创"},
+             {"cid":29,"name":"母婴"},
+             {"cid":30,"name":"科技"},
+             {"cid":31,"name":"脱口秀"},
+             {"cid":32,"name":"健康"}]
+
+
 @plugin.route('/')
 def index():
     yield {
@@ -426,18 +487,12 @@ def index():
         'path': url_for('search')
     }
 
-    url = LIST_URL + '/www/2/----------------iqiyi--.html'
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('ul', {'class': 'mod_category_item'})
-
-    grp = soup[0].find_all('a')
-
-    for prog in grp[:-1]:
+    for channel in channellist:
         yield {
-            'label': prog.text.strip(),
-            'path': url_for('videolist', url=httphead(prog['href']))
+            'label': channel['name'],
+            'path': url_for('category', order=24, cid=channel['cid'], page=1)
         }
+
 
 if __name__ == '__main__':
     plugin.run()

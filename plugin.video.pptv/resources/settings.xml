@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf8" standalone="yes"?>
 <settings>
-    <setting label="使用iPad m3u8流媒体视频" type="bool" id="ipad_video" default="false"/>
     <setting id="movie_quality" type="enum" label="视频质量"
         values="流畅|标清|高清|超清|蓝光" default="1"/>
 </settings>

@@ -45,23 +45,25 @@ class IQiyi():
         #        v8 = v4 + (88 if v4 >= 10 else 49)
         #        sufix += chr(v8)
         url_params += '1j2k2k3l3l4m4m5n5n6o6o7p7p8q8q9r'
-        m = hashlib.md5()
-        m.update(url_params.encode('utf-8'))
-        vf = m.hexdigest()
+        vf = hashlib.md5(url_params.encode('utf-8')).hexdigest()
         return vf
 
     def getVMS1(self, tvid, vid):
-        t = int(time.time() * 1000)
-        src = '76f90cbd92f94a2e925d83e8ccd22cb7'
+        tm = int(time.time() * 1000)
         key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
-        m = hashlib.md5()
-        m.update(str(t) + key + vid)
-        sc = m.hexdigest()
-        vmsreq = 'https://cache.m.iqiyi.com/tmts/{0}/{1}/?t={2}&sc={3}&src={4}'.format(tvid,vid,t,sc,src)
-        return loads(get_html(vmsreq))
+        host = 'http://cache.m.iqiyi.com'
+        sc = hashlib.md5(str(tm) + key + vid).hexdigest()
+        params = {
+            'src': '76f90cbd92f94a2e925d83e8ccd22cb7',
+            'sc': sc,
+            't': tm
+        }
+        src = '/tmts/{}/{}/?{}'.format(tvid, vid, urlencode(params))
+        req_url = '{}{}'.format(host, src)
+        return loads(get_html(req_url))
 
     def getVMS2(self, tvid, vid):
-        host = 'https://cache.video.iqiyi.com'
+        host = 'http://cache.video.iqiyi.com'
         tm = int(time.time() * 1000)
         params = {
             'tvid': tvid,
@@ -77,6 +79,59 @@ class IQiyi():
         src = '/vps?{}'.format(urlencode(params))
         req_url = host + src + '&vf=' + self.get_vf(src)
         return loads(get_html(req_url))
+
+    def cmd5x(self, s):
+        # the param src below uses salt h2l6suw16pbtikmotf0j79cej4n8uw13
+        #    01010031010000000000
+        #    01010031010010000000
+        #    01080031010000000000
+        #    01080031010010000000
+        #    03020031010000000000
+        #    03020031010010000000
+        #    03030031010000000000
+        #    03030031010010000000
+        #    02020031010000000000
+        #    02020031010010000000
+        m = hashlib.md5()
+        m.update(s + 'h2l6suw16pbtikmotf0j79cej4n8uw13')
+        return m.hexdigest()
+
+    def getdash(self, tvid, vid, bid=500):
+        tm = int(time.time() * 1000)
+        host = 'https://cache.video.iqiyi.com'
+        params = {
+            'tvid': tvid,
+            'bid': bid,
+            'vid': vid,
+            'src': '01010031010000000000',
+            'vt': 0,
+            'rs': 1,
+            'uid': '',
+            'ori': 'pcw',
+            'ps': 0,
+            'tm': tm,
+            'qd_v': 1,
+            'k_uid': self.get_macid(),
+            'pt': 0,
+            'd': 0,
+            's': '',
+            'lid': '',
+            'cf': '',
+            'ct': '',
+            'authKey': self.cmd5x('0{}{}'.format(tm, tvid)),
+            'k_tag': 1,
+            'ost': 0,
+            'ppt': 0,
+            'locale': 'zh_cn',
+            'pck': '',
+            'k_err_retries': 0,
+            'ut': 0
+        }
+        src = '/dash?{}'.format(urlencode(params))
+        vf = self.cmd5x(src)
+        req_url = '{}{}&vf={}'.format(host, src, vf)
+        html = get_html(req_url)
+        return loads(html)
 
     def vid_from_url(self, url, **kwargs):
         link = get_html(url)
@@ -113,23 +168,47 @@ class IQiyi():
             level = min(level, len(streams) - 1)
             real_urls = [streams[level][1]]
         else:
-            info = self.getVMS2(tvId, videoId)
-            assert info['code'] == 'A00000', 'can\'t play this video!!'
-            
-            url_prefix = info['data']['vp']['du']
-            stream = info['data']['vp']['tkl'][0]
-            vs_array = stream['vs']
+            try:
+                info = self.getVMS2(tvId, videoId)
+                assert info['code'] == 'A00000', 'can\'t play this video!!'
+                
+                url_prefix = info['data']['vp']['du']
+                stream = info['data']['vp']['tkl'][0]
+                vs_array = stream['vs']
 
-            level = min(level , len(vs_array)-1)
+                level = min(level , len(vs_array)-1)
 
-            vs = vs_array[level]
-            fs_array = vs['fs']
-            real_urls = []
-            for seg_info in fs_array:
-                url = url_prefix + seg_info['l']
-                json_data = loads(get_html(url))
-                down_url = json_data['l']
-                real_urls.append(down_url)
+                vs = vs_array[level]
+                fs_array = vs['fs']
+                real_urls = []
+                for seg_info in fs_array:
+                    url = url_prefix + seg_info['l']
+                    json_data = loads(get_html(url))
+                    down_url = json_data['l']
+                    real_urls.append(down_url)
+            except:
+                bb = (100, 200, 300, 500)
+                if level >= len(bb): level = len(bb) - 1
+                bid = bb[level]
+                dash_data = self.getdash(tvId, videoId, bid)
+                assert dash_data['code'] == 'A00000', 'can\'t play this video!!'
+                url_prefix = dash_data['data']['dd']
+                streams = dash_data['data']['program']['video']
+                for stream in streams:
+                    if 'fs' in stream:
+                        _bid = stream['bid']
+                        container = stream['ff']
+                        fs_array = stream['fs']
+                        size = stream['vsize']
+                        break
+                push_stream_bid(_bid, container, fs_array, size)
+                real_urls = []
+                for seg_info in fs_array:
+                    url = url_prefix + seg_info['l']
+                    json_data = loads(get_html(url))
+                    down_url = json_data['l']
+                    real_urls.append(down_url)
+
   
         return real_urls
 
