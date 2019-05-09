@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
+from xbmcgui import ListItem
 from urllib import quote_plus
 import re
 from json import loads
@@ -50,19 +51,17 @@ def stay():
     pass
 
 
-@plugin.route('/playvideo/<url>')
-def playvideo(url):
+@plugin.route('/playvideo/<url>/<name>/<image>/')
+def playvideo(url, name, image):
     level = int(plugin.addon.getSetting('resolution'))
 
     urls = video_from_url(url, level=level)
 
-    if len(urls) < 1:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '节目暂不能播放')
-        return
-
     stackurl = 'stack://' + ' , '.join(urls)
-    plugin.set_resolved_url(stackurl)
+    list_item = ListItem(name, thumbnailImage=image)
+    xbmc.Player().play(stackurl, list_item)
 
+    #plugin.set_resolved_url(urls)
 
 @plugin.route('/playvideo_other/<url>/<site>')
 def playvideo_other(url, site):
@@ -141,13 +140,21 @@ def videolist(name, url):
         else:
             mode = 'playvideo'
 
-        items.append({
-            'label': title + ' ' + mask + extra,  
-            'path': url_for(mode, url=href),
-            'thumbnail': img,
-            'is_playable': True if mode == 'playvideo' else False,
-            'info': {'title': title, 'plot': info}
-        })
+        if mode == 'playvideo':
+            items.append({
+                'label': title + ' ' + mask + extra,  
+                'path': url_for(mode, url=href, name=title, image=img),
+                'thumbnail': img,
+                'is_playable': True,
+                'info': {'title': title, 'plot': info}
+            })
+        else:
+            items.append({
+                'label': title + ' ' + mask + extra,  
+                'path': url_for(mode, url=href),
+                'thumbnail': img,
+                'info': {'title': title, 'plot': info}
+            })
 
     items.append({
         'label': INDENT_FMT0 % '分页',
@@ -221,7 +228,7 @@ def sohuvideolist(playlistid):
         p_tvId = str(item['tvId']).encode('utf-8')
         items.append({
             'label': p_name,
-            'path': url_for('playvideo', url=p_url),
+            'path': url_for('playvideo', url=p_url, name=p_name, image=p_thumb),
             'thumbnail': p_thumb,
             'is_playable': True,
             'info': {
@@ -451,13 +458,10 @@ def root():
         'label': '[COLOR FF00FF00] 【搜狐视频 - 搜索】[/COLOR]',
         'path': url_for('search')
     }
-    yield {
-        'label': u'电视直播',
-        'path': url_for('livechannel')
-    }
 
     url = '/list_p1_p2_p3_p4_p5_p6_p7_p8_p9_p10_p11_p12_p13.html'
     html = get_html(LIST_URL + url)
+
     tree = BeautifulSoup(html, 'html.parser')
     soup = tree.find_all('div', {'class': 'sort-nav cfix'})
 

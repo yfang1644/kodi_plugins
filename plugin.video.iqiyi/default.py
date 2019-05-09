@@ -32,6 +32,19 @@ def httphead(url):
 
     return url
 
+def previous_page(endpoint, page, total_page, **kwargs):
+    if int(page) > 1:
+        page = str(int(page) - 1)
+        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+    else:
+        return []
+
+def next_page(endpoint, page, total_page, **kwargs):
+    if int(page) < int(total_page):
+        page = str(int(page) + 1)
+        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+    else:
+        return []
 
 def convertTImer(info):
     try:
@@ -421,35 +434,38 @@ orderlist=[{"id":24,"name":"综合排序"},
 @plugin.route('/category/<order>/<cid>/<page>/')
 def category(order, cid, page):
     plugin.set_content('TVShows')
+    items = []
     for x in orderlist:
         if int(x['id']) == int(order):
             style = '[COLOR red]{}[/COLOR]'.format(x['name'])
         else:
             style = '[COLOR yellow]{}[/COLOR]'.format(x['name'])
-        yield {
+        items.append({
             'label': style,
             'path': url_for('category', order=x['id'], cid=cid, page=page)
-        }
+        })
 
     api = PCW_API.format(cid, order, page)
     jdata = loads(get_html(api))
+    items += previous_page('category', page, 300, order=order, cid=cid)
     for item in jdata['data']['list']:
         album = True if '/a_' in item['playUrl'] else False
         if album:
-            yield {
+            items.append({
                 'label': item['name'],
                 'path': url_for('episodelist', albumId=item['albumId'], page=1),
                 'thumbnail': item['imageUrl'],
                 'info': {'title': item['name'], 'plot': item.get('description')}
-            }
+            })
         else:
-            yield {
+            items.append({
                 'label': item['name'],
                 'path': url_for('playfound', url=item['playUrl'], title=item['name'].encode('utf-8')),
                 'thumbnail': item['imageUrl'],
                 'info': {'title': item['name'], 'plot': item.get('description')}
-            }
-
+            })
+    items += next_page('category', page, 300, order=order, cid=cid)
+    return items
 
 channellist=[{"cid":2,"name":"电视剧"},
              {"cid":1,"name":"电影"},

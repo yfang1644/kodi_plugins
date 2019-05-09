@@ -87,7 +87,7 @@ def episodelist(url, page):
     plugin.set_content('TVShows')
     episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
     episode_api = 'http://pcweb.api.mgtv.com/episode/list'
-    episode_api += '?video_id=%s&page=%d&size=40'
+    episode_api += '?video_id=%s&page=%d'
     page = int(page)
     if url[-1] == '/':    # is a directory
         html = get_html(url)
@@ -120,12 +120,12 @@ def episodelist(url, page):
             'info': {'title': title}
         }
 
-    if page > 0:
+    if page > 1:
         yield {
             'label': BANNER_FMT % u'上一页',
             'path': url_for('episodelist', url=url, page=page-1)
         }
-    if page < total_page - 1:
+    if page < total_page:
         yield {
             'label': BANNER_FMT % u'下一页',
             'path': url_for('episodelist', url=url, page=page+1)
@@ -142,8 +142,7 @@ def episodelist(url, page):
             'info': {'title': title}
         }
 
-
-@plugin.route('/mainlist/<url>/<filter>')
+@plugin.route('/mainlist/<url>/<filter>/')
 def mainlist(url, filter):
     plugin.set_content('TVShows')
     filtitle = '' if filter == '0' else filter
@@ -180,7 +179,7 @@ def mainlist(url, filter):
         info = info.replace('\t', '')
         items.append({
             'label': title + exinfo + pay,
-            'path': url_for('episodelist', url=href, page=0),
+            'path': url_for('episodelist', url=href, page=1),
             'thumbnail': httphead(item.img['src']),
             'info': {'title': title, 'plot': info}
         })
@@ -212,7 +211,7 @@ def root():
     mainAPI = 'http://pc.bz.mgtv.com/odin/c1/channel/list?version=5.0&type=4&pageSize=999'
     jsdata = loads(get_html(mainAPI))
 
-    for item in jsdata['data']:
+    for item in jsdata['data'][1:]:
         url = LIST_URL + '/-------------.html?channelId=' + item['pageType']
         yield {
             'label': item['title'],
