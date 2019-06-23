@@ -10,7 +10,7 @@ import re
 
 m3u8_file = xbmc.translatePath('special://home/temp/m3u8')
 
-HOST_URL = 'http://www.yongjiuzy.com'
+HOST_URL = 'http://www.yongjiuzy.cc'
 plugin = Plugin()
 url_for = plugin.url_for
 
@@ -45,18 +45,18 @@ def play(url, m3u8):
     server = parsed.scheme + '://' + parsed.netloc
     page = get_html(url)
     if int(m3u8) == 1:
-        videourl = re.compile('(\S.*m3u8)').findall(page)
-        m3u8 = get_html(server + videourl[0])
-        m3u8 = re.sub('\n/', '\n'+server + '/', m3u8)
-        with open(m3u8_file, "wb") as m3u8File:
-            m3u8File.write(m3u8)
-            m3u8File.close()
+        #videourl = re.compile('(\S.*m3u8)').findall(page)
+        #m3u8 = get_html(server + videourl[0])
+        #m3u8 = re.sub('\n/', '\n'+server + '/', m3u8)
+        #with open(m3u8_file, "wb") as m3u8File:
+        #    m3u8File.write(m3u8)
+        #    m3u8File.close()
 
-        plugin.set_resolved_url(m3u8_file)
+        plugin.set_resolved_url(url)
     else:
         redir = re.compile('var redirecturl.*"(.+)"').findall(page)[0]
         mp4 = re.compile('var main.*"(.+)"').findall(page)[0]
-        movie = redir + mp4
+        movie = server + mp4
         plugin.set_resolved_url(movie)
 
 
