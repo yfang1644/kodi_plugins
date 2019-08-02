@@ -41,20 +41,14 @@ def tvstudio(url, page):
     pass
 
 
-@plugin.route('/liveplay/<data>/')
-def liveplay(data):
-    url = 'http://player.pplive.cn/live/2.12.29/player4live2.swf'
-    playurl = url + '?' + data
-    plugin.set_resolved_url(playurl)
-
-
 @plugin.route('/playvideo/<vid>/<name>/<image>')
 def playvideo(vid, name, image):
     quality = int(plugin.addon.getSetting('movie_quality'))
 
     urls = video_from_vid(vid, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
-    list_item = ListItem(name, thumbnailImage=image)
+    list_item = xbmcgui.ListItem(name, thumbnailImage=image)
+    list_item.setInfo('video', {'title': name})
     xbmc.Player().play(stackurl, list_item)
 
     #plugin.set_resolved_url(stackurl)

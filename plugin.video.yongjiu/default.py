@@ -72,23 +72,37 @@ def episodes(url):
     soups = tree.find('div', {'class': 'videoPic'})
     thumb = soups.img['src']
 
+    selmode = plugin.addon.getSetting('m3u8')
     lists = tree.find_all('input', {'type': 'checkbox'})
     items = []
     for item in lists:
         value = item['value'].split('$')
         if len(value) < 2:
             continue
+        if 'http' not in value[1]:
+            continue
         if 'm3u8' in value[1]:
             m3u8 = 1
         else:
             m3u8 = 0
-        items.append({
-            'label': title + '(m3u8)'*m3u8 + '(' + value[0] + ')',
-            'path': url_for('play', url=value[1], m3u8=m3u8),
-            'is_playable': True,
+
+        if selmode == 'true' and m3u8:
+            items.append({
+                'label': title + '(m3u8)'*m3u8 + '(' + value[0] + ')',
+                'path': url_for('play', url=value[1], m3u8=m3u8),
+                'is_playable': True,
             'thumbnail': thumb,
-            'info': {'title': title +'-'+value[0], 'plot': textinfo}
-        })
+                'info': {'title': title +'-'+value[0], 'plot': textinfo}
+            })
+        if selmode != 'true' and m3u8 == 0:
+            items.append({
+                'label': title + '(m3u8)'*m3u8 + '(' + value[0] + ')',
+                'path': url_for('play', url=value[1], m3u8=m3u8),
+                'is_playable': True,
+            'thumbnail': thumb,
+                'info': {'title': title +'-'+value[0], 'plot': textinfo}
+            })
+
     return items
 
 

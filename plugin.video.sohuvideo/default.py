@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-from xbmcgui import ListItem
 from urllib import quote_plus
 import re
 from json import loads
@@ -56,12 +55,12 @@ def playvideo(url, name, image):
     level = int(plugin.addon.getSetting('resolution'))
 
     urls = video_from_url(url, level=level)
-
     stackurl = 'stack://' + ' , '.join(urls)
-    list_item = ListItem(name, thumbnailImage=image)
+    list_item = xbmcgui.ListItem(name, thumbnailImage=image)
+    list_item.setInfo('video', {'title': name})
     xbmc.Player().play(stackurl, list_item)
 
-    #plugin.set_resolved_url(urls)
+    #plugin.set_resolved_url(stackurl)
 
 @plugin.route('/playvideo_other/<url>/<site>')
 def playvideo_other(url, site):
@@ -320,76 +319,18 @@ def episodelist2(url):
         p_date = item['publishTime'].encode('utf-8')
         p_order = int(item['order'])
         vid = item['vid']
+        title = item['subName'].encode('utf-8')
         items.append({
-            'label': item['subName'].encode('utf-8'),
-            'path': url_for('playvideo', url=item['pageUrl']),
+            'label': title,
+            'path': url_for('playvideo', name=title,
+                            url=item['pageUrl'],
+                            image=item['largePicUrl']),
             'thumbnail': item['largePicUrl'],
             'is_playable': True,
-            'info': {'title': item['subName'].encode('utf-8')},
+            'info': {'title': title},
         })
 
     return items
-
-
-############################################################################
-# Sohu 电视直播 Menu List
-############################################################################
-@plugin.route('/livechannel')
-def livechannel():
-    url ='http://tvimg.tv.itc.cn/live/stations.jsonp'
-    link = get_html(url)
-    link = link[link.find('=')+1: link.find(';channelList')]
-
-    jsdata = loads(link)
-    stations = jsdata['STATIONS']
-
-    items = []
-    for item in stations:
-        title = item['STATION_NAME'].encode('utf-8')
-        p_thumb = item['STATION_PIC']
-        id = item['STATION_ID']
-        p_thumb = httphead(p_thumb)
-        if item['IsSohuSource'] == 1:
-            disp_title = INDENT_FMT0 % title
-        else:
-            disp_title = INDENT_FMT1 % title
-
-        html = get_html(PROGRAM_URL % id)
-        try:
-            program = loads(html)
-        except:
-            continue
-        try:
-            program = program['attachment'][0]['MENU_LIST']
-        except:
-            continue
-
-        schedule = ''
-        for s in program:
-            schedule += '%s %s\n' % (s['START_TIME'], s['NAME'])
-        items.append({
-            'label': disp_title,
-            'path': url_for('liveplay', station_id=id),
-            'is_playable': True,
-            'thumbnail': p_thumb,
-            'info': {'title': disp_title, 'plot': schedule}
-        })
-    return items
-
-
-############################################################################
-# Sohu 电视直播 Player
-############################################################################
-@plugin.route('/liveplay/<station_id>')
-def liveplay(station_id):
-    link = get_html(LIVEID_URL % station_id)
-    parsed_json = loads(link)
-    url = httphead(parsed_json['data']['hls'])
-
-    # link = get_html(url)
-    # parsed_json = loads(link.decode('utf-8'))
-    # url = parsed_json['url'].encode('utf-8')
-    plugin.set_resolved_url(url)
 
 
 ###########################################################################
@@ -443,7 +384,9 @@ def search():
         for series in album:
             items.append({
                 'label': series['title'],
-                'path': url_for('playvideo', url=httphead(series['href'])),
+                'path': url_for('playvideo', name=series['title'],
+                                url=httphead(series['href']),
+                                image=httphead(page.img['src'])),
                 'is_playable': True,
                 'info': {'title': series['title']},
             })
@@ -472,7 +415,6 @@ def root():
             'label': title,
             'path': url_for('videolist', name=title, url=httphead(prog['href']))
         }
-
 
 if __name__ == '__main__':
     plugin.run()
