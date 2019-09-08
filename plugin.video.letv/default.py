@@ -46,7 +46,7 @@ DYNAMIC_API = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
 TRAILER_API = 'http://d.api.m.le.com/detail/getVideoTrailer?pid={}&platform=pc'
 EPISODES_API = 'http://d.api.m.le.com/detail/episode?pid={}&pagesize=300&platform=pc'
 
-@plugin.route('/filter/<url>')
+@plugin.route('/filter/<url>/')
 def filter(url):
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
@@ -78,14 +78,14 @@ def filter(url):
     return videolist(url=url, page=1)
 
 
-@plugin.route('/playvideo/<vid>')
+@plugin.route('/playvideo/<vid>/')
 def playvideo(vid):
     level = int(plugin.addon.getSetting('resolution'))
     v_urls = video_from_vid(vid, m3u8=__m3u8__, level=level)
     plugin.set_resolved_url(__m3u8__)
 
 
-@plugin.route('/episodelist/<aid>')
+@plugin.route('/episodelist/<aid>/')
 def episodelist(aid):
     plugin.set_content('TVShows')
     html = get_html(EPISODES_API.format(aid))
@@ -131,7 +131,7 @@ def episodelist(aid):
 ###############################################################################
 # Search LeTV site based on keyword
 ###############################################################################
-@plugin.route('/search')
+@plugin.route('/search/')
 def search():
     plugin.set_content('TVShows')
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
@@ -184,7 +184,7 @@ def search():
     return items
 
 
-@plugin.route('/videolist/<url>/<page>')
+@plugin.route('/videolist/<url>/<page>/')
 def videolist(url, page):
     plugin.set_content('TVShows')
     html = get_html(url)
