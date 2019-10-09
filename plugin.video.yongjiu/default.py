@@ -136,7 +136,13 @@ def category(url):
 # main entrance
 @plugin.route('/')
 def index():
+    url = ''
     home = get_html(HOST_URL)
+    if (len(home) < 1000):
+        prehome = re.search('var (.*);;', home)
+        exec (prehome.group(1))
+
+    home = get_html(HOST_URL + url)
     tree = BeautifulSoup(home, 'html.parser')
     soup = tree.find_all('div', {'class': 'nav'})
     lists = soup[0].find_all('li')
