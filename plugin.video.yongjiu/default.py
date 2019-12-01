@@ -10,7 +10,7 @@ import re
 
 m3u8_file = xbmc.translatePath('special://home/temp/m3u8')
 
-HOST_URL = 'http://www.yongjiuzy.cc'
+HOST_URL = 'http://www.yongjiuzy1.com'
 plugin = Plugin()
 url_for = plugin.url_for
 
