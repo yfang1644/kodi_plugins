@@ -16,7 +16,7 @@ from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 class MGTV():
     def generate_did_tk2(self):
         did = str(uuid.uuid4())
-        s = 'pno=1000|ver=0.3.0001|did={}|clit={}'.format(did, int(time.time()))
+        s = 'pno=1030|ver=0.3.0301|did={}|clit={}'.format(did, int(time.time()))
         if not isinstance(s, bytes):
             s = s.encode()
         e = bytearray(base64.b64encode(s).translate(maketrans(b'+/=', b'_~-')))
@@ -26,7 +26,7 @@ class MGTV():
     def vid_from_url(self, url, **kwargs):
         """Extracts video ID from URL.
         """
-        vid = match1(url, 'http?://www.mgtv.com/b/\d+/(\d+).html')
+        vid = match1(url, 'https?://www.mgtv.com/b/\d+/(\d+).html')
         if vid is None:
             html = get_html(url)
             vid = match1(html, 'vid.*(\d+)')
@@ -58,14 +58,14 @@ class MGTV():
         handlers = [HTTPCookieProcessor()]
         install_opener(build_opener(*handlers))
         did, tk2 = self.generate_did_tk2()
-        api_info_url = 'https://pcweb.api.mgtv.com/player/video?video_id={}&did={}&tk2={}'.format(vid, did, tk2)
+        api_info_url = 'https://pcweb.api.mgtv.com/player/video?tk2={}&video_id={}&type=pch5'.format(tk2, vid)
         html = get_html(api_info_url)
         content = loads(html)
 
         title = content['data']['info']['title']
         pm2 = content['data']['atc']['pm2']
 
-        api_source_url = 'https://pcweb.api.mgtv.com/player/getSource?video_id={}&did={}&pm2={}&tk2={}'.format(vid, did, pm2, tk2)
+        api_source_url = 'https://pcweb.api.mgtv.com/player/getSource?video_id={}&pm2={}&tk2={}&type=pch5'.format(vid, pm2, tk2)
         html = get_html(api_source_url)
         content = loads(html)
         streams = content['data']['stream']
@@ -83,7 +83,7 @@ class MGTV():
         content = loads(get_html(url))
         url = content['info']
 
-        return [url]
+        return re.compile("(.*m3u8)").findall(url)
 
     def video_from_url(self, url, **kwargs):
         vid = self.vid_from_url(url)
