@@ -2,7 +2,7 @@
 <addons>
 <addon id="plugin.video.letv"
     name="乐视网 (LeTV)"
-    version="2.1.6"
+    version="2.1.7"
     provider-name="yfang1644">
   	<requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
