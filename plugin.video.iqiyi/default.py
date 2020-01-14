@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
+from xbmcgui import ListItem
 from urllib import quote_plus
 import re
+import os
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
@@ -16,7 +18,15 @@ from lib.iqiyi import video_from_vid
 plugin = Plugin()
 url_for = plugin.url_for
 LIST_URL = 'http://list.iqiyi.com'
-PCW_API = 'http://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&mode={}&pageNum={}&pageSize=30&without_qipu=1&is_purchase=0'
+PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&mode={}&pageNum={}&pageSize=30&without_qipu=1&is_purchase=0'
+
+PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?access_play_control_platform=14&channel_id={}&data_type=1&from=pcw_list&is_album_finished=&is_purchase=&key=&market_release_date_level=&mode={}&pageNum={}&pageSize=48&site=iqiyi&source_type=&three_category_id=15\;must&without_qipu=1'
+
+ALBUM_API = 'https://pcw-api.iqiyi.com/albums/album/avlistinfo?aid={}&page=1&size=300'
+
+
+__profile__   = xbmc.translatePath(plugin.addon.getAddonInfo('profile'))
+__m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8'))
 
 BANNER_FMT =  '[COLOR FFDEB887][%s][/COLOR]'
 INDENT_FMT0 = '[COLOR   red]    %s[/COLOR]'
@@ -61,31 +71,38 @@ def stay():
     pass
 
 
-@plugin.route('/playvideo/<tvId>/<vid>/<title>/')
-def playvideo(tvId, vid, title):
+@plugin.route('/playvideo/<tvId>/<vid>/<title>/<pic>/')
+def playvideo(tvId, vid, title, pic):
     sel = int(plugin.addon.getSetting('resolution'))
     m3u8set = plugin.addon.getSetting('m3u8')
-    playmode = 1 if m3u8set == 'true' else None
-    urls = video_from_vid(tvId, vid, level=sel, m3u8=playmode)
+    playmode = True if m3u8set == 'true' else None
+    playmode = None
+    urls = video_from_vid(tvId, vid, level=sel,
+                          m3u8=playmode, m3u8file=__m3u8__)
     if urls is None:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
         return
 
     if len(urls) > 1:
-        stackurls = 'stack://' + ' , '.join(urls)
+        stackurl = 'stack://' + ' , '.join(urls)
     else:
-        stackurls = urls[0]
-    plugin.set_resolved_url(stackurls)
+        stackurl = urls[0]
+    list_item = xbmcgui.ListItem(title, thumbnailImage=pic)
+    list_item.setInfo('video', {'title': title})
+    xbmc.Player().play(stackurl, list_item)
+
+    #plugin.set_resolved_url(stackurl)
 
 
-@plugin.route('/reference/<tvId>/<vid>/<title>/')
-def reference(tvId, vid, title):
+@plugin.route('/reference/<tvId>/<vid>/<title>/<pic>/')
+def reference(tvId, vid, title, pic):
     plugin.set_content('TVShows')
     # recommend
     items = []
     items.append({
         'label': BANNER_FMT % title,
-        'path': url_for('playvideo', tvId=tvId, vid=vid, title=title),
+        'path': url_for('playvideo', tvId=tvId, vid=vid,
+                        title=title, pic=pic),
         'is_playable': True,
         'info': {'title': title}
     })
@@ -100,9 +117,13 @@ def reference(tvId, vid, title):
             mode, playable = 'playvideo', True
         else:
             mode, playable = 'reference', False
+
         items.append({
             'label': series['name'],
-            'path': url_for(mode, tvId=series['tvId'], vid=series['vid'], title=series['name'].encode('utf-8')),
+            'path': url_for(mode, tvId=series.get('tvId'),
+                            vid=series.get('vid', 0),
+                            title=series['name'].encode('utf-8'),
+                            pic=series['imageUrl']),
             'thumbnail': series['imageUrl'],
             'is_playable': playable,
             'info': {'title': series['name'],
@@ -124,7 +145,11 @@ def listType1(albumType, albumId):
     for item in json_response['data']:
         items.append({
             'label': item['videoName'] + item['tvYear'],
-            'path': url_for('playvideo', tvId=item['tvId'], vid=item['vid'], title=item['videoName'].encode('utf-8')),
+            'path': url_for('playvideo',
+                            tvId=item['tvId'],
+                            vid=item['vid'],
+                            title=item['videoName'].encode('utf-8'),
+                            pic=item['aPicUrl']),
             'thumbnail': item['aPicUrl'],
             'is_playable': True,
             'info': {'title': item['videoName']}
@@ -149,7 +174,11 @@ def listType2(albumId, page):
     for item in json_response['data']['vlist']:
         items.append({
             'label': item['vn'] + ' ' + item['vt'],
-            'path': url_for('playvideo', tvId=item['id'], vid=item['vid'], title=item['vn'].encode('utf-8')),
+            'path': url_for('playvideo',
+                            tvId=item['id'],
+                            vid=item['vid'],
+                            title=item['vn'].encode('utf-8'),
+                            pic=item['vpic']),
             'thumbnail': item['vpic'],
             'is_playable': True,
             'info': {'title': item['vn'], 'plot': item['desc'], 'duration': item['timeLength']}
@@ -191,7 +220,8 @@ def episodelist(albumId, page):
     if isSeries == 0:
         items.append({
             'label': BANNER_FMT % title,
-            'path': url_for('playvideo', tvId=tvId, vid=vid, title=title),
+            'path': url_for('playvideo', tvId=tvId, vid=vid, title=title,
+                           pic=item.get('tvPictureUrl','0')),
             'thumbnail': item.get('tvPictureUrl', ''),
             'is_playable': True,
             'info': {'title': title, 'plot': item['tvDesc']}
@@ -203,14 +233,14 @@ def episodelist(albumId, page):
            items += listType2(albumId, page)
 
     # recommend
-    items += reference(tvId, vid, title)
+    items += reference(tvId, vid, title, 'xxxx')
     if len(items) > 1 and items[0]['label'] == items[1]['label']:
         del items[1]
     return items
 
 
-@plugin.route('/playfound/<url>/<title>/')
-def playfound(url, title):
+@plugin.route('/playfound/<url>/<title>/<pic>/')
+def playfound(url, title, pic):
     items = []
     if not url.startswith('http'):
         return []
@@ -221,7 +251,8 @@ def playfound(url, title):
     if tvId is not None and vid is not None:
         items = [{
             'label': title,
-            'path': url_for('playvideo', tvId=tvId, vid=vid, title=title),
+            'path': url_for('playvideo', tvId=tvId, vid=vid,
+                            title=title, pic=pic),
             'is_playable': True,
             'info': {'title': title}
         }]
@@ -321,7 +352,10 @@ def search():
                 title += ' |' + t.text
             items.append({
                 'label': title,
-                'path': url_for('playfound', url=httphead(series.a['href']), title=title.encode('utf-8')),
+                'path': url_for('playfound',
+                                url=httphead(series.a['href']),
+                                title=title.encode('utf-8'),
+                                pic=httphead(img)),
                 'thumbnail': httphead(img),
                 'info': {'title': title, 'plot': info}
             })
@@ -331,7 +365,10 @@ def search():
                 title = page.a.get('title', '')
                 items.append({
                     'label': '--' + title,
-                    'path': url_for('playfound', url=page.a.get('href'), title=title.encode('utf-8')),
+                    'path': url_for('playfound',
+                                    url=page.a.get('href'),
+                                    title=title.encode('utf-8'),
+                                    pic=img),
                     'thumbnail': img,
                     'info': {'title': title}
                 })
@@ -449,18 +486,20 @@ def category(order, cid, page):
     jdata = loads(get_html(api))
     items += previous_page('category', page, 300, order=order, cid=cid)
     for item in jdata['data']['list']:
-        album = True if '/a_' in item['playUrl'] else False
-        if album:
+        albumId=item.get('albumId')
+        if albumId:
             items.append({
                 'label': item['name'],
-                'path': url_for('episodelist', albumId=item['albumId'], page=1),
+                'path': url_for('episodelist', albumId=albumId, page=1),
                 'thumbnail': item['imageUrl'],
                 'info': {'title': item['name'], 'plot': item.get('description')}
             })
         else:
             items.append({
                 'label': item['name'],
-                'path': url_for('playfound', url=item['playUrl'], title=item['name'].encode('utf-8')),
+                'path': url_for('playfound', url=item['playUrl'],
+                                title=item['name'].encode('utf-8'),
+                                pic=item['imageUrl']),
                 'thumbnail': item['imageUrl'],
                 'info': {'title': item['name'], 'plot': item.get('description')}
             })
