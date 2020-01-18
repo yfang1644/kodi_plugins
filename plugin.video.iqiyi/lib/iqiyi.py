@@ -23,8 +23,8 @@ class IQiyi():
     ]
      
     ids = ['4k','BD', 'TD', 'HD', 'SD', 'LD']
-    vd_2_id = {10: '4k', 19: '4k', 5:'BD', 18: 'BD', 14: 'HD', 21: 'HD', 2: 'HD', 4: 'TD', 17: 'TD', 96: 'LD', 1: 'SD'}
-    id_2_profile = {'4k':'4k', 'BD': '1080p','TD': '720p', 'HD': '540p', 'SD': '360p', 'LD': '210p'}
+    vd_2_id = {10:'4k', 19:'4k', 5:'BD', 18:'BD', 21:'HD_H265', 2:'HD', 4:'TD', 17:'TD_H265', 96:'LD', 1:'SD', 14:'TD', '75':'LDD'}
+    id_2_profile = {'4k':'4k', 'BD':'1080p','TD':'720p', 'HD':'540p', 'SD':'360p', 'LD':'210p', 'HD_H265':'540p H265', 'TD_H265':'720p H265', 'LDD': '540p'}
     idsize= {'4k':9, 'BD': 8,'TD': 7, 'HD': 6, 'SD': 5, 'LD': 4}
 
     def get_macid(self):
@@ -158,15 +158,28 @@ class IQiyi():
 
             streams = []
             for stream in info['data']['vidl']:
-                stream_id = self.vd_2_id[stream['vd']]
+                try:
+                    stream_id = self.vd_2_id[stream['vd']]
+                except:
+                    continue
                 if stream_id in self.stream_types:
                     continue
-                stream_profile = self.idsize[stream_id]
-                streams.append((stream_profile, stream['m3u']))
+                stream_profile = self.id_2_profile[stream_id]
+                u = stream.get('m3u')
+                if u is None:
+                    u = stream.get('m3utx')
+                streams.append((stream_profile, u))
 
             streams.sort()
             level = min(level, len(streams) - 1)
             real_urls = [streams[level][1]]
+            return real_urls
+            m3u8_file = kwargs.get('m3u8file')
+
+            with open(m3u8_file, "wb") as m3u8File:
+                #m3u8File.write()
+                m3u8File.close()
+
         else:
             try:
                 info = self.getVMS2(tvId, videoId)

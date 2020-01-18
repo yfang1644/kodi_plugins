@@ -76,22 +76,18 @@ def playvideo(tvId, vid, title, pic):
     sel = int(plugin.addon.getSetting('resolution'))
     m3u8set = plugin.addon.getSetting('m3u8')
     playmode = True if m3u8set == 'true' else None
-    playmode = None
-    urls = video_from_vid(tvId, vid, level=sel,
-                          m3u8=playmode, m3u8file=__m3u8__)
+    urls = video_from_vid(tvId, vid, level=sel, m3u8=playmode)
     if urls is None:
         xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
         return
 
     if len(urls) > 1:
         stackurl = 'stack://' + ' , '.join(urls)
+        list_item = xbmcgui.ListItem(title, thumbnailImage=pic)
+        list_item.setInfo('video', {'title': title})
+        xbmc.Player().play(stackurl, list_item)
     else:
-        stackurl = urls[0]
-    list_item = xbmcgui.ListItem(title, thumbnailImage=pic)
-    list_item.setInfo('video', {'title': title})
-    xbmc.Player().play(stackurl, list_item)
-
-    #plugin.set_resolved_url(stackurl)
+        plugin.set_resolved_url(urls[0])
 
 
 @plugin.route('/reference/<tvId>/<vid>/<title>/<pic>/')
