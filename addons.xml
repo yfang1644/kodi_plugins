@@ -97,13 +97,15 @@
 </addon>
 
 <addon id="plugin.video.cntv-live"
-    name="中国网络电视台 CNTV" version="2.0.10"
+    name="中国网络电视台 CNTV" version="3.0.0"
     provider-name="yfang1644">
-	<requires>
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.geturl" version="2.0.0"/>
 		<import addon="xbmc.python" version="2.1.0" />
 	</requires>
 	
-	<extension point="xbmc.python.pluginsource" library="addon.py">
+	<extension point="xbmc.python.pluginsource" library="default.py">
 		<provides>video</provides>
 	</extension>
 	
@@ -111,7 +113,7 @@
 	<extension point="xbmc.addon.metadata">
 		<summary lang="en">CNTV Live video plugin</summary>
 		<summary lang="zh">中国网络电视台直播</summary>
-		<description lang="en">Stream live Chinese television from CCTV via the CNTV website.</description>
+		<description lang="en">Stream live TV.</description>
 		<description lang="zh">中国网络电视台直播</description>
 		<disclaimer lang="en"></disclaimer>
 		<language></language>
@@ -947,7 +949,7 @@
 <addon id="script.module.geturl"
     name="CHVideo getURL"
     provider-name="yfang1644"
-    version="1.0.0">
+    version="2.0.0">
   <requires>
     <import addon="xbmc.python" version="2.24.0" />
   </requires>

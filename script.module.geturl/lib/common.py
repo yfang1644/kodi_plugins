@@ -1,11 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-import urllib2
+import sys
+if sys.version[0]=='3':
+    from urllib.request import Request, urlopen
+else:
+    from urllib2 import Request, urlopen
+from io import BytesIO
 import re
 import gzip
 import zlib
-import StringIO
 import socket
 cookies = None
 
@@ -40,9 +44,9 @@ def match1(text, *patterns):
 
 
 def urlopen_with_retry(*args, **kwargs):
-    for i in xrange(10):
+    for i in range(10):
         try:
-            return urllib2.urlopen(*args, **kwargs)
+            return urlopen(*args, **kwargs)
         except socket.timeout:
             pass
 
@@ -62,7 +66,7 @@ def get_html(url,
         The content as a string.
     """
 
-    req = urllib2.Request(url, data)
+    req = Request(url, data)
     req.add_header('User-Agent', UserAgent)
     if cookies:
         cookies.add_cookie_header(req)
@@ -77,9 +81,12 @@ def get_html(url,
     # Handle HTTP compression for gzip and deflate (zlib)
     content_encoding = response.headers.get('Content-Encoding')
     if content_encoding == 'gzip':
-        if data[-1] == '\n':
+        t = bytearray(data)
+        if t[-1] == 10:    # b'\n'
             data = data[:-1]
-        data = gzip.GzipFile(fileobj=StringIO.StringIO(data)).read()
+        buffer = BytesIO(data)
+        f = gzip.GzipFile(fileobj=buffer)
+        data = f.read()
     elif content_encoding == 'deflate':
         data = zlib.decompressobj(-zlib.MAX_WBITS).decompress(data)
 
@@ -97,8 +104,8 @@ def get_html(url,
 
 def updateTime():
     import time, os
-    req = urllib2.Request('http://time.pptv.com')
-    resp = urllib2.urlopen(req)
+    req = Request('http://time.pptv.com')
+    resp = urlopen(req)
     data = resp.read()
     timefmt = time.localtime(float(data))
 
