@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf8" standalone="yes"?>
+<settings>
+	<setting id="resolution" type="enum" label="视频清晰度" values="1080P|4K" default="0"/>
+	<setting id="m3u8" type="bool" label="播放M3U8" default="true"/>
+</settings>
