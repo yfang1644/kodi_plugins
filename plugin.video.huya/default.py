@@ -7,7 +7,7 @@ from json import loads
 import re
 
 HOST = 'https://www.huya.com'
-playurl = 'http://aldirect.hls.huya.com/huyalive'
+playurl = 'https://aldirect.hls.huya.com/huyalive'
 category = [
     {'全部': 0},
     #{'全部电影': 2067,}
@@ -27,8 +27,8 @@ category = [
     {'正能量': 1223   }
 ]
 
-cateAPI = HOST + '/cache.php?m=LiveList&do=getTmpLiveByPage&gameId=2135&tmpId=%s'
-listAPI = HOST + '/cache.php?m=LiveList&do=getLiveListByPage&gameId=2135&page=%s'
+cateAPI = HOST + '/cache.php?m=LiveList&do=getTmpLiveByPage&gameId=2135&tmpId={}&page={}'
+listAPI = HOST + '/cache.php?m=LiveList&do=getLiveListByPage&gameId=2135&page={}'
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 
 plugin = Plugin()
@@ -40,10 +40,11 @@ def playvideo(url):
     plugin.set_resolved_url(url)
 
 
-@plugin.route('/listpages/<page>/')
-def listpages(page):
+@plugin.route('/categorylist/<dataid>/<page>/')
+def categorylist(dataid, page):
     plugin.set_content('TVShows')
-    html = get_html(listAPI%page)
+    api = listAPI.format(page) if dataid=='0' else cateAPI.format(dataid, page)
+    html = get_html(api)
     data = loads(html)
     rooms = data['data']['datas']
     items = []
@@ -53,58 +54,34 @@ def listpages(page):
         vurl = re.sub('http.+?/huyalive', playurl, screenshot)
         url = re.sub('/[^\/]*.jpg', '.m3u8', vurl)
         homepage = HOST + '/' + item['profileRoom']
+        blueray = item.get('isBluRay')
+        title = item['nick'] + (u'(蓝光)' if int(blueray) else '')
         items.append({
-            'label': item['nick'],
+            'label': title,
             'path': url_for('playvideo', url=url),
             'thumbnail': screenshot,
             'is_playable': True,
-            'info': {'title': item['nick'], 'plot': item['introduction']}
+            'info': {'title': title, 'plot': item['introduction']}
         })
 
+    thispage = int(data['data']['page'])
     pages = int(data['data']['totalPage'])
     for x in range(pages):
+        if x+1 == thispage: continue
         items.append({
             'label': '第{}页'.format(x+1),
-            'path': url_for('listpages', page=x+1)
-        })
-    return items
-
-
-@plugin.route('/categorylist/<dataid>/')
-def categorylist(dataid):
-    plugin.set_content('TVShows')
-    html = get_html(cateAPI%dataid)
-    data = loads(html)
-    rooms = data['data']['datas']
-
-    items = []
-    for item in rooms:
-        screenshot = item['screenshot']
-        vurl = re.sub('http.+?/huyalive', playurl, screenshot)
-        url = re.sub('/[^\/]*.jpg', '.m3u8', vurl)
-        homepage = HOST + '/' + item['profileRoom']
-        items.append({
-            'label': item['nick'],
-            'path': url_for('playvideo', url=url),
-            'thumbnail': screenshot,
-            'is_playable': True,
-            'info': {'title': item['nick'], 'plot': item['introduction']}
+            'path': url_for('categorylist', dataid=dataid, page=x+1)
         })
     return items
 
 
 @plugin.route('/')
 def index():
-
-    yield {
-        'label': '全部',
-        'path': url_for('listpages', page=1)
-    }
-    for dic in category[1:]:
-        c = (dic.items())
+    for dic in category:
+        c = list(dic.items())
         yield {
             'label': c[0][0],
-            'path': url_for('categorylist', dataid=c[0][1])
+            'path': url_for('categorylist', dataid=c[0][1], page=1)
         }
 
 
