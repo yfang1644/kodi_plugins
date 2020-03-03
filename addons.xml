@@ -1005,4 +1005,54 @@
   </extension>
 </addon>
 
+<addon id="plugin.video.miguvideo"
+    name="咪咕视频"
+    version="0.9.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.geturl" version="2.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">MIGU Video plugin</summary>
+        <summary lang="zh">咪咕视频插件</summary>
+        <description lang="en">www.migu.cn</description>
+        <description lang="zh">www.migu.cn</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.miguvideo</source>
+        <email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
+
+<addon id="script.iptvtool"
+    name="IPTV Tool" version="1.0.2" provider-name="Taxigps, yfang1644">
+    <requires>
+        <import addon="xbmc.python" version="2.1.0" />
+        <import addon="script.module.geturl" version="2.0.0"/>
+    </requires>
+
+    <extension point="xbmc.python.script" library="default.py">
+        <provides>executable</provides>
+    </extension>
+
+    <extension point="xbmc.service" library="epgservice.py" start="login" />
+
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">Automatic setting PVR IPTV Simple Client</summary>
+        <summary lang="zh">自动设置PVR的IPTV客户端</summary>
+        <description lang="en">Automatic setting PVR IPTV Simple Client for M3U playlist, channels logos and EPG</description>
+        <description lang="zh">自动设置PVR的IPTV客户端，包括M3U播放列表、频道图标和电子节目单</description>
+        <disclaimer lang="en"></disclaimer>
+        <language></language>
+        <platform>all</platform>
+        <license>GNU GENERAL PUBLIC LICENSE, Version 2</license>
+        <forum></forum>
+        <website></website>
+        <source>https://github.com/yfang1644/kodi_plugins/script.iptvtool</source>
+        <email>yfang1644@gmail.com</email>
+    </extension>
+</addon>
 </addons>

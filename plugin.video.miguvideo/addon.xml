@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.miguvideo"
+    name="咪咕视频"
+    version="0.9.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.geturl" version="2.0.0"/>
+    </requires>
+    <extension point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">MIGU Video plugin</summary>
+        <summary lang="zh">咪咕视频插件</summary>
+        <description lang="en">www.migu.cn</description>
+        <description lang="zh">www.migu.cn</description>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.miguvideo</source>
+        <email>yfang1644@gmail.com</email>
+        <platform>all</platform>
+    </extension>
+</addon>
