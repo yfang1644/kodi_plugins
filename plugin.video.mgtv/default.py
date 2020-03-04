@@ -118,6 +118,7 @@ def changeList(url):
 def episodelist(url, id, page):
     if int(id) == 0:
         url = httphead(url)
+        print "XXXXXXXXXXXXXXXXXXX", url
         html = get_html(url)
         l = re.compile('window.location = "(.+?)"').findall(html)
         if l:

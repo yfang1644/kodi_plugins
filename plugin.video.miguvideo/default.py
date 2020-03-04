@@ -97,7 +97,7 @@ seriesAPI = 'https://www.miguvideo.com/gateway/program/v2/cont/content-info/'
 
 plugin = Plugin()
 url_for = plugin.url_for
-TIPFMT = '[COLOR pink][{}][/COLOR]'
+TIPFMT = '[COLOR magenta][{}][/COLOR]'
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -116,10 +116,12 @@ def next_page(endpoint, page, total_page, **kwargs):
 
 @plugin.route('/playvideo/<pid>/')
 def playvideo(pid):
+    level = int(plugin.addon.getSetting('resolution'))
+    if level != 0: level = -1
     html = get_html(urlAPI.format(pid))
     data = loads(html)
     data = data['body']
-    url = data['urlInfos'][0]['url']
+    url = data['urlInfos'][level]['url'].encode('utf-8')
     plugin.set_resolved_url(url)
 
 
@@ -218,14 +220,17 @@ def categorylist(index, type, area, year, pack, cont, Chu, page):
             title = item['name'] + TIPFMT.format(tip)
         except:
             title = item['name']
-        if item['programType'] == 'TV_PLAY':
+        if duration == 0:
+            update = item.get('updateEP', '')
+            if update:
+                update = '('+ update +')'
+
             items.append({
-                'label': title,
+                'label': title + update,
                 'path': url_for('series', pid=item['pID']),
                 'thumbnail': pic,
                 'info': {'title': item['name'],
                          'plot': item['detail'],
-                         'duration': duration,
                          'rating': float(item['score'])
                         }
             })

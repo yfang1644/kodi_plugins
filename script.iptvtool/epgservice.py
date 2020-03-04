@@ -78,17 +78,14 @@ def doUpdate():
         fHandle.write('<?xml version="1.0" encoding="utf-8" ?>\n')
         fHandle.write('<tv>\n')
 
-        if getSetting("epg_cctv") == "true":
-            for id, name in CHANNEL_CCTV:
-                updateChannelCCTV(fHandle, id, name)
+        for id, name in CHANNEL_CCTV:
+            updateChannelCCTV(fHandle, id, name)
 
-        if getSetting("epg_province") == "true":
-            for id, name in CHANNEL_PROV:
-                updateChannelCCTV(fHandle, id, name)
+        for id, name in CHANNEL_PROV:
+            updateChannelCCTV(fHandle, id, name)
 
-        if getSetting("epg_phoenix") == "true":
-            for id, id2, name in CHANNEL_PHNX:
-                updateChannelPHNX(fHandle, id, id2, name)
+        for id, id2, name in CHANNEL_PHNX:
+            updateChannelPHNX(fHandle, id, id2, name)
 
         fHandle.write('</tv>\n')
         fHandle.close()
