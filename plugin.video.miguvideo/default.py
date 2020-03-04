@@ -92,12 +92,12 @@ category = [
     ]
 
 cateAPI = 'https://jadeite.migu.cn/search/v3/category?'
-urlAPI = 'https://webapi.miguvideo.com/gateway/playurl/v3/play/playurl?contId={}&rateType=1,2,3,4'
+urlAPI = 'https://webapi.miguvideo.com/gateway/playurl/v3/play/playurl?contId=%s&rateType=1,2,3,4'
 seriesAPI = 'https://www.miguvideo.com/gateway/program/v2/cont/content-info/'
 
 plugin = Plugin()
 url_for = plugin.url_for
-TIPFMT = '[COLOR magenta][{}][/COLOR]'
+TIPFMT = '[COLOR magenta][{0}][/COLOR]'
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -118,10 +118,10 @@ def next_page(endpoint, page, total_page, **kwargs):
 def playvideo(pid):
     level = int(plugin.addon.getSetting('resolution'))
     if level != 0: level = -1
-    html = get_html(urlAPI.format(pid))
+    html = get_html(urlAPI % pid)
     data = loads(html)
     data = data['body']
-    url = data['urlInfos'][level]['url'].encode('utf-8')
+    url = data['urlInfos'][level]['url']
     plugin.set_resolved_url(url)
 
 
