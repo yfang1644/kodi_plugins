@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import re
 import time
-from urllib import urlencode
+if sys.version[0]=='3':
+    from urllib.parse import urlencode
+else:
+    from urllib import urlencode
 from random import random
 import binascii
 from xml.dom.minidom import parseString
@@ -19,10 +23,10 @@ def rshift(a, b):
 
 def le32_pack(b_str):
     result = 0
-    result |=  int(b_str[0], 16)
-    result |= (int(b_str[1], 16) << 8)
-    result |= (int(b_str[2], 16) << 16)
-    result |= (int(b_str[3], 16) << 24)
+    result |=  int(str(b_str[0]), 16)
+    result |= (int(str(b_str[1]), 16) << 8)
+    result |= (int(str(b_str[2]), 16) << 16)
+    result |= (int(str(b_str[3]), 16) << 24)
     return result
 
 def tea_core(data, key_seg):
@@ -120,7 +124,7 @@ def parse_pptv_xml(dom):
         width = get_attr(item, 'width')
         height = get_attr(item, 'height')
         bitrate = get_attr(item, 'bitrate')
-        res = '{}x{}@{}kbps'.format(width, height, bitrate)
+        res = '{0}x{1}@{2}kbps'.format(width, height, bitrate)
         item_meta = (file_type, rid, size, res)
         item_mlist.append(item_meta)
 
@@ -190,7 +194,7 @@ def make_url(stream):
 
     src = []
     for i, seg in enumerate(stream['segs']):
-        url = 'http://{}/{}/{}?key={}&k={}'.format(host, i, rid, key, key_expr)
+        url = 'http://{0}/{1}/{2}?key={3}&k={4}'.format(host, i, rid, key, key_expr)
         # type修改成ppbox.launcher
         # url += '&fpp.ver=1.3.0.23&type=web.fpp'
         url += '&fpp.ver=1.3.0.23&type=ppbox.launcher'
@@ -200,9 +204,9 @@ def make_url(stream):
 def getppi():
     ppi_url = 'http://tools.aplusapi.pptv.com/get_ppi'
     html = get_html(ppi_url)
-    data = re.compile('\((.+)\)').findall(html)
+    data = r1('\((.+)\)', html)
 
-    jsdata = loads(data[0])
+    jsdata = loads(data)
     ppi_cookie = jsdata['ppi']
     #html = get_html(url, headers={'Cookie': 'ppi=' + ppi_cookie})
 
@@ -217,7 +221,7 @@ class PPTV():
     ]
 
     def video_from_vid(self, id, **kwargs):
-        api_url = 'http://web-play.pptv.com/webplay3-0-{}.xml?'.format(id)
+        api_url = 'http://web-play.pptv.com/webplay3-0-{0}.xml?'.format(id)
         req = {
             'zone': 8,
             'version': 4,
@@ -237,8 +241,7 @@ class PPTV():
         dom = parseString(get_html(api_url + urlencode(req), decoded=False))
         self.title, m_items, m_streams, m_segs = parse_pptv_xml(dom)
         xml_streams = merge_meta(m_items, m_streams, m_segs)
-        stream_key = xml_streams.keys()
-        stream_key.sort()
+        stream_key = sorted(xml_streams)
         list_streams = []
         for x in stream_key:
             list_streams += [xml_streams[x]]

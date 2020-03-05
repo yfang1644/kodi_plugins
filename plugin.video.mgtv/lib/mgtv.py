@@ -1,17 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 import re
 from json import loads
 from os.path import dirname
 from random import randrange
-import urlparse
+if sys.version[0]=='3':
+    from urllib.parse import urlsplit, quote_plus
+    maketrans = bytes.maketrans
+    bytearray2str = bytearray.decode
+    from urllib.request import build_opener, HTTPCookieProcessor, install_opener
+else:
+    from urlparse import urlsplit
+    from urllib import quote_plus
+    from string import maketrans
+    bytearray2str = str
+    from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 from common import get_html, match1
 import base64
 import uuid
 import time
-from string import maketrans
-from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 
 class MGTV():
     def generate_did_tk2(self):

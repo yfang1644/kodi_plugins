@@ -4,11 +4,10 @@
 from xbmcswift2 import Plugin, xbmcgui, xbmc
 from xbmcgui import ListItem
 from bs4 import BeautifulSoup
-from urllib import urlencode
 import re
 from json import loads
 from common import get_html
-from lib.pptv import video_from_vid
+from lib.pptv import video_from_vid, urlencode
 
 # Plugin constants
 
@@ -47,8 +46,7 @@ def playvideo(vid, name, image):
 
     urls = video_from_vid(vid, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
-    list_item = xbmcgui.ListItem(name, thumbnailImage=image)
-    list_item.setInfo('video', {'title': name})
+    list_item = ListItem(name, thumbnailImage=image)
     xbmc.Player().play(stackurl, list_item)
 
     #plugin.set_resolved_url(stackurl)
@@ -182,17 +180,6 @@ def videolist(url, page):
 
 @plugin.route('/')
 def root():
-    plugin.set_content('TVShows')
-    # show search entry
-    #yield {
-    #    'label': '[COLOR FF00FFFF]<搜索...>[/COLOR]',
-    #    'path': url_for('search')
-    #}
-    #yield {
-    #    'label': u'全国电视台',
-    #    'path': url_for('tvstudio', url=PPTV_TV_LIST, page=1)
-    #}
-
     data = get_html(PPTV_LIST)
     soup = BeautifulSoup(data, 'html.parser')
     menu = soup.find_all('div', {'class': 'detail_menu'})
