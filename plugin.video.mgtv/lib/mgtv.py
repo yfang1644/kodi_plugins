@@ -16,7 +16,7 @@ from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 class MGTV():
     def generate_did_tk2(self):
         did = str(uuid.uuid4())
-        s = 'pno=1030|ver=0.3.0301|did={}|clit={}'.format(did, int(time.time()))
+        s = 'pno=1030|ver=0.3.0301|did={0}|clit={1}'.format(did, int(time.time()))
         if not isinstance(s, bytes):
             s = s.encode()
         e = bytearray(base64.b64encode(s).translate(maketrans(b'+/=', b'_~-')))
@@ -58,14 +58,14 @@ class MGTV():
         handlers = [HTTPCookieProcessor()]
         install_opener(build_opener(*handlers))
         did, tk2 = self.generate_did_tk2()
-        api_info_url = 'https://pcweb.api.mgtv.com/player/video?tk2={}&video_id={}&type=pch5'.format(tk2, vid)
+        api_info_url = 'https://pcweb.api.mgtv.com/player/video?tk2={0}&video_id={1}&type=pch5'.format(tk2, vid)
         html = get_html(api_info_url)
         content = loads(html)
 
         title = content['data']['info']['title']
         pm2 = content['data']['atc']['pm2']
 
-        api_source_url = 'https://pcweb.api.mgtv.com/player/getSource?video_id={}&pm2={}&tk2={}&type=pch5'.format(vid, pm2, tk2)
+        api_source_url = 'https://pcweb.api.mgtv.com/player/getSource?video_id={0}&pm2={1}&tk2={2}&type=pch5'.format(vid, pm2, tk2)
         html = get_html(api_source_url)
         content = loads(html)
         streams = content['data']['stream']
