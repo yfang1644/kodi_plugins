@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<settings>
-    <setting id="resolution" type="enum" label="码率设置"
-        values="流畅优先|清晰度优先" default="0"/>
-</settings>

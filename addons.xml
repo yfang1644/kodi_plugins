@@ -97,7 +97,7 @@
 </addon>
 
 <addon id="plugin.video.cntv-live"
-    name="中国网络电视台 CNTV" version="3.0.1"
+    name="中国网络电视台 CNTV" version="3.0.2"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -455,32 +455,6 @@
         <email>yfang1644@gmail.com</email>
 		<platform>all</platform>
 	</extension>
-</addon>
-
-<addon id="plugin.video.tvonline"
-    name="地方电视台直播" version="1.0.1"
-    provider-name="yfang1644">
-    <requires>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.geturl" version="1.0.0"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">TV Live plugin</summary>
-        <summary lang="zh">地方电视台直播</summary>
-        <description lang="en">Stream live Nanjing TV and other local TV programs</description>
-        <description lang="zh">电视台直播</description>
-        <disclaimer lang="en">http://www.nbs.cn, http://www.haoqu.net/3/</disclaimer>
-        <language></language>
-        <license>GNU GENERAL PUBLIC LICENSE, Version 3, 29 June 2007</license>
-        <forum></forum>
-        <website></website>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tvonline</source>
-        <email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-    </extension>
 </addon>
 
 <addon id="plugin.video.funshion"
