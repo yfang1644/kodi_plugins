@@ -61,14 +61,16 @@ http://otttv.bj.chinamobile.com/PLTV/88888888/224/3221225866/1.m3u8
 http://223.110.242.130:6610/gitv/live1/G_CCTV-NEWS/index.m3u8
 #EXTINF:-1 group-title="中央台" ,CCTV风云足球
 http://223.99.186.132:6410/shandong_cabletv.live.zte.com/223.99.253.7:8081/00/SNM/CHANNEL00000618/index.m3u8
-#EXTINF:-1 group-title="中央台" ,CCTV体育赛事
-http://hwottcdn.ln.chinamobile.com/PLTV/88888890/224/3221225496/index.m3u8
-#EXTINF:-1 group-title="中央台" ,CCTV发现之旅
+#EXTINF:-1 tvg-name="发现之旅" group-title="中央台" ,CCTV发现之旅
 http://ott.js.chinamobile.com/PLTV/3/224/3221227030/index.m3u8
-#EXTINF:-1 group-title="中央台" ,CCTV老故事
+#EXTINF:-1 tvg-name="老故事" group-title="中央台" ,CCTV老故事
 http://ott.js.chinamobile.com/PLTV/3/224/3221227043/index.m3u8
-#EXTINF:-1 group-title="中央台" ,CCTV怀旧剧场
-http://223.99.186.132:6410/shandong_cabletv.live.zte.com/223.99.253.7:8081/00/SNM/CHANNEL00000622/index.m3u8
+#EXTINF:-1 tvg-name="第一剧场" group-title="中央台" ,CCTV第一剧场
+http://39.135.15.70:6610/PLTV/88888888/224/3221225702/1/'
+#EXTINF:-1 tvg-name="风云剧场" group-title="中央台" ,CCTV风云剧场
+http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000094
+#EXTINF:-1 tvg-name="怀旧剧场" group-title="中央台" ,CCTV怀旧剧场
+http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000089
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225634/index.m3u8
 #EXTINF:-1 tvg-name="安徽公共频道" group-title="地方电视台" ,安徽公共频道
@@ -119,7 +121,7 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221225602/index.m3u8
 http://112.17.40.140/PLTV/88888888/224/3221226116/index.m3u8
 #EXTINF:-1 tvg-name="河南卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/henan.png" group-title="地方电视台" ,河南卫视
 http://223.110.241.139:6610/gitv/live1/HENAN/HENAN/
-#EXTINF:-1 tvg-name="辽宁卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/liaoning.png" group-title="地方电视台" ,辽宁卫
+#EXTINF:-1 tvg-name="辽宁卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/liaoning.png" group-title="地方电视台" ,辽宁卫视
 http://223.110.241.139:6610/gitv/live1/LNWS/LNWS/
 #EXTINF:-1 tvg-name="吉林卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/jilin.png" group-title="地方电视台" ,吉林卫视
 http://223.110.241.139:6610/gitv/live1/G_JILIN/G_JILIN/
@@ -127,6 +129,24 @@ http://223.110.241.139:6610/gitv/live1/G_JILIN/G_JILIN/
 http://ott.js.chinamobile.com/PLTV/3/224/3221227252/index.m3u8
 #EXTINF:-1 tvg-name="湖北卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221227211/index.m3u8
+#EXTINF:-1 tvg-name="湖北公共·新闻" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北公共新闻
+http://live.cjyun.org/hubeitv/s10008-live-hbgg.m3u8
+#EXTINF:-1 tvg-name="湖北经济频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北经济频道
+http://live.cjyun.org/hubeitv/s10008-live-hbjs.m3u8
+#EXTINF:-1 tvg-name="湖北教育频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北教育频道
+http://live.cjyun.org/hubeitv/s10008-live-hbjy.m3u8
+#EXTINF:-1 tvg-name="湖北垄上频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北垄上频道
+http://live.cjyun.org/hubeitv/s10008-live-hbls.m3u8
+#EXTINF:-1 tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北美嘉购物
+http://live.cjyun.org/hubeitv/s10008-live-mjgw.m3u8
+#EXTINF:-1 tvg-name="湖北生活频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北生活频道
+http://live.cjyun.org/hubeitv/s10008-live-hbsh.m3u8
+#EXTINF:-1 tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北休闲指南
+http://live.cjyun.org/hubeitv/s10008-live-xxzn.m3u8
+#EXTINF:-1 tvg-name="湖北影视频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北影视频道
+http://live.cjyun.org/hubeitv/s10008-live-hbys.m3u8
+#EXTINF:-1 tvg-name="湖北综合频道" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hubei.png" group-title="地方电视台" ,湖北综合频道
+http://live.cjyun.org/hubeitv/s10008-live-hbzh.m3u8
 #EXTINF:-1 tvg-name="湖南卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hunan.png" group-title="地方电视台" ,湖南卫视HD
 http://ott.js.chinamobile.com/PLTV/3/224/3221225908/index.m3u8
 #EXTINF:-1 tvg-name="江苏卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/jiangsu.png" group-title="地方电视台" ,江苏卫视
@@ -143,8 +163,6 @@ http://223.110.241.204:6610/gitv/live1/G_JSZY/G_JSZY/
 http://ott.js.chinamobile.com/PLTV/4/224/3221225935/index.m3u8
 #EXTINF:-1 tvg-name="江西卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/jiangxi.png" group-title="地方电视台" ,江西卫视(HD)
 http://ott.js.chinamobile.com/PLTV/3/224/3221225536/index.m3u8
-#EXTINF:-1 tvg-name="深圳卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shenzhen.png" group-title="地方电视台" ,深圳卫视
-http://ivi.bupt.edu.cn/hls/sztv.m3u8
 #EXTINF:-1 tvg-name="天津卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/tianjin.png" group-title="地方电视台" ,天津卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221227212/index.m3u8
 #EXTINF:-1 tvg-name="四川卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sichuan.png" group-title="地方电视台" ,四川卫视
@@ -152,7 +170,7 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221225570/index.m3u8
 #EXTINF:-1 tvg-name="SCTV2" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv2.png" group-title="地方电视台" ,四川文化旅游
 http://scgctvshow.sctv.com/hdlive/sctv2/1.m3u8
 #EXTINF:-1 tvg-name="SCTV3" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv3.png" group-title="地方电视台" ,四川经济
-ttp://scgctvshow.sctv.com/hdlive/sctv3/1.m3u8
+http://scgctvshow.sctv.com/hdlive/sctv3/1.m3u8
 #EXTINF:-1 tvg-name="SCTV4" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv4.png" group-title="地方电视台" ,四川新闻
 http://scgctvshow.sctv.com/sdlive/sctv4/1.m3u8
 #EXTINF:-1 tvg-name="SCTV5" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv5.png" group-title="地方电视台" ,四川影视文艺
@@ -161,7 +179,7 @@ http://scgctvshow.sctv.com/hdlive/sctv5/1.m3u8
 http://scgctvshow.sctv.com/hdlive/sctv6/1.m3u8
 #EXTINF:-1 tvg-name="SCTV7" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv7.png" group-title="地方电视台" ,四川妇女儿童
 http://scgctvshow.sctv.com/hdlive/sctv7/1.m3u8
-#EXTINF:-1 tvg-name="峨眉电影" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv8.png" group-title="地方电视台" ,峨眉电影
+#EXTINF:-1 tvg-name="峨嵋电影" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv8.png" group-title="地方电视台" ,峨嵋电影
 http://scgctvshow.sctv.com/hdlive/emei/index.m3u8
 #EXTINF:-1 tvg-name="SCTV9" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/sheng/sctv9.png" group-title="地方电视台" ,四川公共频道
 http://scgctvshow.sctv.com/hdlive/sctv9/1.m3u8
@@ -173,6 +191,24 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221225576/index.m3u8
 http://ott.js.chinamobile.com/PLTV/3/224/3221227258/index.m3u8
 #EXTINF:-1 group-title="地方电视台" ,山东教育卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221227019/index.m3u8
+#EXTINF:-1 tvg-name="山东公共" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东公共频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=ggpd
+#EXTINF:-1 tvg-name="山东国际" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东国际频道频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=gjpd
+#EXTINF:-1 tvg-name="山东农科" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东农科频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=nkpd
+#EXTINF:-1 tvg-name="山东齐鲁" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东齐鲁电视台
+http://player.ioioz.com/18/tv.php?tv=qltv&id=qlpd
+#EXTINF:-1 tvg-name="山东少儿" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东少儿频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=sepd
+#EXTINF:-1 tvg-name="山东生活" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东生活频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=shpd
+#EXTINF:-1 tvg-name="山东体育" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东体育频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=typd
+#EXTINF:-1 tvg-name="山东影视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东影视频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=yspd
+#EXTINF:-1 tvg-name="山东综艺" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shandong.png" group-title="地方电视台" ,山东综艺频道
+http://player.ioioz.com/18/tv.php?tv=qltv&id=zypd
 #EXTINF:-1 tvg-name="厦门卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/xiamen.png" group-title="地方电视台" ,厦门卫视
 http://cstvpull.live.wscdns.com/live/xiamen.flv
 #EXTINF:-1 tvg-name="厦门一套" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/xiamen.png" group-title="地方电视台" ,厦门一套
@@ -189,6 +225,8 @@ http://cstvpull.live.wscdns.com/live/xiamenyidong.flv
 http://ott.js.chinamobile.com/PLTV/3/224/3221227005/index.m3u8
 #EXTINF:-1 tvg-name="广东卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/guangdong.png" group-title="地方电视台" ,广东卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225592/index.m3u8
+#EXTINF:-1 tvg-name="深圳卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/shenzhen.png" group-title="地方电视台" ,深圳卫视
+http://cctvtxyh5ca.liveplay.myqcloud.com/wstv/shenzhen_2/index.m3u8
 #EXTINF:-1 tvg-name="广西卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/guangxi.png" group-title="地方电视台" ,广西卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225554/index.m3u8
 #EXTINF:-1 tvg-name="青海卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/qinghai.png" group-title="地方电视台" ,青海卫视
@@ -233,11 +271,11 @@ http://ali.m.l.cztv.com/channels/lantian/channel11/720p.m3u8
 http://ali.m.l.cztv.com/channels/lantian/channel12/720p.m3u8
 #EXTINF:-1 ,CETV-1
 http://ott.js.chinamobile.com/PLTV/3/224/3221225622/index.m3u8
-#EXTINF:-1 ,凤凰香港
+#EXTINF:-1 tvg-name="凤凰香港" tvg-logo="http://epg.51zmt.top:8000/tb1/gt/fenghuangxianggang.png" group-title="地方电视台" ,凤凰香港
 http://ott.js.chinamobile.com/PLTV/3/224/3221226975/index.m3u8
-#EXTINF:-1 ,凤凰资讯HD
+#EXTINF:-1 tvg-name="凤凰资讯" tvg-logo="http://epg.51zmt.top:8000/tb1/gt/fenghuangzixun.png" group-title="地方电视台" ,凤凰资讯
 http://ott.js.chinamobile.com/PLTV/3/224/3221226923/index.m3u8
-#EXTINF:-1 ,凤凰中文(HD)
+#EXTINF:-1 tvg-name="凤凰中文" tvg-logo="http://epg.51zmt.top:8000/tb1/gt/fenghuangzhongwen.png" group-title="地方电视台" ,凤凰中文
 http://ott.js.chinamobile.com/PLTV/3/224/3221226922/index.m3u8
 #EXTINF:-1 ,都市剧场
 http://ott.js.chinamobile.com/PLTV/3/224/3221226029/index.m3u8
@@ -612,73 +650,73 @@ http://hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228384/42613784.smi
 #EXTINF:-1 group-title="爱奇艺轮播" ,经典港片
 http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_jingdianguangpian_1080p_t10/c15_lb_jingdianguangpian_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,电影精选
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_dianyingjingxuan_1080p_t10/c15_lb_dianyingjingxuan_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_dianyingjingxuan_1080p_t10/c15_lb_dianyingjingxuan_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,五星影院
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_wuxingyingyuan_1080p_t10/c15_lb_wuxingyingyuan_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_wuxingyingyuan_1080p_t10/c15_lb_wuxingyingyuan_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,动作电影
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_dongzuodianying_1080p_t10/c16_lb_dongzuodianying_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_dongzuodianying_1080p_t10/c16_lb_dongzuodianying_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,黑帮电影
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_heibangdianying_1080p_t10/c16_lb_heibangdianying_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_heibangdianying_1080p_t10/c16_lb_heibangdianying_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,欢乐剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_xijudianying_1080p_t10/c16_lb_xijudianying_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_xijudianying_1080p_t10/c16_lb_xijudianying_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,惊悚午夜场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_jingnawuyechang_1080p_t10/c16_lb_jingnawuyechang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_jingnawuyechang_1080p_t10/c16_lb_jingnawuyechang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,动画电影
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_donghuadianying_1080p_t10/c16_lb_donghuadianying_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_donghuadianying_1080p_t10/c16_lb_donghuadianying_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,记录片
 http://cdn-out.iqy.sc96655.com/tslive/c15_lb_newjilupian_1080p_t10/c15_lb_newjilupian_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,科学探索
-http://aiducdnct.inter.iqiyi.com/tslive/c16_lb_kexuetansuo_1080p_t10/c16_lb_kexuetansuo_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_kexuetansuo_1080p_t10/c16_lb_kexuetansuo_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,自然地理
-http://aiducdnct.inter.iqiyi.com/tslive/c16_lb_zirandili_1080p_t10/c16_lb_zirandili_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_zirandili_1080p_t10/c16_lb_zirandili_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,华语院线
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_huayuyuanxian_1080p_t10/c16_lb_huayuyuanxian_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_huayuyuanxian_1080p_t10/c16_lb_huayuyuanxian_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,怀旧剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_huaijiujuchang_1080p_t10/c16_lb_huaijiujuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_huaijiujuchang_1080p_t10/c16_lb_huaijiujuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,日韩院线
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_rihanyuanxian_1080p_t10/c16_lb_rihanyuanxian_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_rihanyuanxian_1080p_t10/c16_lb_rihanyuanxian_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,周末影院
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_fengxiaogang_1080p_t10/c16_lb_fengxiaogang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_fengxiaogang_1080p_t10/c16_lb_fengxiaogang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,经典重温
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_jingdianjuchang_1080p_t10/c16_lb_jingdianjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_jingdianjuchang_1080p_t10/c16_lb_jingdianjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,谍战剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_diezhanjuchang_1080p_t10/c16_lb_diezhanjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_diezhanjuchang_1080p_t10/c16_lb_diezhanjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,军旅剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_junlvjuchang_1080p_t10/c16_lb_junlvjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_junlvjuchang_1080p_t10/c16_lb_junlvjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,情景喜剧
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_kaixinjuchang_1080p_t10/c16_lb_kaixinjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_kaixinjuchang_1080p_t10/c16_lb_kaixinjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,热血搏击
 http://cdn-out.iqy.sc96655.com/tslive/c16_lb_bojinew_1080p_t10/c16_lb_bojinew_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,人文社会
 http://cdn-out.iqy.sc96655.com/tslive/c15_lb_renwenshehui_1080p_t10/c15_lb_renwenshehui_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,老年剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_laonianjuchang_1080p_t10/c15_lb_laonianjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_laonianjuchang_1080p_t10/c15_lb_laonianjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,青春剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_weizhangzhe_1080p_t10/c15_lb_weizhangzhe_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_weizhangzhe_1080p_t10/c15_lb_weizhangzhe_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,宫廷正剧
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_niandaijuchang_1080p_t10/c15_lb_niandaijuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_niandaijuchang_1080p_t10/c15_lb_niandaijuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,家庭剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_jiatingjuchang_1080p_t10/c15_lb_jiatingjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_jiatingjuchang_1080p_t10/c15_lb_jiatingjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,抗战剧场
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_kangzhanjuchang_1080p_t10/c15_lb_kangzhanjuchang_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_kangzhanjuchang_1080p_t10/c15_lb_kangzhanjuchang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,热播电视剧
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_reboju_1080p_t10/c15_lb_reboju_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_reboju_1080p_t10/c15_lb_reboju_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,历史秘闻
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_lishimiwen_1080p_t10/c15_lb_lishimiwen_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_lishimiwen_1080p_t10/c15_lb_lishimiwen_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,旅游攻略
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_lvyounew_1080p_t10/c15_lb_lvyounew_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_lvyounew_1080p_t10/c15_lb_lvyounew_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,军事观察
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_junshinew_1080p_t10/c16_lb_junshinew_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_junshinew_1080p_t10/c16_lb_junshinew_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,童年经典
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_balalaxiaomoxian_1080p_t10/c15_lb_balalaxiaomoxian_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_balalaxiaomoxian_1080p_t10/c15_lb_balalaxiaomoxian_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,动物兄弟
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_yingshijinqu_1080p_t10/c16_lb_yingshijinqu_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_yingshijinqu_1080p_t10/c16_lb_yingshijinqu_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,怀旧动画
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_huanjiudongman_1080p_t10/c15_lb_huanjiudongman_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_huanjiudongman_1080p_t10/c15_lb_huanjiudongman_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,儿童乐园
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c15_lb_dongmantiandi_1080p_t10/c15_lb_dongmantiandi_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_dongmantiandi_1080p_t10/c15_lb_dongmantiandi_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,亲子启蒙
-http://101.72.196.41/r/baiducdnct.inter.iqiyi.com/tslive/c16_lb_qinziqimeng_1080p_t10/c16_lb_qinziqimeng_1080p_t10.m3u8
+http://baiducdnct.inter.iqiyi.com/tslive/c16_lb_qinziqimeng_1080p_t10/c16_lb_qinziqimeng_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,宝贝课堂
 http://cdn-out.iqy.sc96655.com/tslive/c16_lb_baobaoketang_1080p_t10/c16_lb_baobaoketang_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,脱口秀
@@ -691,7 +729,7 @@ http://cdn-out.iqy.sc96655.com/tslive/c15_lb_wangqiu2_1080p_t10/c15_lb_wangqiu2_
 http://cdn-out.iqy.sc96655.com/tslive/c15_lb_benpaobaxiongdi_1080p_t10/c15_lb_benpaobaxiongdi_1080p_t10.m3u8
 #EXTINF:-1 group-title="爱奇艺轮播" ,宠物台
 http://cdn-out.iqy.sc96655.com/tslive/c15_lb_chongwutai_1080p_t10/c15_lb_chongwutai_1080p_t10.m3u8
- #EXTINF:-1 ,法国成人
+#EXTINF:-1 ,法国成人
 http://5.135.92.138:58143/out/u/109_1.m3u8
 #EXTINF:-1 ,Sk成人台1
 http://80.87.208.158/dna-4631-tv-pc.m3u8

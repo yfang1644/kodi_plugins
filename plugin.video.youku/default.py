@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui, xbmc
-from urllib import quote_plus, urlencode
+from xbmcgui import ListItem
 from json import loads
-from common import get_html, match1
-from lib.youku import video_from_vid
+import re
+from common import get_html
+from lib.youku import video_from_vid, video_from_url, urlencode, quote_plus
 
 HOST = 'http://tv.api.3g.youku.com'
 BASEIDS = {
@@ -18,14 +19,89 @@ BASEIDS = {
     'launcher': 0
 }
 
-########################################################################
-# 优酷 www.youku.com
-########################################################################
-
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 
 plugin = Plugin()
 url_for = plugin.url_for
+
+def httphead(url):
+    if len(url) < 2:
+        return url
+    if url[0:2] == '//':
+        url = 'https:' + url
+    elif url[0] == '/':
+        url = 'https://list.youku.com' + url
+
+    return url
+
+category = [
+    {'剧集':['show', 97,
+               ['古装','武侠','警匪','军事','神话','科幻','悬疑','历史','儿童',
+                '农村','都市','家庭','搞笑','偶像','时装','优酷出品']]},
+    {'电影':['show', 96,
+               ['武侠','警匪','犯罪','科幻','战争','恐怖','惊悚','纪录片','西部',
+                '戏曲','歌舞','奇幻','冒险','悬疑','历史','动作','传记','动画','儿童',
+                '喜剧','爱情','剧情','运动','短片','优酷出品']]},
+    {'综艺':['show', 85,
+               ['热门','网综','优酷','牛人','脱口秀','真人秀','选秀','美食','旅游',
+                '汽车','访谈','纪实','搞笑','时尚','晚会','理财','演唱会','曲艺',
+                '益智','音乐','舞蹈','游戏','生活']]},
+    {'动漫':['show', 100,
+               ['热血','格斗','恋爱','美少女','校园','搞笑','LOLI','神魔','机战',
+                '科幻','真人','青春','魔法','神话','冒险','运动','竞技','童话','亲子',
+                '教育','励志','剧情','社会','历史','战争']]},
+    {'少儿':['show', 177,
+               ['动画','儿歌','绘本','故事','玩具','早教','艺术','探索纪实','少儿综艺',
+                '亲子','英语','国学','课程辅导','人际交往','情商','认知启蒙','科普',
+                '冒险','幽默','友情','益智','战斗','科幻','魔法','亲情','数学',
+                '动物','热血']]},
+    {'音乐':['show', 95,
+               ['流行','摇滚','舞曲','电子','R&B','HIP-HOP','乡村','民族','民谣',
+                '拉丁','爵士','雷鬼','新世纪','古典','音乐剧','轻音乐']]},
+    {'教育':['show', 87,
+               ['公开课','名人名嘴','文化','艺术','伦理','社会','理工','历史','心理学',
+                '经济','政治','管理学','外语','法律','计算机','哲学','职业培训',
+                '家庭教育']]},
+    {'纪实':['show', 84,
+               ['人物','军事','历史','自然','古迹','探险','科技','文化','刑侦',
+                '社会','旅游']]},
+    {'体育':['show', 98,
+               ['奥运会','世界杯','格斗','足球','篮球','健身','跑步','广场舞',
+                '综合','棋牌','电竞','冰壶','冰球','滑雪','滑冰','雪车雪撬','射击']]},
+    {'文化':['show', 178, []]},
+
+    {'娱乐':['show', 86, ['明星资讯','电影资讯','电视资讯','音乐资讯']]},
+    {'游戏':['show', 99, []]},
+    {'资讯':['video', 91,
+               ['社会资讯','科技资讯','生活资讯','军事资讯','财经资讯','时政资讯',
+                '法制']]},
+    {'搞笑':['video', 94,
+               ['恶搞短片','搞笑自拍','萌宠奇趣','搞笑达人','影视剧吐槽','恶搞配音',
+                '欢乐街访','鬼畜']]},
+    {'生活':['video', 103,
+               ['休闲','美食','聚会','宠物','居家','健康','家居','女性','婚恋',
+                '潮品','记录','生活达人']]},
+    {'汽车':['video', 104, []]},
+    {'科技':['video', 105,
+               ['数码','IT','手机','笔记本','DC/DV','MP3/MP4','数字家电','GPS',
+                '游戏机','App','平板','科技达人']]},
+    {'时尚':['video', 89,
+               ['美容','修身','服装服饰','时尚购物','潮人','情感星座','时尚达人',
+                '美容达人']]},
+    {'亲子':['video', 90,
+               ['怀孕','育儿','早教','宝宝秀','搞笑儿童','妈妈']]},
+    {'旅游':['video', 88,
+               ['国内游','出境游','旅游业界','交通住宿','旅游用品','城市','乡村古镇',
+                '游轮岛屿','人文景点','自然景点','节庆活动','户外运动',
+                '攻略指南','旅游达人']]},
+    {'微电影':['video', 171, []]},
+    {'网剧':['video', 172, []]},
+    {'拍客':['video', 174, []]},
+    {'创意视频':['video', 175, []]},
+    {'自拍':['video', 176, []]},
+    {'广告':['video', 102, []]},
+]
+
 
 ############################################################################
 def previous_page(endpoint, page, total_page, **kwargs):
@@ -43,32 +119,35 @@ def next_page(endpoint, page, total_page, **kwargs):
         return []
 
 
-@plugin.route('/playvideo/<videoid>')
-def playvideo(videoid):
+@plugin.route('/playvideo/<videoid>/<name>/')
+def playvideo(videoid, name):
     level = int(plugin.addon.getSetting('resolution'))
 
     urls = video_from_vid(videoid, level=level)
-    stackurl = 'stack://' + ' , '.join(urls)
-    plugin.set_resolved_url(stackurl)
+    if len(urls) > 1:
+        stackurl = 'stack://' + ' , '.join(urls)
+        list_item = ListItem(name)
+        list_item.setInfo(type="video", infoLabels={"Title": name})
+        xbmc.Player().play(stackurl, list_item)
+    else:
+        plugin.set_resolved_url(urls[0])
 
 
-@plugin.route('/select/<cid>')
+@plugin.route('/select/<cid>/')
 def select(cid):
-    req = {'cid': cid}
-    req.update(BASEIDS)
-    page = get_html(HOST + '/tv/v2_0/childchannel/list?' + urlencode(req))
-    results = loads(page)['results']['result']
-
-    lists = [x['sub_channel_title'] for x in results]
-    f = [x['filter'] for x in results]
+    for item in category:
+        title = item.keys()[0]
+        if str(item[title][1]) == cid:
+            type= item[title][0]
+            g = item[title][2]
+            break
 
     dialog = xbmcgui.Dialog()
 
-    sel = dialog.select(u'分类过滤', lists)
-    filter = f[sel].encode('utf-8') if sel >= 0 else '0'
-    filters = lists[sel].encode('utf-8') if sel >= 0 else '全部'
-    return channel(cid, 1, filter, filters)
+    sel = dialog.select('类型', g)
+    group = g[sel] if sel >= 0 else '0'
 
+    return mainchannel(type=type, cid=cid, group=group, page=1)
 
 @plugin.route('/search')
 def search():
@@ -89,7 +168,7 @@ def search():
     for item in results:
         items.append({
             'label': item['showname'],
-            'path': url_for('episodelist', tid=item['showid']),
+            'path': url_for('episodelist', vid=item['showid']),
             'thumbnail': item['show_vthumburl_hd']
         })
 
@@ -117,122 +196,80 @@ def search():
     return items
 
 
-@plugin.route('/videolist/<showid>')
-def videolist(showid):
-    url = HOST + '/layout/smarttv/shows/' + showid + '/series?'
-    print "XXXXXXXXXXXXXXXXXXXXXXXXX",url + urlencode(BASEIDS)
-    site = get_html(url + urlencode(BASEIDS))
-    results = loads(site)['results']
+@plugin.route('/episodelist/<vid>/')
+def episodelist(vid):
+    plugin.set_content('TVShows')
+    url = 'http://v.youku.com/v_show/id_{0}.html'.format(vid)
+    page = get_html(url)
+
+    m = re.search('__INITIAL_DATA__\s*=({.+?\});', page)
+    
+    p = loads(m.group(1))
+    series = p['data']['data']['nodes'][0]['nodes'][2]['nodes']
+    content = p['data']['data']['nodes'][0]['nodes'][0]['nodes'][0]['data']['desc']
     items = []
-    for item in results:
-        extra = '(' + item['show_videotype'] + ')' if int(item['is_trailer']) else ''
+    for film in series:
+        vid = film['data']['action']['value']
+        title = film['data']['title'].encode('utf-8')
+
         items.append({
-            'label': item['title'] + extra,
-            'path': url_for('playvideo', videoid=item['videoid']),
-            'thumbnail': item['img'],
+            'label': title,
+            'path': url_for('playvideo', videoid=vid, name=title),
+            'thumbnail': film['data']['img'],
             'is_playable': True,
-            'info': {'title': item['title'], 'episode': item['video_stage']},
+            'info': {'title': title, 'plot': content}
         })
 
-    unsorted = [(dict_['info']['episode'], dict_) for dict_ in items]
-    unsorted.sort()
-    sorted = [dict_ for (key, dict_) in unsorted]
-    return sorted
-
-
-@plugin.route('/episodelist/<tid>')
-def episodelist(tid):
-    plugin.set_content('TVShows')
-    req = {'id': tid}
-    req.update(BASEIDS)
-    site = get_html(HOST + '/layout/smarttv/play/detail?' + urlencode(req))
-    results = loads(site)
-    detail = results['detail']
-    if detail['episode_total'] == '1':
-        items = [{
-            'label': detail['title'],
-            'path': url_for('playvideo', videoid=detail['videoid']),
-            'thumbnail': detail['img'],
-            'is_playable': True,
-            'info': {'title': detail['title'], 'plot': detail['desc']}
-    }]
-    else:
-        items = [{
-            'label': detail['title'] + '(' + detail['stripe_bottom'] + ')',
-            'path': url_for('videolist', showid=detail['showid']),
-            'thumbnail': detail['img'],
-            'info': {'title': detail['title'], 'plot': detail['desc']}
-        }]
-
-    site = get_html(HOST + '/common/shows/relate?' + urlencode(req))
-    results = loads(site)
-    results = results['results']
-    for item in results:
-        items.append({
-            'label': item['showname'] + '(' + item['stripe_bottom'] + ')',
-            'path': url_for('episodelist', tid=item['showid']),
-            'thumbnail': item['img_hd'],
-        })
     return items
 
 
-@plugin.route('/channel/<cid>/<page>/<filter>/<filters>')
-def channel(cid, page, filter, filters):
+@plugin.route('/mainchannel/<type>/<cid>/<group>/<page>/')
+def mainchannel(type, cid, group, page):
     plugin.set_content('TVShows')
-    pagesize = 20
+    api = 'https://list.youku.com/category/page?'
     req = {
-        'cid': cid,
-        'pz': pagesize,
-        'filter': '' if filter=='0' else filter,
-        'pg': page
+        'type': type,
+        'c': cid,
+        'p': page,
+        'g': '' if group == '0' else group
     }
-    req.update(BASEIDS)
-    try:
-        site = get_html(HOST + '/layout/smarttv/item_list?' + urlencode(req))
-    except:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
-                            '此功能尚未实现')
-        return index()
 
-    jsdata = loads(site)
-    total = jsdata['total']
-    total_page = (total + pagesize - 1) // pagesize
+    html = get_html(api + urlencode(req))
+    data = loads(html)
 
-    items = [{
-        'label': '',
-        'label': BANNER_FMT % ('分类过滤' + '('+ filters + ')'),
-        'path': url_for('select', cid=cid),
-    }]
-
-    items += previous_page('channel', page, total_page, cid=cid, filter=filter, filters=filters)
-    results = jsdata['results']
-    for item in results:
-        completed = u'--完结' if item['completed'] else ''
-        reputation = str(item['reputation'])
+    items = previous_page('mainchannel', page, 300, type=type, cid=cid, group=group)
+    items.append({
+        'label': '[COLOR yellow][分类][/COLOR]',
+        'path': url_for('select', cid=cid)
+    })
+    for item in data['data']:
         items.append({
-            'label': item['showname'] + '(' + reputation + completed + ')' ,
-            'path': url_for('episodelist', tid=item['tid']),
-            'thumbnail': item['show_vthumburl_hd'],
+            'label': item['title'] + '(' + item['summary'] +')',
+            'path': url_for('episodelist', vid=item['videoId']),
+            'thumbnail': httphead(item['img']),
+            'info': {'title': item['title'], 'plot': item['subTitle']}
         })
 
-    items += next_page('channel', page, total_page, cid=cid, filter=filter, filters=filters)
-    return items
+    items += next_page('mainchannel', page, 300, type=type, cid=cid, group=group)
 
+    return items
 
 @plugin.route('/')
 def index():
-    plugin.set_content('TVShows')
-    page = get_html(HOST + '/tv/main/top?' + urlencode(BASEIDS))
-    jsdata = loads(page)['results']['channel']
-    items = [{
-        'label': BANNER_FMT % '优酷视频--搜索',
+    items = []
+    items.append({
+        'label': '[COLOR magenta][搜索][/COLOR]',
         'path': url_for('search')
-    }]
-    for item in jsdata:
+    })
+    for item in category:
+        title = item.keys()[0]
         items.append({
-            'label': item['title'],
-            'path': url_for('channel', cid=item['cid'], page=1, filter='0', filters='全部'),
-            'thumbnail': item['image']
+            'label': title,
+            'path': url_for('mainchannel',
+                            type=item[title][0],
+                            cid=item[title][1],
+                            group=0,
+                            page=1)
         })
     return items
 

@@ -548,19 +548,19 @@
 
 <addon id="plugin.video.youku"
     name="优酷视频"
-    version="1.1.1"
+    version="2.0.0"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.geturl" version="1.0.0"/>
+        <import addon="script.module.geturl" version="2.0.0"/>
     </requires>
     <extension point="xbmc.python.pluginsource" library="default.py">
         <provides>video</provides>
     </extension>
     <extension point="xbmc.python.module" library="lib"/>
     <extension point="xbmc.addon.metadata">
-        <summary lang="en">YouKu Video (plain version)</summary>
-        <summary lang="zh">优酷视频插件(平铺版)</summary>
+        <summary lang="en">YouKu Video</summary>
+        <summary lang="zh">优酷视频插件</summary>
         <description lang="en">online video from youku.com</description>
         <description lang="zh">优酷(www.youku.com)在线网络视频</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku</source>
