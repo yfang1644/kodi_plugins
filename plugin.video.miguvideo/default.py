@@ -97,7 +97,7 @@ seriesAPI = 'https://www.miguvideo.com/gateway/program/v2/cont/content-info/'
 
 plugin = Plugin()
 url_for = plugin.url_for
-TIPFMT = '[COLOR magenta][{0}][/COLOR]'
+TIPFMT = u'[COLOR magenta][{0}][/COLOR]'
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
@@ -209,43 +209,34 @@ def categorylist(index, type, area, year, pack, cont, Chu, page):
 
     data = data['body']
     for item in data['data']:
-        t = item.get('duration', '')
-        if t == '': t = '0:0:0'
-        duration = 0
-        for y in t.split(':'):
-            duration = 60*duration + int(y)
         pic = item['h5pics']['lowResolutionH']
         try:
-            tip = item['tip']['msg']
-            title = item['name'] + TIPFMT.format(tip)
+            tip = TIPFMT.format(item['tip']['msg'])
         except:
-            title = item['name']
-        if duration == 0:
-            update = item.get('updateEP', '')
-            if update:
-                update = '('+ update +')'
+            tip = ''
+        update = item.get('updateEP', '')
+        if update:
+            update = '('+ update +')'
+        title = item['name'] + update + tip
+        items.append({
+            'label': title,
+            'thumbnail': pic,
+            'info': {'title': title,
+                     'plot': item['detail'],
+                     'rating': float(item['score'])
+                    }
+        })
+        t = item.get('duration')
+        if t:
+            duration = 0
+            for y in t.split(':'):
+                duration = 60*duration + int(y)
+            items[-1]['is_playable'] = True
+            items[-1]['path'] = url_for('playvideo', pid=item['pID'])
+            items[-1]['info']['duration'] = duration
 
-            items.append({
-                'label': title + update,
-                'path': url_for('series', pid=item['pID']),
-                'thumbnail': pic,
-                'info': {'title': item['name'],
-                         'plot': item['detail'],
-                         'rating': float(item['score'])
-                        }
-            })
         else:
-            items.append({
-                'label': title,
-                'path': url_for('playvideo', pid=item['pID']),
-                'thumbnail': pic,
-                'is_playable': True,
-                'info': {'title': item['name'],
-                         'plot': item['detail'],
-                         'duration': duration,
-                         'rating': float(item['score'])
-                        }
-            })
+            items[-1]['path'] = url_for('series', pid=item['pID'])
 
     items += next_page('categorylist', page, total_page, index=index,
                        type=type, area=area, year=year,

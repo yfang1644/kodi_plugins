@@ -187,7 +187,7 @@ def search():
 
         items.append({
             'label': item['title'],
-            'path': url_for('playvideo', videoid=item['videoid']),
+            'path': url_for('playvideo', videoid=item['videoId'], name=item['title']),
             'thumbnail': item['img'],
             'is_playable': True,
             'info': {'title': item['title'], 'plot': item['desc'],
@@ -222,6 +222,7 @@ def episodelist(vid):
 
     return items
 
+series = (97, 85, 100, 177, 87, 84, 98, 178, 86, 99) 
 
 @plugin.route('/mainchannel/<type>/<cid>/<group>/<page>/')
 def mainchannel(type, cid, group, page):
@@ -238,17 +239,25 @@ def mainchannel(type, cid, group, page):
     data = loads(html)
 
     items = previous_page('mainchannel', page, 300, type=type, cid=cid, group=group)
+    if group == '0': c = '分类'
+    else: c = '分类' + '|' + group
     items.append({
-        'label': '[COLOR yellow][分类][/COLOR]',
+        'label': '[COLOR yellow][{0}][/COLOR]'.format(c),
         'path': url_for('select', cid=cid)
     })
     for item in data['data']:
         items.append({
             'label': item['title'] + '(' + item['summary'] +')',
-            'path': url_for('episodelist', vid=item['videoId']),
             'thumbnail': httphead(item['img']),
-            'info': {'title': item['title'], 'plot': item['subTitle']}
+            'info': {'title': item['title'], 'plot': item.get('subTitle', '')}
         })
+        if int(cid) in series:
+            items[-1]['path'] = url_for('episodelist', vid=item['videoId'])
+        else:
+            items[-1]['path'] = url_for('playvideo',
+                                        videoid=item['videoId'],
+                                        name=item['title'].encode('utf-8'))
+            items[-1]['is_playable'] = True
 
     items += next_page('mainchannel', page, 300, type=type, cid=cid, group=group)
 
