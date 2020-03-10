@@ -119,11 +119,11 @@ def next_page(endpoint, page, total_page, **kwargs):
         return []
 
 
-@plugin.route('/playvideo/<videoid>/<name>/')
-def playvideo(videoid, name):
+@plugin.route('/playvideo/<vid>/<name>/')
+def playvideo(vid, name):
     level = int(plugin.addon.getSetting('resolution'))
 
-    urls = video_from_vid(videoid, level=level)
+    urls = video_from_vid(vid, level=level)
     if len(urls) > 1:
         stackurl = 'stack://' + ' , '.join(urls)
         list_item = ListItem(name)
@@ -187,7 +187,7 @@ def search():
 
         items.append({
             'label': item['title'],
-            'path': url_for('playvideo', videoid=item['videoId'], name=item['title']),
+            'path': url_for('playvideo', vid=item['videoId'], name=item['title']),
             'thumbnail': item['img'],
             'is_playable': True,
             'info': {'title': item['title'], 'plot': item['desc'],
@@ -214,7 +214,7 @@ def episodelist(vid):
 
         items.append({
             'label': title,
-            'path': url_for('playvideo', videoid=vid, name=title),
+            'path': url_for('playvideo', vid=vid, name=title),
             'thumbnail': film['data']['img'],
             'is_playable': True,
             'info': {'title': title, 'plot': content}
@@ -254,8 +254,7 @@ def mainchannel(type, cid, group, page):
         if int(cid) in series:
             items[-1]['path'] = url_for('episodelist', vid=item['videoId'])
         else:
-            items[-1]['path'] = url_for('playvideo',
-                                        videoid=item['videoId'],
+            items[-1]['path'] = url_for('playvideo', vid=item['videoId'],
                                         name=item['title'].encode('utf-8'))
             items[-1]['is_playable'] = True
 

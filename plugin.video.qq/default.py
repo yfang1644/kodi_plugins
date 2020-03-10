@@ -1,25 +1,45 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui
-from urlparse import parse_qsl
-from urllib import quote_plus, urlencode
+import xbmc
+from xbmcgui import Dialog, ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
+import xbmcaddon
 import re
 from bs4 import BeautifulSoup
-from json import loads, dumps
+from json import loads
 from common import get_html
-from lib.qq import video_from_url, video_from_vid
+from lib.qq import video_from_url, video_from_vid, urlencode, quote_plus, parse_qsl
 
-plugin = Plugin()
-url_for = plugin.url_for
+PAGESIZE = 20
 
 # Plugin constants
+__addon__     = xbmcaddon.Addon()
+__addonid__   = __addon__.getAddonInfo('id')
+__addonname__ = __addon__.getAddonInfo('name')
 
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
-INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
-INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 
 HOST_URL = 'https://v.qq.com'
+CHANNEL_LIST = {'电视剧': 'tv',
+                '综艺': 'variety',
+                '电影': 'movie',
+                '动漫': 'cartoon',
+                '少儿': 'children',
+                '娱乐': 'ent',
+                '音乐': 'music',
+                '纪录片': 'doco',
+                '微电影': 'dv',
+                '新闻': 'news',
+                '体育': 'sports',
+                '教育': 'education',
+                '搞笑': 'fun',
+                '时尚': 'fashion',
+                '生活': 'life',
+                '科技': 'tech',
+                '知识': 'knowledge',
+                '汽车': 'auto',
+                '财经': 'finance'}
 
 def httphead(url):
     if url[0:2] == '//':
@@ -29,9 +49,65 @@ def httphead(url):
 
     return url
 
+############################################################################
 
-@plugin.route('/search/')
-def search():
+def select(params):
+    channel = params.get('channel')
+    api = 'https://v.qq.com/x/bu/pagesheet/list?'
+    req = {
+        '_all': 1,
+        'channel': channel,
+        'pagesize': PAGESIZE,
+        'listpage': 1,
+    }
+    html = get_html(api + urlencode(req))
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('div', {'class':'filter_line'})
+
+    dialog = Dialog()
+
+    for t in tree:
+        name = t.findAll('span')[0].text
+        label = []
+        type = []
+        key = t['data-key']
+        items = t.findAll('a')
+        for x in items:
+            label += [x.text]
+            type += [x['data-value']]
+
+        sel = dialog.select(name, label)
+
+        if sel >= 0:
+            req[key] = type[sel]
+
+    req['title'] = params['title']
+    mainlist(req)
+
+def playvideo(params):
+    sel = int(__addon__.getSetting('resolution'))
+    if sel == 4:
+        list = ['流畅(270P)', '高清(360P)', '超清(720P)', '蓝光(1080P)']
+        sel = Dialog().select('清晰度选择', list)
+        if (sel < 0):
+            return False
+
+    url = params['url']
+    if ('http://' in url) or ('https://' in url):
+        urls = video_from_url(url, level=sel)
+    else:
+        urls = video_from_vid(url, level=sel)
+
+    stackurl = 'stack://' + ' , '.join(urls)
+    title = params['title']
+
+    li = ListItem(title, thumbnailImage='')
+    li.setInfo(type='Video', infoLabels={'Title': title})
+
+    xbmc.Player().play(stackurl, li)
+
+
+def search(params):
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
@@ -43,156 +119,99 @@ def search():
     url += '&stag=0'
 
     link = get_html(url)
-    items = []
     if link is None:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
-                            ' 抱歉，没有找到[COLOR FFFF0000] ' + keyword
-                            + ' [/COLOR]的相关视频')
-        return items
+        li = ListItem('抱歉，没有找到[COLOR FFFF0000]' + keyword + '[/COLOR]的相关视频')
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
+        endOfDirectory(int(sys.argv[1]))
+        return
 
-    items.append({
-        'label': '[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]',
-    })
+    li = ListItem('[COLOR FFFF0000]当前搜索:(' + keyword + ')[/COLOR]')
+    u = sys.argv[0]
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     # fetch and build the video series episode list
     content = BeautifulSoup(link, 'html.parser')
-    soup = content.find_all('div', {'class': 'result_item'})
+    soup = content.findAll('div', {'class': 'result_item'})
 
-    for item in soup:
-        href = httphead(item.a['href'])
-        img = httphead(item.img['src'])
-        title = item.img['alt']
+    for items in soup:
+        href = httphead(items.a['href'])
+        img = httphead(items.img['src'])
+        title = items.img['alt']
 
-        info = item.find('span', {'class': 'desc_text'})
+        info = items.find('span', {'class': 'desc_text'})
         try:
             info = info.text
         except:
             info = ''
-        items.append({
-            'label': title,
-            'path': url_for('episodelist', url=href),
+
+        req = {
+            'title': title.encode('utf-8'),
+            'mode': 'episodelist',
             'thumbnail': img,
-            'info': {'title': title, 'plot': info}
-        })
-
-        list = item.find_all('div', {'class': 'item'})
-        for series in list:
-            subtitle = series.a.text
-            href = httphead(series.a['href'])
-            items.append({
-                'label': subtitle,
-                'path': url_for('playvideo', vid=href),
-                'is_playable': True,
-                'info': {'title': subtitle}
-            })
-    return items
-
-
-@plugin.route('/playvideo/<vid>')
-def playvideo(vid):
-    sel = int(plugin.addon.getSetting('resolution'))
-    if sel == 4:
-        list = ['流畅(270P)', '高清(360P)', '超清(720P)', '蓝光(1080P)']
-        sel = xbmcgui.Dialog().select('清晰度选择', list)
-        if (sel < 0):
-            return False, False
-
-    urls = video_from_vid(vid, level=sel)
-
-    if urls is False:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
-                            '无法获取视频地址')
-        return
-
-    stackurl = 'stack://' + ' , '.join(urls)
-    plugin.set_resolved_url(stackurl)
-
-
-@plugin.route('/select/<url>')
-def select(url):
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'filter_line'})
-
-    dialog = xbmcgui.Dialog()
-
-    setparam = ''
-    for iclass in soup:
-        si = iclass.find_all('a')
-        list = []
-        item = []
-        for subitem in si:
-            list.append(subitem.text)
-            item.append(subitem['href'])
-        sel = dialog.select(iclass.span.text, list)
-
-        if sel >= 0:
-            setparam += item[sel]
-
-    setparam = setparam.replace('?', '&')
-    params = dict(parse_qsl(setparam.strip('&')))
-    return mainlist(url, data=dumps(params))
-
-
-@plugin.route('/serieslist/<name>/<url>')
-def serieslist(name, url):
-    html = get_html(url)
-    html = re.sub('\t|\n|\r| ', '', html)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('span', {'class': 'item'})
-
-    info = tree.find('meta', {'name': 'description'})['content']
-    img = tree.find('meta', {'itemprop': 'image'})['content']
-
-    for item in soup:
-        try:
-            p_title = item.a['title']
-        except:
-            continue
-        try:
-            href = httphead(item.a['href'])
-        except:
-            continue
-        tn = item.a.text
-        title = p_title + '--' + tn
-        yield {
-            'label': title,
-            'path': url_for('playvideo', vid=0),
-            'thumbnail': img,
-            'info': {'title': title, 'plot': info}
+            'url': href.encode('utf-8')
         }
+        u = sys.argv[0] + '?' + urlencode(req)
+        li = ListItem(title, iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': title, 'Plot': info})
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+        list = items.findAll('div', {'class': 'item'})
+        for series in list:
+            subtitle = series.a.text.encode('utf-8')
+            href = httphead(series.a['href'])
+            li = ListItem(subtitle)
+            li.setInfo(type='Video', infoLabels={'Title': subtitle})
+            req = {
+                'title': subtitle,
+                'mode': 'playvideo',
+                'url': href.encode('utf-8')
+            }
+            u = sys.argv[0] + '?' + urlencode(req)
+            addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/episodelist/<url>')
-def episodelist(url):
-    plugin.set_content('TVShows')
+def episodelist(params):
+    url = params['url']
+    thumb = params['thumbnail']
+    title = params['title']
+
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
     info = tree.find('meta', {'name': 'description'})['content']
-    thumb = tree.find('meta', {'itemprop': 'thumbnailUrl'})['content']
+
     match = re.compile('var LIST_INFO\s*=\s*({.*}).*\n').search(html)
     js = loads(match.group(1))
 
-    items = []
     for j, item in enumerate(js['vid']):
         try:
             p_title = js['data'][item]['title']
         except:
-            p_title = str(j+1)
+            p_title = title + '-' + str(j+1)
+        vid = item
         try:
             img = js['data'][item]['preview']
         except:
             img = thumb
         img = httphead(img)
-        items.append({
-            'label': p_title,
-            'path': url_for('playvideo', vid=item),
-            'is_playable': True,
-            'thumbnail': img,
-            'info': {'title': p_title, 'plot': info}
-        })
+        li = ListItem(p_title, iconImage=img, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'Title': p_title, 'Plot': info})
+        req = {
+            'title': p_title,
+            'mode': 'playvideo',
+            'url': vid,
+            'thumbnail': img
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    soup = tree.find_all('li', {'class': 'list_item'})
+    li = ListItem(BANNER_FMT % '相关视频')
+    u = sys.argv[0]
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    soup = tree.findAll('li', {'class': 'list_item'})
     for item in soup:
         vid = item.get('data-vid')
         if not vid:
@@ -213,144 +232,152 @@ def episodelist(url):
                 title = item.img['alt']
             except:
                 title = item.a['title']
-        items.append({
-            'label': title,
-            'path': url_for('episodelist', url=href),
-            'thumbnail': img
-        })
-
-    return items
-
-
-@plugin.route('/otherlist/<url>/<data>')
-def otherlist(url, data):
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'nav_area'})
-    list1 = soup[0].find_all('a')
-    soup = tree.find_all('div', {'class': 'slider_nav'})
-    list2 = soup[0].find_all('a')
-
-    items = []
-    for item in list1 + list2:
-        title = item.text
-        href = httphead(item['href'])
-        try:
-            img = httphead(item['data-bgimage'])
-        except:
-            img = 'xxx'
-        items.append({
-            'label': title,
-            'path': url_for('episodelist', url=href),
-            'thumbnail': img
-        })
-
-    items.append({
-        'label': BANNER_FMT % '其他视频',
-        'path': url_for('otherlist', url=url)
-    })
-
-    soup = tree.find_all('ul', {'class': 'figures_list'})
-    for group in soup:
-        listitem = group.find_all('li', {'class': 'list_item'})
-        for item in listitem:
-            title = item.a['title']
-            href = item.a['href']
-            try:
-                img = item.img['src']
-            except:
-                img = item.img['lz_src']
-            items.append({
-                'label': title,
-                'path': url_for('episodelist', url=href),
-                'thumbnail': img
-            })
-
-    return items
-
-
-@plugin.route('/mainlist/<url>/<data>/')
-def mainlist(url, data):
-    plugin.set_content('TVShows')
-    params = loads(data)
-    html = get_html(url + '?' + urlencode(params))
-    print "XXXXXXXXXXXXXXXXXXXX",url+'?'+urlencode(params)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'filter_line'})
-    
-    items = []
-    items.append({
-        'label': BANNER_FMT % '分类过滤',
-        'path': url_for('select', url=url)
-    })
-
-    soup = tree.find_all('li', {'class': 'list_item'})
-    for mainpage in soup:
-        img = httphead(mainpage.img['r-lazyload'])
-        title = mainpage.strong.a.text
-        info = mainpage.find('span', {'class': 'figure_info'})
-        if info:
-            info = '(' + info.text + ')'
-        else:
-            info = ''
-        href = mainpage.strong.a['href']
-        mark = mainpage.find('i', {'class': 'mark_v'})
-        if mark:
-            info += '[COLOR FFD00080](' + mark.img['alt'] + ')[/COLOR]'
-
-        items.append({
-            'label': title + info,
-            'path': url_for('episodelist', url=href),
+        li = ListItem(title, iconImage=img, thumbnailImage=img)
+        req = {
+            'title': quote_plus(title.encode('utf-8')),
+            'mode': 'episodelist',
+            'url': quote_plus(href),
             'thumbnail': img,
-        })
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    # PAGE LISTING
-    soup = tree.find_all('div', {'class': 'mod_pages'})
-    if len(soup) > 0:
-        pages = soup[0].find_all('a')
-        for site in pages:
-            title = site.text
-            href = site['href']
-            try:
-                offset = re.compile('=(\d+)').findall(href)[0]
-            except:
-                continue
-            #  href looks like '?&offset=30'
-            params['offset'] = offset
-            items.append({
-                'label': title,
-                'path': url_for('mainlist', url=url, data=dumps(params))
-            })
-
-    return items
+    setContent(int(sys.argv[1]), 'videos')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/')
-def root():
-    plugin.set_content('TVShows')
-    html = get_html('https://v.qq.com/x/list/tv')
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'filter_list'})
-    channels = soup[0].find_all('a')
-
-    yield {
-        'label': '[COLOR FF808F00] 【腾讯视频 - 搜索】[/COLOR]',
-        'path': url_for('search')
+def mainlist(params):
+    channel = params['channel']
+    page = int(params.get('page', 1))
+    api = 'https://v.qq.com/x/bu/pagesheet/list?'
+    req = {
+        '_all': 1,
+        'channel': channel,
+        'pagesize': PAGESIZE,
+        'listpage': page,
+        'offset': 20*(page-1),
     }
 
-    for item in channels:
-        name = item.text.encode('utf-8')
-        url = item['href']
-        if name in ('微电影', '时尚', '原创',
-                      '生活', '财经', '汽车', '科技'):
-            mode = 'otherlist'
-        else:
-            mode = 'mainlist'
-        yield {
-            'label': name,
-            'path': url_for(mode, url=httphead(url), data='{"offset":0}'),
+    name = params.pop('title')
+    params.update(req)
+    html = get_html(api + urlencode(params))
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('div', {'class': 'filter_line'})
+
+    t =soup.findAll('div', {'class':'filter_result'})
+    total= int(t[0]['data-total'])
+    total_page = total // PAGESIZE
+
+    li = ListItem(BANNER_FMT % (name + ' (分类过滤)'))
+    req = {
+        'title': name,
+        'mode': 'select',
+        'channel': channel
+    }
+    u = sys.argv[0] + '?' + urlencode(req)
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    if page > 1:
+        li = ListItem('上一页')
+        req = {
+            'title': name,
+            'mode': 'mainlist',
+            'channel': channel,
+            'page': page - 1
         }
+        params.update(req)
+        u = sys.argv[0] + '?' + urlencode(params)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    li = ListItem(BANNER_FMT % (name+' (分类过滤)'))
+
+    tree = soup.findAll('div', {'class': 'list_item'})
+    for mainpage in tree:
+        img = mainpage.findAll(None, {'class': 'figure'})[0].findAll('img')[0]['src']
+        info = mainpage.findAll(None, {'class': 'figure_desc'})
+        if info: info = '(' + info[0].text + ')'
+        else: info = ''
+        cap = mainpage.findAll(None, {'class': 'figure_caption'})
+        try:
+            cap = cap[0].text
+        except:
+            cap = ''
+        duration = 0
+        try:
+            for t in cap.split(':'):
+                duration = duration*60 + int(t)
+            cap = ''
+        except:
+            cap = '('+ cap + ')'
+
+        title = mainpage.findAll(None, {'class': 'figure'})[0]['title']
+        href = mainpage.findAll(None, {'class': 'figure'})[0]['href']
+        vid = mainpage.findAll(None, {'class': 'figure'})[0]['data-float']
+        mark = mainpage.find('i', {'class': 'mark_v'})
+        if mark:
+            info += '[COLOR FFD00080](%s)[/COLOR]' % mark.img['alt']
+
+        img = httphead(img)
+        li = ListItem(title + cap, iconImage=img, thumbnailImage=img)
+        li.setInfo(type='video', infoLabels={'Title': title, 'plot': info, 'duration': duration})
+        req = {
+            'title': title.encode('utf-8'),
+            'mode': 'episodelist' if duration==0 else 'playvideo',
+            'url': href,
+            'thumbnail': img
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, duration==0)
+
+    if page <= total_page:
+        li = ListItem('下一页')
+        req = {
+            'title': name,
+            'mode': 'mainlist',
+            'channel': channel,
+            'page': page + 1
+        }
+        params.update(req)
+        u = sys.argv[0] + '?' + urlencode(params)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
+
+def root():
+    li = ListItem('[COLOR FF808F00] 【腾讯视频 - 搜索】[/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    for name in CHANNEL_LIST:
+        li = ListItem(name)
+        req = {
+            'title': name,
+            'mode': 'mainlist',
+            'channel': CHANNEL_LIST[name],
+            'page': 1
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+    endOfDirectory(int(sys.argv[1]))
 
 
-if __name__ == '__main__':
-    plugin.run()
+# main programs goes here #########################################
+runlist = {
+    None: 'root()',
+    'mainlist': 'mainlist(params)',
+    'episodelist': 'episodelist(params)',
+    'search': 'search(params)',
+    'select': 'select(params)',
+    'playvideo': 'playvideo(params)'
+}
+
+params = sys.argv[2][1:]
+params = dict(parse_qsl(params))
+
+mode = params.get('mode')
+
+if mode is not None:
+    del(params['mode'])
+
+exec(runlist[mode])
