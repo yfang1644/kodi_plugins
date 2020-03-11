@@ -1,12 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
+if sys.version[0] == '3':
+    from urllib.parse import urlencode
+else:
+    from urllib import urlencode
 import hashlib
 import time
 from random import randrange
 from json import loads
 from common import get_html, r1
-from urllib import urlencode
 
 
 class IQiyi():

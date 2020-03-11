@@ -1,34 +1,19 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
+if sys.version[0] == '3':
+    from urllib.parse import urlencode, urlparse
+else:
+    from urllib import urlencode
+    from urlparse import urlparse
 from json import loads
-from random import random, randrange
+from random import random, choice
 import base64
 import hashlib
-from urllib import urlencode
-import urllib2
 import time
 import re
-from urlparse import urlparse
 from common import get_html, match1
-
-
-#@DEPRECATED
-def get_timestamp():
-    tn = random()
-    url = 'http://api.letv.com/time?tn={}'.format(tn)
-    result = get_content(url)
-    return loads(result)['stime']
-
-
-#@DEPRECATED
-def get_key(t):
-    for s in xrange(8):
-        e = 1 & t
-        t >>= 1
-        e <<= 31
-        t += e
-    return t ^ 185025305
 
 
 class LeTV():
@@ -45,7 +30,7 @@ class LeTV():
                 loc4[2 * i + 1] = loc2[i] & 15
             loc6 = loc4[len(loc4) - 11:] + loc4[:len(loc4) - 11]
             loc7 = [0] * length
-            for i in xrange(length):
+            for i in range(length):
                 loc7[i] = (loc6[2 * i] << 4) + loc6[2 * i + 1]
             return ''.join([chr(i) for i in loc7])
         else:
@@ -60,7 +45,7 @@ class LeTV():
     def video_from_vid(self, vid, **kwargs):
         vparamap = {0: '1300', 1: '720p', 2: '1080p'}
 
-        url = 'http://player-pc.le.com/mms/out/video/playJson'
+        api = 'http://player-pc.le.com/mms/out/video/playJson?'
         req = {
             'id': vid,
             'platid': 1,
@@ -72,7 +57,7 @@ class LeTV():
             'source': 1000,
             'accessyx': 1
         }
-        r = get_html(url + '?' + urlencode(req))
+        r = get_html(api + urlencode(req))
         info = loads(r)
         playurl = info['msgs']['playurl']
 
@@ -83,12 +68,11 @@ class LeTV():
         stream_id = support_stream_id[stream_level]
 
         # pick a random domain 
-        index = randrange(len(playurl['domain']))
-
-        url = playurl["domain"][index] + playurl["dispatch"][stream_id][0]
-        uuid = hashlib.sha1(url.encode('utf8')).hexdigest() + '_0'
+        domain = choice(playurl['domain'])
+        url = domain + playurl["dispatch"][stream_id][0]
+        uuid = hashlib.sha1(url.encode('utf-8')).hexdigest() + '_0'
         url = url.replace('tss=0', 'tss=ios')
-        url += '&m3v=1&termid=1&format=1&hwtype=un&ostype=MacOS10.12.4&p1=1&p2=10&p3=-&expect=3&tn={}&vid={}&uuid={}&sign=letv'.format(random(), vid, uuid)
+        url += '&m3v=1&format=1&hwtype=un&p1=1&p2=10&p3=-&vid={}&uuid={}'.format(vid, uuid)
 
         r2 = get_html(url.encode('utf-8'))
         info2 = loads(r2)
@@ -99,7 +83,7 @@ class LeTV():
 
         m3u8 = get_html(info2['location'] + suffix, decoded=False)
         if m3u8 is None:
-            return None
+            return
 
         m3u8_list = self.m3u8decode(m3u8)
         m3u8_file = kwargs.get('m3u8')
@@ -116,10 +100,9 @@ class LeTV():
         sign_key = '2f9d6924b33a165a6d8b5d3d42f4f987'  #ALL YOUR BASE ARE BELONG TO US
         str2Hash = ''.join([i + argumet_dict[i] for i in sorted(argumet_dict)]) + sign_key
         sign = hashlib.md5(str2Hash.encode('utf-8')).hexdigest()
-        request_info = urllib2.Request('http://api.letvcloud.com/gpc.php?' + '&'.join([i + '=' + argumet_dict[i] for i in argumet_dict]) + '&sign={sign}'.format(sign=sign))
-        response = urllib2.urlopen(request_info)
-        data = response.read()
-        info = loads(data.decode('utf-8'))
+        url = 'http://api.letvcloud.com/gpc.php?' + '&'.join([i + '=' + argumet_dict[i] for i in argumet_dict]) + '&sign={sign}'.format(sign=sign)
+        data = get_html(url)
+        info = loads(data)
         type_available = []
         for video_type in info['data']['video_info']['media']:
             type_available.append({'video_url': info['data']['video_info']['media'][video_type]['play_url']['main_url'], 'video_quality': int(info['data']['video_info']['media'][video_type]['play_url']['vtype'])})

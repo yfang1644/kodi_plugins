@@ -46,34 +46,61 @@ DYNAMIC_API = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
 TRAILER_API = 'http://d.api.m.le.com/detail/getVideoTrailer?pid={}&platform=pc'
 EPISODES_API = 'http://d.api.m.le.com/detail/episode?pid={}&pagesize=300&platform=pc'
 
+############################################################################
+def previous_page(endpoint, page, total_page, **kwargs):
+    if int(page) > 1:
+        page = str(int(page) - 1)
+        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+    else:
+        return []
+
+def next_page(endpoint, page, total_page, **kwargs):
+    if int(page) < int(total_page):
+        page = str(int(page) + 1)
+        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
+    else:
+        return []
+
 @plugin.route('/filter/<url>/')
 def filter(url):
     html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'list_nav'})
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.find_all('div', {'class': 'list_nav'})
     dialog = xbmcgui.Dialog()
 
     urlsplit = url.split('/')
-    urltype = re.compile('\w{1}.+?_').findall(urlsplit[-1])
-    marktype = []
-    for item in soup:
+    urltype = urlsplit[-1].split('_')
+
+    for item in tree:
         typelist = item.span.text
         title= re.sub('\r|\n|\t| ', '', typelist)
         li = item.findAll('li')
+        try:
+            url0 = li[0].a['href'].split('/')
+        except:
+            url0 = url.split('/')
+        url0type = url0[-1].split('_')
+        try:
+            url1 = li[1].a['href'].split('/')
+        except:
+            url1 = url.split('/')
+        url1type = url1[-1].split('_')
+        for i, u in enumerate(url0type):
+            if u != url1type[i]:
+                idx = i
+                break
+
         sel = dialog.select(title, [x.text for x in li])
 
         if sel >= 0:
-            if 'href' not in li[sel]: li[sel]['href'] = url
-            selurl = li[sel]['href'].split('/')
-            seltype = re.compile('\w{1}.+?_').findall(selurl[-1])
-            for i in seltype:
-                if i not in urltype:
-                    marktype.append(i)
+            try:
+                selurl = li[sel].a['href'].split('/')
+            except:
+                selurl = url.split('/')
+            seltype = selurl[-1].split('_')
+            urltype[idx] = seltype[idx]
 
-    u1 = urlsplit[-1]
-    for type in marktype:
-        u1 = re.sub(type[0] + '.+?_', type, u1)
-    urlsplit[-1] = u1
+    urlsplit[-1] = '_'.join(urltype)
     url = '/'.join(urlsplit)
     return videolist(url=url, page=1)
 
@@ -131,7 +158,7 @@ def episodelist(aid):
 ###############################################################################
 # Search LeTV site based on keyword
 ###############################################################################
-@plugin.route('/search/')
+@plugin.route('/search')
 def search():
     plugin.set_content('TVShows')
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
@@ -151,7 +178,6 @@ def search():
 
     lists = loads(link)
     # fetch and build the video series episode list
-    content = BeautifulSoup(link, 'html.parser')
 
     for item in lists['data_list']:
         try:
@@ -207,7 +233,7 @@ def videolist(url, page):
         except:
             type = ''
         type = re.sub('\r|\n|\t| ', '', type)
-        title += typelist + '(' + type + ')' + '|'
+        title += typelist + '(' + type + ')|'
 
     items.append({
         'label': title,
@@ -229,12 +255,7 @@ def videolist(url, page):
 
         })
 
-    page = int(page)
-    if page > 1:
-        items.append({
-            'label': '上一页',
-            'path': url_for('videolist', url=url, page=page-1)
-        })
+    items += previous_page('videolist', page, 300, url=url)
 
     newpage = '&pn=' + str(page)
     frontUrl = re.sub('&pn=\d+', newpage, frontUrl)
@@ -268,10 +289,7 @@ def videolist(url, page):
                 'info': {'title': title, 'plot': item['description']},
             })
 
-    items.append({
-        'label': '下一页',
-        'path': url_for('videolist', url=url, page=page+1)
-    })
+    items += next_page('videolist', page, 300, url=url)
 
     return items
 
@@ -286,15 +304,15 @@ def index():
 
     url = LIST_URL
     html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('ul', {'class': 'list_cnt'})
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.find_all('ul', {'class': 'list_cnt'})
 
-    grp = soup[0].find_all('li')
+    grp = tree[0].find_all('li')
     for prog in grp:
         try:
             href = prog.a['href']
         except:
-            href = url
+            href = '/listn/c2_t-1_a-1_y-1_s1_md_o4_d1_p.html'
         title = prog.text
         title = re.sub('\n| ', '', title)
         yield {
