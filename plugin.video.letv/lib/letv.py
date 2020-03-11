@@ -3,9 +3,9 @@
 
 import sys
 if sys.version[0] == '3':
-    from urllib.parse import urlencode, urlparse
+    from urllib.parse import urlencode, urlparse, quote_plus
 else:
-    from urllib import urlencode
+    from urllib import urlencode, quote_plus
     from urlparse import urlparse
 from json import loads
 from random import random, choice
