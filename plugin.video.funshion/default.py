@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-from random import randrange
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
@@ -33,28 +32,12 @@ url_for = plugin.url_for
 
 
 def httphead(url):
-    if url.startswith('//'):
+    if url[0:2]=='//':
         url = 'http:' + url
-    elif url.startswith('/'):
+    elif url[0]=='/':
         url = HOST_URL + url
 
     return url
-
-
-def mergeUrl(purl, curl):
-    for x in curl:
-        if len(x) < 2:
-            continue
-        hx = x[:2]
-        for i in range(len(purl)):
-            if purl[i].find(hx) >= 0:
-                purl[i] = x
-                break
-        if x not in purl:
-            purl.insert(0, x)
-
-    return purl
-
 
 ##############################################################################
 # Routine to update video list as per user selected filtrs
@@ -64,43 +47,44 @@ def stay():
     pass
 
 
-@plugin.route('/vfilters/<url>/<filtrs>')
-def vfilters(url, filtrs):
+@plugin.route('/vfilters/<url>/')
+def vfilters(url):
     surl = url.split('/')
     purl = surl[-2].split('.')
 
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'ls-nav-bar'})
+    for x in purl:
+        if x[0] == 'c':
+            ctype = x
+            break
 
+    html = get_html(url + '?isajax=1')
+    data = loads(html)
+    fl = data['data']['data']['navs'][1:]
     dialog = xbmcgui.Dialog()
 
-    filter = ''
-    for iclass in soup[1:]:
-        si = iclass.find_all('li')
-        list = []
-        for subitem in si:
-            if 'bar-current' in subitem['class']:
-                title = '[COLOR FFFF00FF]' + subitem.a.text + '[/COLOR]'
-            else:
-                title = subitem.a.text
-            list.append(title)
+    select = []
+    for item in fl:
+        type = item['value']
+        dlist, val = [], []
+        for subitem in item['nitems']:
+            url1 = subitem['url'].split('/')[-2]
+            types = url1.split('.')
+            for x in types:
+                if type == x[0]:
+                    val += [x]
+                    break
+            dlist += [subitem['name']]
 
-        try:
-            caption = iclass.label.text
-        except:
-            caption = u'排序'
-        sel = dialog.select(caption, list)
+        sel = dialog.select(item['title'], dlist)
         if sel >= 0:
-            filter += '|[COLOR FFF00080]' + caption + '[/COLOR](' + si[sel].text + ')'
-            curl = si[sel].a['href'].split('/')
-            curl = curl[-2].split('.')
-            purl = mergeUrl(purl, curl)
+            select += [val[sel]]
+        else:
+            return mainlist(url)
 
-    surl[-2] = '.'.join(purl)
+    select.insert(0, ctype)
+    surl[-2] = '.'.join(select)
     url = '/'.join(surl)
-
-    return mainlist(url, filter.encode('utf-8'))
+    return mainlist(url)
 
 
 def playList(url):
@@ -218,7 +202,7 @@ def seriesList(url):
         else:
             extra = ''
         items.append({
-            'label': p_name + extra,
+            'label': p_name + extra.encode('utf-8'),
             'path': url_for('playvideo', url=p_url),
             'thumbnail': p_thumb,
             'is_playable': True,
@@ -246,7 +230,7 @@ def selResolution():
     else:
         return resolution
 
-@plugin.route('/movielist/<url>')
+@plugin.route('/movielist/<url>/')
 def playvideo(url):
     resolution = selResolution()
 
@@ -258,7 +242,7 @@ def playvideo(url):
                             '没有可播放的视频')
 
 
-@plugin.route('/albumlist/<url>')
+@plugin.route('/albumlist/<url>/')
 def albumlist(url):
     plugin.set_content('TVShows')
     vid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)
@@ -271,8 +255,9 @@ def albumlist(url):
         return []
 
 
-@plugin.route('/mainlist/<url>/<filtrs>')
-def mainlist(url, filtrs):
+@plugin.route('/mainlist/<url>/')
+def mainlist(url):
+    plugin.set_content('TVShows')
     html = get_html(url)
 
     tree = BeautifulSoup(html, 'html.parser')
@@ -282,8 +267,8 @@ def mainlist(url, filtrs):
     items = tree.find_all('div', {'class': 'mod-vd-i'})
 
     yield {
-        'label': '[选择过滤]' + (filtrs if filtrs !='0' else ''),
-        'path': url_for('vfilters', url=url, filtrs=filtrs)
+        'label': '[选择过滤]',
+        'path': url_for('vfilters', url=url)
     }
 
     for item in items:
@@ -303,9 +288,11 @@ def mainlist(url, filtrs):
         if score:
             p_name1 += '[COLOR FFFF00FF][' + score.text + '][/COLOR]'
 
-        if item.find("class='ico-dvd spdvd'") > 0:
+        sp = item.find("class='ico-dvd spdvd'")
+        hd = item.find("class='ico-dvd hdvd'")
+        if sp is not None and sp > 0:
             p_name1 += ' [COLOR FFFFFF00][超清][/COLOR]'
-        elif item.find("class='ico-dvd hdvd'") > 0:
+        elif hd is not None and hd > 0:
             p_name1 += ' [COLOR FF00FFFF][高清][/COLOR]'
 
         p_duration = item.find('i', {'class': 'tip'})
@@ -334,7 +321,7 @@ def mainlist(url, filtrs):
                 continue
             yield {
                 'label': page.text,
-                'path': url_for('mainlist', url=httphead(href), filtrs=filtrs)
+                'path': url_for('mainlist', url=httphead(href))
             }
 
 
@@ -348,8 +335,7 @@ def index():
     for item in items:
         yield {
             'label': item.a.text,
-            'path': url_for('mainlist', url=httphead(item.a['href']),
-                            filtrs='0')
+            'path': url_for('mainlist', url=httphead(item.a['href']))
         }
 
 

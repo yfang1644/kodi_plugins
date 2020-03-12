@@ -1,11 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 import re
 from json import loads
 from common import get_html, r1
 import base64
-from urlparse import urlparse, urljoin
+if sys.version[0]=='3':
+    from urllib.parse import urlparse, urljoin
+else:
+    from urlparse import urlparse, urljoin
 import string
 
 
