@@ -155,7 +155,7 @@ class QQ():
         return  videos[s[level]]
 
     def video_from_url(self, url, **kwargs):
-        vid = match1(url, 'http[s]://.*/(\w+)\.html')
+        vid = match1(url, 'https?://.*/(\w+)\.html')
 
         if vid and match1(url, '(^https?://film\.qq\.com)'):
             url = 'https://v.qq.com/x/cover/%s.html' % vid

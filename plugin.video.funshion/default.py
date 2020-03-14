@@ -102,35 +102,6 @@ def filter(url):
     return mainlist(url)
 
 
-def playList(url):
-    html = get_html(url)
-    soup = BeautifulSoup(html, 'html.parser')
-
-    lists = soup.find_all('a', {'class': 'vd-list-item'})
-
-    if lists is None:
-        return []
-
-    items = []
-    for item in lists:
-        p_thumb = item.img.get('src')
-        if p_thumb is None:
-            p_thumb = item.img.get('_lazysrc', '')
-        d = item.find('i', {'class': 'vtime'})
-        duration = 0
-        for t in d.text.split(':'):
-            duration = duration * 60 + int(t)
-        items.append({
-            'label': item['title'],
-            'path': url_for('playvideo', url=httphead(item['href'])),
-            'thumbnail': p_thumb,
-            'is_playable': True,
-            'info': {'title': item['title'], 'duration': duration}
-        })
-
-    return items
-
-
 def relatedList(url):
     epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
     if not epid:
@@ -174,7 +145,12 @@ def relatedList(url):
     return items
 
 ##########################################################################
-def seriesList(url):
+@plugin.route('/albumlist/<url>/')
+def albumlist(url):
+    plugin.set_content('TVShows')
+    vid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)       # single video
+    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)    # list series
+
     html = get_html(url + '?isajax=1')
     data = loads(html)
 
@@ -195,26 +171,15 @@ def seriesList(url):
         duration = 0
         for t in item['duration'].split(':'):
             duration = duration*60 + int(t)
+        title = item.get('name') or item.get('title')
         items.append({
-            'label': item['name'],
+            'label': title,
             'path': url_for('playvideo', url=httphead(item['url'])),
             'thumbnail': item.get('pic') or infos['pic'],
             'is_playable': True,
-            'info': {'title': item['name'], 'duration': duration,
+            'info': {'title': title, 'duration': duration,
                      'plot': infos['desc']}
         })
-    return items
-
-@plugin.route('/albumlist/<url>/')
-def albumlist(url):
-    plugin.set_content('TVShows')
-    vid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)
-    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
-    items = []
-    if vid:
-        items += playList(url)    # play single video
-    elif epid:
-        items += seriesList(url)     # list series
 
     # add some related videos
     items += relatedList(url)

@@ -7,7 +7,6 @@ from json import loads
 from common import get_html, r1
 import base64
 import binascii
-from random import choice
 if sys.version[0]=='3':
     from urllib.parse import urlparse, urljoin
 else:
@@ -92,7 +91,7 @@ class Funshion():
     def get_cdninfo(self, hashid):
         url = 'http://jobsfe.funshion.com/query/v1/mp4/{}.json'.format(hashid)
         meta = loads(get_html(url))
-        return choice(meta['playlist'][0]['urls'])    # random pick 
+        return meta['playlist'][0]['urls'][0]
 
     def funshion_decrypt(self, a_bytes, coeff):
         res_list = []
@@ -117,7 +116,7 @@ class Funshion():
         if len(a_str) == 28 and a_str[-1] == '0':
             data_bytes = base64.b64decode(a_str[:27] + '=')
             clear = self.funshion_decrypt(data_bytes, coeff)
-            return binascii.hexlify(clear.encode('ut-f8')).upper()
+            return binascii.hexlify(clear.encode('utf-8')).upper()
 
         data_bytes = base64.b64decode(a_str[2:])
         return self.funshion_decrypt(data_bytes, coeff)
@@ -133,7 +132,11 @@ class Funshion():
         return False
 
     def dec_playinfo(self, info, coeff):
-        clear = self.funshion_decrypt_str(info['infohash'], coeff)
+        hash = info.get('infohash')
+        if hash is None:
+            hash = info.get('hashid')
+
+        clear = self.funshion_decrypt_str(hash, coeff)
         if self.checksum(clear):
             token = 'token'
         else:
@@ -141,7 +144,7 @@ class Funshion():
             if self.checksum(clear):
                 token = 'token_prev'
             else:
-                return
+                token = 'token_prev'
 
         res = dict(hashid=clear[:40], token=self.funshion_decrypt_str(info[token], coeff))
         return res
@@ -154,32 +157,44 @@ class Funshion():
 
         ep_url = self.video_ep if 'single_video' in kwargs else self.media_ep
         url = ep_url.format(vid)
+
+        level = kwargs.get('level', 0)
+
         meta = loads(get_html(url))
 
-        streams = meta['playlist']
-        maxlevel = len(streams)
-        level = kwargs.get('level', 0)
-        level = min(level, maxlevel-1)
-        stream = streams[level]
-        definition = stream['code']
-        s = stream['playinfo'][0]
-        clear_info = self.dec_playinfo(s, self.coeff)
-        base_url = self.get_cdninfo(clear_info['hashid'])
-        token = base64.b64encode(clear_info['token'].encode('utf8'))
-        video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
+        if meta['retcode'] != '404':
+            streams = meta['playlist']
+            maxlevel = len(streams)
+            level = min(level, maxlevel-1)
+            stream = streams[level]
+            s = stream['playinfo'][0]
+            clear_info = self.dec_playinfo(s, self.coeff)
+            base_url = self.get_cdninfo(clear_info['hashid'])
+            token = base64.b64encode(clear_info['token'].encode('utf8'))
+            video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
+        else:
+            meta = loads(get_html('https://api1.fun.tv/ajax/new_playinfo/video/%s' % vid))
+            streams = meta['data']['files']
+            maxlevel = len(streams)
+            level = min(level, maxlevel-1)
+            s = streams[level]
+            clear_info = self.dec_playinfo(s, self.coeff)
+            base_url = self.get_cdninfo(clear_info['hashid'])
+            token = base64.b64encode(s['token'].encode('utf8'))
+            video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
 
         return [video_url]
 
     # Logics for single video until drama
     #----------------------------------------------------------------------
     def video_from_url(self, url, **kwargs):
-        vid = r1(r'http?://www.fun.tv/vplay/v-(\w+)', url)
+        vid = r1(r'https?://www.fun.tv/vplay/v-(\w+)', url)
         if vid:
             return self.video_from_vid(vid, single_video=True, **kwargs)
         else:
-            vid = r1(r'http?://www.fun.tv/vplay/.*v-(\w+)', url)
+            vid = r1(r'https?://www.fun.tv/vplay/.*v-(\w+)', url)
             if not vid:
-                epid = r1(r'http?://www.fun.tv/vplay/.*g-(\w+)', url)
+                epid = r1(r'https?://www.fun.tv/vplay/.*g-(\w+)', url)
                 url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(epid)
                 html = get_html(url)
                 meta = loads(html)
