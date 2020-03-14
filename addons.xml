@@ -459,7 +459,7 @@
 
 <addon id="plugin.video.funshion"
     name="风行视频(Funshion)"
-    version="2.1.9"
+    version="2.1.10"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -526,24 +526,6 @@
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
   </extension>
-</addon>
-
-<addon id="plugin.video.ku6"
-    name="酷6云中剧场(Ku6)"
-    version="1.0.5"
-    provider-name="wow1122,yfang1644">
-    <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Ku6 video plugin</summary>
-        <summary lang="zh">酷6云中剧场视频插件</summary>
-        <description lang="en">online video from www.juchang.com/n</description>
-        <description lang="zh">观看酷6云中剧场</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.ku6</source>
-        <email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-    </extension>
 </addon>
 
 <addon id="plugin.video.youku"

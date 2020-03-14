@@ -6,6 +6,8 @@ import re
 from json import loads
 from common import get_html, r1
 import base64
+import binascii
+from random import choice
 if sys.version[0]=='3':
     from urllib.parse import urlparse, urljoin
 else:
@@ -89,32 +91,33 @@ class Funshion():
 
     def get_cdninfo(self, hashid):
         url = 'http://jobsfe.funshion.com/query/v1/mp4/{}.json'.format(hashid)
-        meta = loads(get_html(url, decoded=False).decode('utf8'))
-        return meta['playlist'][0]['urls']
+        meta = loads(get_html(url))
+        return choice(meta['playlist'][0]['urls'])    # random pick 
 
     def funshion_decrypt(self, a_bytes, coeff):
         res_list = []
         pos = 0
+        a_bytes = bytearray(a_bytes)
         while pos < len(a_bytes):
-            a = ord(a_bytes[pos])
+            a = a_bytes[pos]
             if pos == len(a_bytes) - 1:
                 res_list.append(a)
                 pos += 1
             else:
-                b = ord(a_bytes[pos + 1])
+                b = a_bytes[pos+1]
                 m = a * coeff[0] + b * coeff[2]
                 n = a * coeff[1] + b * coeff[3]
                 res_list.append(m & 0xff)
                 res_list.append(n & 0xff)
                 pos += 2
-    
-        return str(bytearray(res_list))
+
+        return ''.join(chr(i) for i in res_list)
 
     def funshion_decrypt_str(self, a_str, coeff):
         if len(a_str) == 28 and a_str[-1] == '0':
             data_bytes = base64.b64decode(a_str[:27] + '=')
             clear = self.funshion_decrypt(data_bytes, coeff)
-            return binascii.hexlify(clear.encode('utf8')).upper()
+            return binascii.hexlify(clear.encode('ut-f8')).upper()
 
         data_bytes = base64.b64decode(a_str[2:])
         return self.funshion_decrypt(data_bytes, coeff)
@@ -130,15 +133,17 @@ class Funshion():
         return False
 
     def dec_playinfo(self, info, coeff):
-        res = None
         clear = self.funshion_decrypt_str(info['infohash'], coeff)
         if self.checksum(clear):
-            res = dict(hashid=clear[:40], token=self.funshion_decrypt_str(info['token'], coeff))
+            token = 'token'
         else:
             clear = self.funshion_decrypt_str(info['infohash_prev'], coeff)
             if self.checksum(clear):
-                res = dict(hashid=clear[:40], token=self.funshion_decrypt_str(info['token_prev'], coeff))
+                token = 'token_prev'
+            else:
+                return
 
+        res = dict(hashid=clear[:40], token=self.funshion_decrypt_str(info[token], coeff))
         return res
 
     #----------------------------------------------------------------------
@@ -154,20 +159,16 @@ class Funshion():
         streams = meta['playlist']
         maxlevel = len(streams)
         level = kwargs.get('level', 0)
-        if level >= maxlevel: level = maxlevel-1
+        level = min(level, maxlevel-1)
         stream = streams[level]
         definition = stream['code']
-        for s in stream['playinfo']:
-            codec = 'h' + s['codec'][2:]    # h.264 -> h264
-            for st in self.stream_types:
-                s_id = definition if codec == 'h264' else '{}_{}'.format(definition, codec)
-                if s_id == st:
-                    clear_info = self.dec_playinfo(s, self.coeff)
-                    cdn_list = self.get_cdninfo(clear_info['hashid'])
-                    base_url = cdn_list[0]
-                    token = base64.b64encode(clear_info['token'].encode('utf8'))
-                    video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
-                    return [video_url]
+        s = stream['playinfo'][0]
+        clear_info = self.dec_playinfo(s, self.coeff)
+        base_url = self.get_cdninfo(clear_info['hashid'])
+        token = base64.b64encode(clear_info['token'].encode('utf8'))
+        video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
+
+        return [video_url]
 
     # Logics for single video until drama
     #----------------------------------------------------------------------
@@ -188,3 +189,4 @@ class Funshion():
 
 site = Funshion()
 video_from_url = site.video_from_url
+video_from_vid = site.video_from_vid

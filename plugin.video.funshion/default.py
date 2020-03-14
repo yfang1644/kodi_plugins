@@ -5,7 +5,7 @@ from xbmcswift2 import Plugin, xbmcgui
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
-from lib.funshion import video_from_url
+from lib.funshion import video_from_url, video_from_vid
 
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 EXTRA = '[COLOR FF8080FF]%s[/COLOR]'
@@ -24,8 +24,6 @@ RES_LIST = [['tv', '低清'],
             ['dvd', '标清'],
             ['high-dvd', '高清'],
             ['super_dvd', '超清']]
-
-LANG_LIST = [['chi','国语'], ['arm','粤语'], ['und','原声']]
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -47,8 +45,25 @@ def stay():
     pass
 
 
-@plugin.route('/vfilters/<url>/')
-def vfilters(url):
+##############################################################################
+@plugin.route('/playvideo/<url>/')
+def playvideo(url):
+    resolution = int(plugin.addon.getSetting('resolution'))
+    if resolution == 4:
+        list = [x[1] for x in RES_LIST]
+        sel = xbmcgui.Dialog().select('清晰度', list)
+        resolution = 2 if sel < 0 else sel    # set default
+
+    v_urls = video_from_url(url, level=resolution)
+    if len(v_urls) > 0:
+        plugin.set_resolved_url(v_urls[0])
+    else:
+        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
+                            '没有可播放的视频')
+
+
+@plugin.route('/filter/<url>/')
+def filter(url):
     surl = url.split('/')
     purl = surl[-2].split('.')
 
@@ -89,9 +104,9 @@ def vfilters(url):
 
 def playList(url):
     html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
 
-    lists = tree.find_all('a', {'class': 'vd-list-item'})
+    lists = soup.find_all('a', {'class': 'vd-list-item'})
 
     if lists is None:
         return []
@@ -112,6 +127,7 @@ def playList(url):
             'is_playable': True,
             'info': {'title': item['title'], 'duration': duration}
         })
+
     return items
 
 
@@ -137,205 +153,121 @@ def relatedList(url):
         for y in x['contents']:
             pic = y['poster'] if y['poster'] else y['still']
             info = {}
-            dur = y.get('duration')
-            if dur:
-                duration = 0
-                for t in dur.split(':'):
-                    duration = duration * 60 + int(t)
-                info['duration'] = duration
-            info['tltle'] = y['name']
-            info['plot'] = y['aword']
-            if y['template'] == 'vplay':
-                items.append({
-                    'label': y['name'],
-                    'path': url_for('playvideo',
-                                    url=HOST_URL + '/vplay/v-' + y['id']),
-                    'thumbnail': pic,
-                    'is_playable': True,
-                    'info': info
+            dur = y.get('duration', '0:0')
+            duration = 0
+            for t in dur.split(':'):
+                duration = duration * 60 + int(t)
+            items.append({
+                'label': y['name'],
+                'thumbnail': pic,
+                'info': {'title': y['name'], 'plot': y['aword'], 'duration': duration}
                 })
+
+            if ['template'] == 'vplay':
+                items[-1]['path'] = url_for('playvideo',
+                                            url=httphead('/vplay/v-' + y['id']))
+                items[-1]['is_playable'] = True
             else:
-                items.append({
-                    'label': y['name'],
-                    'path': url_for('albumlist',
-                                    url=HOST_URL + '/vplay/g-' + y['id']),
-                    'thumbnail': pic,
-                    'info': info
-                })
+                items[-1]['path'] = url_for('albumlist',
+                                            url=httphead('/vplay/g-' + y['id']))
+
     return items
-
-
-def singleVideo(url):
-    items = playList(url)
-    items += relatedList(url)
-    return items
-
 
 ##########################################################################
 def seriesList(url):
-    epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
-    # url = 'http://api.funshion.com/ajax/get_web_fsp/%s/mp4?isajax=1'
-    purl = 'http://api.funshion.com/ajax/vod_panel/%s/w-1?isajax=1'  #&dtime=1397342446859
-    link = get_html(purl % epid)
-    intro = loads(get_html(profile_m.format(epid)))
-    poster = intro['poster'].encode('utf-8')
-    json_response = loads(link)
-    if json_response['status'] == 404:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
-                            '本片暂不支持网页播放')
-        return []
+    html = get_html(url + '?isajax=1')
+    data = loads(html)
 
     items = []
-    videos = json_response['data']['videos']
-    # name = json_response['data']['name'].encode('utf-8')
+
+    gvideos = data['data']['play_lists']['dvideos'][0]['videos']
+    infos = data['data']['share']
+
+    try:
+        videos = []
+        for x in gvideos:
+            videos += x['lists']
+    except:
+        videos = gvideos
 
     for item in videos:
-        p_name = item['name'].encode('utf-8')
-        p_url = httphead(item['url'].encode('utf-8'))
-        # p_number = str(item['number'])
-        p_thumb = item['pic'].encode('utf-8')
-
-        seconds = item['duration']
-
-        if item['dtype'] == 'prevue':
-            extra = EXTRA % '|预'
-        else:
-            extra = ''
+        d = item.get('duration', '0:0')
+        duration = 0
+        for t in item['duration'].split(':'):
+            duration = duration*60 + int(t)
         items.append({
-            'label': p_name + extra.encode('utf-8'),
-            'path': url_for('playvideo', url=p_url),
-            'thumbnail': p_thumb,
+            'label': item['name'],
+            'path': url_for('playvideo', url=httphead(item['url'])),
+            'thumbnail': item.get('pic') or infos['pic'],
             'is_playable': True,
-            'info': {'title': p_name, 'duration': seconds,
-                     'plot': intro['description']}
+            'info': {'title': item['name'], 'duration': duration,
+                     'plot': infos['desc']}
         })
-
-    # playlist
-    items += playList(url)
-
-    # related
-    items += relatedList(url)
     return items
-
-
-##############################################################################
-def selResolution():
-    resolution = int(plugin.addon.getSetting('resolution'))
-    if resolution == 4:
-        list = [x[1] for x in RES_LIST]
-        sel = xbmcgui.Dialog().select('清晰度', list)
-        if sel == -1:
-            sel = 2          # set default
-        return sel
-    else:
-        return resolution
-
-@plugin.route('/movielist/<url>/')
-def playvideo(url):
-    resolution = selResolution()
-
-    v_urls = video_from_url(url, level=resolution)
-    if len(v_urls) > 0:
-        plugin.set_resolved_url(v_urls[0])
-    else:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'),
-                            '没有可播放的视频')
-
 
 @plugin.route('/albumlist/<url>/')
 def albumlist(url):
     plugin.set_content('TVShows')
     vid = r1('http?://www.fun.tv/vplay/v-(\w+)', url)
     epid = r1('http?://www.fun.tv/vplay/.*g-(\w+)', url)
+    items = []
     if vid:
-        return singleVideo(url)    # play single video
+        items += playList(url)    # play single video
     elif epid:
-        return seriesList(url)     # list series
-    else:
-        return []
+        items += seriesList(url)     # list series
+
+    # add some related videos
+    items += relatedList(url)
+    return items
 
 
 @plugin.route('/mainlist/<url>/')
 def mainlist(url):
     plugin.set_content('TVShows')
-    html = get_html(url)
+    html = get_html(url + '?isajax=1')
 
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'mod-videos'})
-
-    items = soup[0].find_all('div', {'class': 'mod-vd-i'})
-    items = tree.find_all('div', {'class': 'mod-vd-i'})
+    data = loads(html)
 
     yield {
         'label': '[选择过滤]',
-        'path': url_for('vfilters', url=url)
+        'path': url_for('filter', url=url)
     }
 
-    for item in items:
-        pic = item.find('div', {'class': 'pic'})
-        inf = item.find('div', {'class': 'info'})
-        href = httphead(inf.a['href'])
-        p_id = pic.a['data-id']
-        p_thumb = httphead(pic.img['_lazysrc'])
-        p_name = pic.img['alt']
-
-        p_name1 = p_name + ' '
-        span = pic.find('span')
-        if span and len(span.text) > 0:
-            p_name1 += '[COLOR FF00FFFF](' + span.text.strip() + ')[/COLOR] '
-
-        score = inf.find('b', {'class': 'score'})
-        if score:
-            p_name1 += '[COLOR FFFF00FF][' + score.text + '][/COLOR]'
-
-        sp = item.find("class='ico-dvd spdvd'")
-        hd = item.find("class='ico-dvd hdvd'")
-        if sp is not None and sp > 0:
-            p_name1 += ' [COLOR FFFFFF00][超清][/COLOR]'
-        elif hd is not None and hd > 0:
-            p_name1 += ' [COLOR FF00FFFF][高清][/COLOR]'
-
-        p_duration = item.find('i', {'class': 'tip'})
-        info = {
-            'title': p_name,
-        }
-        desc = inf.find('p', {'class', 'desc'})
-        if desc:
-            info['plot'] = desc.text
-
+    for item in data['data']['data']['ritems']:
+        info = item.get('update_info')
+        if info:
+            extra = EXTRA % ('(' + info +')')
+        else: extra = ''
         yield {
-            'label': p_name1,
-            'path': url_for('albumlist', url=href),
-            'thumbnail': p_thumb,
-            'info': info
+            'label': item['title'] + extra,
+            'path': url_for('albumlist', url=httphead(item['url'])),
+            'thumbnail': item['pic'],
+            'info': {'title': item['title'], 'plot': item.get('desc')},
         }
 
     # Construct page selection
-    soup = tree.find_all('div', {'class': 'pager-wrap'})
-    if len(soup) > 0:
-        pages = soup[0].find_all('a')
-
-        for page in pages:
-            href = page['href']
-            if href == '###':
-                continue
-            yield {
-                'label': page.text,
-                'path': url_for('mainlist', url=httphead(href))
-            }
+    pages = data['data']['page']
+    soup = BeautifulSoup(pages, 'html.parser')
+    pages = soup.findAll('a')
+    for page in pages:
+        href = page['href']
+        if href == '###':
+            continue
+        yield {
+            'label': page.text,
+            'path': url_for('mainlist', url=httphead(href))
+        }
 
 
 @plugin.route('/')
 def index():
-    html = get_html(HOST_URL + '/retrieve/')
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'ls-nav-bar'})
-    items = soup[0].find_all('li')
+    html = get_html(HOST_URL + '/retrieve/?isajax=1')
+    data = loads(html)
 
-    for item in items:
+    for item in data['data']['data']['navs'][0]['nitems']:
         yield {
-            'label': item.a.text,
-            'path': url_for('mainlist', url=httphead(item.a['href']))
+            'label': item['name'],
+            'path': url_for('mainlist', url=httphead(item['url']))
         }
 
 
