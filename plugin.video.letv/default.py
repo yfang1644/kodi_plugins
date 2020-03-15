@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from common import get_html
 from lib.letv import video_from_vid, quote_plus
 
+GBANNER = '[COLOR green]%s[/COLOR]'
 plugin = Plugin()
 url_for = plugin.url_for
 
@@ -45,21 +46,6 @@ DYNAMIC_API = 'http://d.api.m.le.com/card/dynamic?vid=%s&platform=pc'
 TRAILER_API = 'http://d.api.m.le.com/detail/getVideoTrailer?pid={}&platform=pc'
 EPISODES_API = 'http://d.api.m.le.com/detail/episode?pid={}&pagesize=300&platform=pc'
 
-############################################################################
-def previous_page(endpoint, page, total_page, **kwargs):
-    if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
-def next_page(endpoint, page, total_page, **kwargs):
-    if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
 @plugin.route('/filter/<url>/')
 def filter(url):
     html = get_html(url)
@@ -89,7 +75,14 @@ def filter(url):
                 idx = i
                 break
 
-        sel = dialog.select(title, [x.text for x in li])
+        content = []
+        for x in li:
+            if x.get('class'):
+                content += [GBANNER % re.sub('\r|\n|\t| ', '', x.text)]
+            else:
+                content += [x.text]
+
+        sel = dialog.select(title, content)
 
         if sel >= 0:
             try:
@@ -254,14 +247,19 @@ def videolist(url, page):
 
         })
 
-    items += previous_page('videolist', page, 300, url=url)
+    if int(page) > 1:
+        p = int(page) - 1
+        items.append({
+            'label': '上一页 - {0}'.format(p),
+            'path': plugin.url_for('videolist', url=url, page=p)
+        })
 
     newpage = '&pn=' + str(page)
     frontUrl = re.sub('&pn=\d+', newpage, frontUrl)
 
     html = get_html(frontUrl)
-    jsdata = loads(html)['data']['arr']
-    for item in jsdata:
+    jsdata = loads(html)['data']
+    for item in jsdata['arr']:
         aid = item.get('aid')   #album ID
         eps = item.get('episodes', 0);
         sub = item.get('subname')
@@ -288,7 +286,12 @@ def videolist(url, page):
                 'info': {'title': title, 'plot': item['description']},
             })
 
-    items += next_page('videolist', page, 300, url=url)
+    if jsdata['more'] == True:
+        p = int(page) + 1
+        items.append({
+            'label': '下一页 - {0}'.format(p),
+             'path': plugin.url_for('videolist', url=url, page=p)
+        })
 
     return items
 

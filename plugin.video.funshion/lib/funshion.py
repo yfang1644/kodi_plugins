@@ -23,7 +23,7 @@ def mapping(num, base):
     return res
 
 class Funshion():
-    stream_types = ['sdvd', 'sdvd_h265', 'hd', 'hd_h265',
+    stream_types = ['sdvd', 'sdvd_h265', 'hd', 'hd_h265', 'shd',
                     'dvd', 'dvd_h265', 'tv', 'tv_h265'
                    ]
     a_mobile_url = 'http://m.fun.tv/implay/?mid=302555'
@@ -162,44 +162,37 @@ class Funshion():
 
         meta = loads(get_html(url))
 
-        if meta['retcode'] != '404':
-            streams = meta['playlist']
-            maxlevel = len(streams)
-            level = min(level, maxlevel-1)
-            stream = streams[level]
-            s = stream['playinfo'][0]
-            clear_info = self.dec_playinfo(s, self.coeff)
-            base_url = self.get_cdninfo(clear_info['hashid'])
-            token = base64.b64encode(clear_info['token'].encode('utf8'))
-            video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
-        else:
+        if meta['retcode'] == '404':
             meta = loads(get_html('https://api1.fun.tv/ajax/new_playinfo/video/%s' % vid))
             streams = meta['data']['files']
             maxlevel = len(streams)
             level = min(level, maxlevel-1)
             s = streams[level]
-            clear_info = self.dec_playinfo(s, self.coeff)
-            base_url = self.get_cdninfo(clear_info['hashid'])
-            token = base64.b64encode(s['token'].encode('utf8'))
-            video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
+        else:
+            streams = meta['playlist']
+            maxlevel = len(streams)
+            level = min(level, maxlevel-1)
+            stream = streams[level]
+            s = stream['playinfo'][0]
 
+        clear_info = self.dec_playinfo(s, self.coeff)
+        base_url = self.get_cdninfo(clear_info['hashid'])
+        token = base64.b64encode(clear_info['token'].encode('utf-8'))
+        video_url = '{}?token={}&vf={}'.format(base_url, token, s['vf'])
         return [video_url]
 
     # Logics for single video until drama
     #----------------------------------------------------------------------
     def video_from_url(self, url, **kwargs):
-        vid = r1(r'https?://www.fun.tv/vplay/v-(\w+)', url)
-        if vid:
-            return self.video_from_vid(vid, single_video=True, **kwargs)
-        else:
-            vid = r1(r'https?://www.fun.tv/vplay/.*v-(\w+)', url)
-            if not vid:
-                epid = r1(r'https?://www.fun.tv/vplay/.*g-(\w+)', url)
-                url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(epid)
-                html = get_html(url)
-                meta = loads(html)
-                vid = meta['episodes'][0]['id']
-            return self.video_from_vid(vid, **kwargs)
+        vid = r1(r'https?://www.fun.tv/vplay/.*v-(\w+)', url)
+        if not vid:
+            epid = r1(r'https?://www.fun.tv/vplay/.*g-(\w+)', url)
+            url = 'http://pm.funshion.com/v5/media/episode?id={}&cl=mweb&uc=111'.format(epid)
+            html = get_html(url)
+            meta = loads(html)
+            vid = meta['episodes'][0]['id']  # pick the first video in episodes
+
+        return self.video_from_vid(vid, **kwargs)
 
 
 site = Funshion()
