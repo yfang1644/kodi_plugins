@@ -134,7 +134,7 @@ def relatedList(url):
                 'info': {'title': y['name'], 'plot': y['aword'], 'duration': duration}
                 })
 
-            if ['template'] == 'vplay':
+            if y['template'] == 'vplay':
                 items[-1]['path'] = url_for('playvideo',
                                             url=httphead('/vplay/v-' + y['id']))
                 items[-1]['is_playable'] = True
