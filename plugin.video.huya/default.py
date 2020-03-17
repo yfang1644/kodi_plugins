@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin
-from common import get_html
+from common import get_html, r1
 from json import loads
+import random
 import re
 
 HOST = 'https://www.huya.com'
-playurl = 'https://aldirect.hls.huya.com/huyalive'
+playurl = 'https://al.hls.huya.com/huyalive'
 category = [
     {'全部': 0},
     #{'全部电影': 2067,}
@@ -27,8 +28,8 @@ category = [
     {'正能量': 1223   }
 ]
 
-cateAPI = HOST + '/cache.php?m=LiveList&do=getTmpLiveByPage&gameId=2135&tmpId={}&page={}'
-listAPI = HOST + '/cache.php?m=LiveList&do=getLiveListByPage&gameId=2135&page={}'
+cateAPI = HOST + '/cache.php?m=LiveList&do=getTmpLiveByPage&gameId=2135&tmpId={0}&page={1}'
+listAPI = HOST + '/cache.php?m=LiveList&do=getLiveListByPage&gameId=2135&page={0}'
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 
 plugin = Plugin()
@@ -36,8 +37,22 @@ url_for = plugin.url_for
 
 @plugin.route('/playvideo/<url>/')
 def playvideo(url):
+    html = get_html(url)
+    json_stream = r1('"stream": ({.+?})\s*};', html)
+    assert json_stream, "live video is offline"
+    data = loads(json_stream)
+    assert data['status'] == 200, data['msg']
 
-    plugin.set_resolved_url(url)
+    room_info = data['data'][0]['gameLiveInfo']
+
+    stream_info = random.choice(data['data'][0]['gameStreamInfoList'])
+    sHlsUrl = stream_info['sHlsUrl']
+    sStreamName = stream_info['sStreamName']
+    sHlsUrlSuffix = stream_info['sHlsUrlSuffix']
+    sHlsAntiCode = stream_info['sHlsAntiCode']
+    hls_url = u'{0}/{1}.{2}?{3}'.format(sHlsUrl, sStreamName, sHlsUrlSuffix, sHlsAntiCode)
+
+    plugin.set_resolved_url(hls_url)
 
 
 @plugin.route('/categorylist/<dataid>/<page>/')
@@ -58,7 +73,7 @@ def categorylist(dataid, page):
         title = item['nick'] + (u'(蓝光)' if int(blueray) else '')
         items.append({
             'label': title,
-            'path': url_for('playvideo', url=url),
+            'path': url_for('playvideo', url=homepage),
             'thumbnail': screenshot,
             'is_playable': True,
             'info': {'title': title, 'plot': item['introduction']}
@@ -69,7 +84,7 @@ def categorylist(dataid, page):
     for x in range(pages):
         if x+1 == thispage: continue
         items.append({
-            'label': '第{}页'.format(x+1),
+            'label': '第{0}页'.format(x+1),
             'path': url_for('categorylist', dataid=dataid, page=x+1)
         })
     return items
