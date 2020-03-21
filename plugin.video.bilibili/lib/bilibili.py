@@ -1,11 +1,19 @@
 #!/usr/bin/python
 #coding=utf-8
 
+import sys
 import base64
 from json import loads
 import hashlib
-import urllib, urllib2
-from urlparse import urlparse
+if sys.version[0] == '3':
+    from urllib.parse import urlencode, quote_plus, urlparse
+    from urllib.request import Request, urlopen
+else:
+    from urllib import urlencode, quote_plus
+    from urlparse import urlparse
+    from urllib2 import Request, urlopen
+
+import urllib2
 import re
 import time
 import os
@@ -19,13 +27,13 @@ from bilibili_config import *
 from niconvert import create_website
 
 def url_locations(url):
-    response = urllib2.urlopen(urllib2.Request(url))
+    response = urlopen(Request(url))
     return response.url
 
 class Bilibili():
     name = u'哔哩哔哩 (Bilibili)'
 
-    api_url = 'http://interface.bilibili.com/playurl?'
+    api_url = 'http://interface.bilibili.com/v2/playurl?'
     bangumi_api_url = 'http://bangumi.bilibili.com/player/web_api/playurl?'
     SEC1 = '94aba54af9065f71de72f5508f1cd42e'
     SEC2 = '9b288147e5474dd2aa67085f716c560d'
@@ -102,17 +110,17 @@ class Bilibili():
         pub_key = rsa.PublicKey.load_pkcs1_openssl_pem(key)
         pwd = rsa.encrypt(pwd.encode('utf-8'), pub_key)
         pwd = base64.b64encode(pwd)
-        pwd = urllib.quote(pwd)
+        pwd = quote_plus(pwd)
         return pwd
 
     def api_sign(self, params):
         params['appkey'] = self.appkey
         data = ''
         keys = params.keys()
-        # must sorted.  urllib.urlencode(params) doesn't work
+        # must sorted.  urlencode(params) doesn't work
         keys.sort()
         for key in keys:
-            data += '{}={}&'.format(key, urllib.quote(str(params[key])))
+            data += '{}={}&'.format(key, quote_plus(str(params[key])))
 
         data = data[:-1]  # remove last '&'
         if self.appsecret is None:
@@ -345,7 +353,21 @@ class Bilibili():
             f.close()
             return 'tmp.ass'
 
-    def get_video_urls(self, cid):
+    def get_video_urls(self, cid, qn=0):
+        req = {
+            'appkey': APPKEY,
+            'cid': cid,
+            'platform': 'html5',
+            'player': 0,
+            'qn': qn
+        }
+        data = urlencode(req)
+        chksum = hashlib.md5(compact_bytes(params_str + SECRETKEY, 'utf-8')).hexdigest()
+
+        purl = '{}?{}&sign={}'.format(api_url, params_str, chksum)
+        print "XXXXXXXXXXXXXXXXX",purl
+        html = get_html(purl)
+
         m = hashlib.md5()
         m.update(INTERFACE_PARAMS.format(str(cid), SECRETKEY_MINILOADER))
         url = INTERFACE_URL.format(str(cid), m.hexdigest())
@@ -356,7 +378,7 @@ class Bilibili():
             if re.match(r'.*\.qqvideo\.tc\.qq\.com', url):
                 re.sub(r'.*\.qqvideo\.tc', 'http://vsrc.store', u)
             urls.append(u)
-            #urls.append(u + '|Referer={}'.format(urllib.quote('https://www.bilibili.com/')))
+            #urls.append(u + '|Referer={}'.format(quote('https://www.bilibili.com/')))
 
         return urls
 
@@ -392,7 +414,7 @@ class Bilibili():
         for durl in doc.getElementsByTagName('durl'):
             u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
             #urls.append(u)
-            urls.append(urllib.quote_plus(u + '|Referer=https://www.bilibili.com'))
+            urls.append(quote_plus(u + '|Referer=https://www.bilibili.com'))
 
         return urls
 

@@ -1,8 +1,10 @@
 #!/usr/bin/python
-#coding=utf-8
+# -*- coding: utf-8 -*-
 
 APPKEY = '19bf1f1192873efa'
 APPSECRET = '87677fc06b0afc08cb86e008183390e5'
+APPKEY = 'iVGUTjsxvpLeuDCf'
+SECRETKEY = 'aHRmhWMLkdeMuILqORnYZocwMBpMEOdt'
 
 API_URL = 'https://api.bilibili.com'
 HOME_URL = 'https://www.bilibili.com'

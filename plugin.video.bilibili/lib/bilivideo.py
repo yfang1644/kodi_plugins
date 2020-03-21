@@ -1,12 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 from common import get_html
 from json import loads
 import time
 import re
 import hashlib
-from urllib2 import urlopen, Request
+if sys.version[0] == '3':
+    from urllib.request import Request, urlopen
+    from urllib.parse import urlencode
+else:
+    from urllib2 import Request, urlopen
+    from urllib import urlencode
 
 def get_location(url, headers={}):
     response = urlopen(Request(url, headers))
@@ -39,29 +45,41 @@ class BiliBase():
     profile_2_type = {u'超清': 'TD', u'高清': 'HD', u'流畅' :'SD'}
     headers = {'Referer': 'https://www.bilibili.com'}
 
+    prepareurl = {}   
     def parse_cid_playurl(self, xml):
         from xml.dom.minidom import parseString
         urls = []
+        size = 0
         doc = parseString(xml.encode('utf-8'))
-        ext = doc.getElementsByTagName('format')[0].firstChild.nodeValue
+        qlt = doc.getElementsByTagName('quality')[0].firstChild.nodeValue
+        aqlts = doc.getElementsByTagName('accept_quality')[0].firstChild.nodeValue.split(',')   
         for durl in doc.getElementsByTagName('durl'):
-            u = durl.getElementsByTagName('url')[0].firstChild.nodeValue
-            urls.append(u + '|Referer=https://www.bilibili.com')
-        return urls, ext
+            urls.append('https' + durl.getElementsByTagName('url')[0].firstChild.nodeValue[4:]) 
+            size += int(durl.getElementsByTagName('size')[0].firstChild.nodeValue)
+        return urls, size, qlt, aqlts
 
-    def video_from_vid(self, vid, **kwargs):
-        level = kwargs.get('level', 0)
+    def video_from_vid(self, vid, qn=0, **kwargs):
         self.vid = vid
-        api_url = self.get_api_url(level + 1)
-        self.headers['Referer'] = self.url
+        if int(qn) > 80: return
+        api_url = self.get_api_url(qn)
+
         html = get_html(api_url)
         code = match1(html, '<code>([^<])')
         assert not code, "can't play this video: {}".format(match1(html, 'CDATA\[([^\]]+)'))
-        urls, ext = self.parse_cid_playurl(html)
-        if ext == 'hdmp4':
-            ext = 'mp4'
 
-        return urls
+        urls, size, qlt, aqlts = self.parse_cid_playurl(html)
+        self.prepareurl[size] = urls
+
+        if qn == 0:
+            aqlts.remove(qlt)
+            for aqlt in aqlts:
+                self.video_from_vid(vid, qn=aqlt, **kwargs)
+
+        videos = sorted(self.prepareurl)
+        level = kwargs.get('level', 0)
+        level = min(len(videos), level)
+
+        return self.prepareurl[videos[level]]
 
     def video_from_url(self, url, **kwargs):
         self.url = url
@@ -126,11 +144,17 @@ class BiliVideo(BiliBase):
 
         return vid, title
 
-    def get_api_url(self, q):
-        SECRETKEY = '1c15888dc316e05a15fdd0a02ed6584f'
-        params_str = 'cid={}&player=1&qn={}'.format(self.vid, q)
-        encrypt = hashlib.md5(params_str+SECRETKEY).hexdigest()
-        return 'http://interface.bilibili.com/v2/playurl?' + params_str + '&sign=' + encrypt
+    def get_api_url(self, qn=0):
+        skey = 'aHRmhWMLkdeMuILqORnYZocwMBpMEOdt'
+        data = urlencode([
+            ('appkey', 'iVGUTjsxvpLeuDCf'),
+            ('cid', self.vid),
+            ('platform', 'html5'),
+            ('player', 0),
+            ('qn', qn)
+        ])
+        encrypt = hashlib.md5(data + skey).hexdigest()
+        return 'https://interface.bilibili.com/v2/playurl?' + data + '&sign=' + encrypt
 
     def prepare_list(self):
         html = get_html(self.url)

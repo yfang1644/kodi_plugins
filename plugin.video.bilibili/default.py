@@ -182,10 +182,11 @@ def stay():
 
 @plugin.route('/playmovie/<cid>/<vid>/<name>/')
 def playmovie(cid, vid, name):
+    level = int(plugin.addon.getSetting('resolution'))
     if vid != '0':
-        urls = video_from_vid(vid)
+        urls = video_from_vid(vid, level=level)
     else:
-        urls = bilivideo_from_vid(cid)
+        urls = bilivideo_from_vid(cid, level=level)
 
     stack_url = 'stack://' + ' , '.join(urls)
     danmu = plugin.addon.getSetting('danmu')
@@ -204,7 +205,7 @@ def playmovie(cid, vid, name):
         plugin.set_resolved_url(stack_url)
 
 
-@plugin.route('/list_video/<aid>')
+@plugin.route('/list_video/<aid>/')
 def list_video(aid):
     plugin.set_content('videos')
     result = bilibili.get_av_list(aid)
