@@ -1,8 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmcgui, xbmc
-from xbmcgui import ListItem
+from xbmcswift2 import Plugin, xbmc, xbmcgui
+from xbmcgui import ListItem, Dialog
 from bs4 import BeautifulSoup
 import re
 from json import loads
@@ -35,20 +35,20 @@ def next_page(endpoint, page, total_page, **kwargs):
         return []
 
 
-@plugin.route('/tvstudio/<url>/<page>')
-def tvstudio(url, page):
-    pass
-
-
-@plugin.route('/playvideo/<vid>/<name>/<image>')
+@plugin.route('/playvideo/<vid>/<name>/<image>/')
 def playvideo(vid, name, image):
     quality = int(plugin.addon.getSetting('movie_quality'))
 
     urls = video_from_vid(vid, level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
-    list_item = ListItem(name, thumbnailImage=image)
-    xbmc.Player().play(stackurl, list_item)
 
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    list_item = ListItem(name, thumbnailImage=image)
+    list_item.setInfo(type="video", infoLabels={"Title": name})
+    playlist.add(stackurl, li)
+    xbmc.Player().play(playlist)
+    xbmc.sleep(500)
     #plugin.set_resolved_url(stackurl)
 
 
@@ -65,7 +65,7 @@ def search():
             xbmc.executebuiltin('Container.Update(%s)' % u)
 
 
-@plugin.route('/select/<url>')
+@plugin.route('/select/<url>/')
 def select(url):
     html = get_html(url)
     # html has an extra </dt>
@@ -74,7 +74,7 @@ def select(url):
     filter = tree.find_all('div', {'class': 'sear-menu'})
 
     filter = filter[0].find_all('dl')
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     for item in filter:
         try:
@@ -111,7 +111,7 @@ def select(url):
             return videolist(url, 1)
 
 
-@plugin.route('/episodelist/<url>')
+@plugin.route('/episodelist/<url>/')
 def episodelist(url):
     plugin.set_content('TVShows')
     html = get_html(url)
@@ -139,7 +139,7 @@ def episodelist(url):
     return items
 
 
-@plugin.route('/videolist/<url>/<page>')
+@plugin.route('/videolist/<url>/<page>/')
 def videolist(url, page):
     plugin.set_content('TVShows')
     items = [{

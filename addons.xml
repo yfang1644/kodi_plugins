@@ -53,7 +53,7 @@
 
 <addon id="plugin.video.pptv"
     name="PPTV视频"
-    version="2.2.0"
+    version="2.2.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -128,7 +128,7 @@
 
 <addon id="plugin.video.sohuvideo"
     name="搜狐视频(SoHu)"
-    version="2.6.3"
+    version="2.6.4"
     provider-name="Taxigps,yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -404,7 +404,7 @@
 
 <addon id="plugin.video.iqiyi"
     name="爱奇艺视频(IQIYI)"
-    version="2.4.6"
+    version="2.4.7"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -530,7 +530,7 @@
 
 <addon id="plugin.video.youku"
     name="优酷视频"
-    version="2.0.0"
+    version="2.0.1"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -783,7 +783,6 @@
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
         <import addon="script.module.geturl" version="2.0.0"/>
         <import addon="plugin.video.qq" version="1.1.0"/>
     </requires>

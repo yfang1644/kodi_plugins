@@ -1,15 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui
-from urllib import quote_plus
+from xbmcgui import Dialog, ListItem
+from xbmcswift2 import Plugin, xbmc
 import re
 from json import loads
 from bs4 import BeautifulSoup
-from urlparse import urlparse
 from common import get_html
-from lib.sohu import video_from_url
-
+from lib.sohu import video_from_url, urlparse, quote_plus
 from iqiyi import video_from_url as video_from_iqiyi
 from qq import video_from_url as video_from_qq
 from funshion import video_from_url as video_from_fun
@@ -56,9 +54,12 @@ def playvideo(url, name, image):
 
     urls = video_from_url(url, level=level)
     stackurl = 'stack://' + ' , '.join(urls)
-    list_item = xbmcgui.ListItem(name, thumbnailImage=image)
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    list_item = ListItem(name, thumbnailImage=image)
     list_item.setInfo('video', {'title': name})
-    xbmc.Player().play(stackurl, list_item)
+    playlist.add(stackurl, list_item)
+    xbmc.Player().play(playlist)
 
     #plugin.set_resolved_url(stackurl)
 
@@ -177,7 +178,7 @@ def select(name, url):
     tree = BeautifulSoup(html, 'html.parser')
     filter = tree.find_all('dl', {'class': 'cfix'})
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     surl = url.split('/')
     lurl = re.compile('(.+?).html').findall(surl[-1])

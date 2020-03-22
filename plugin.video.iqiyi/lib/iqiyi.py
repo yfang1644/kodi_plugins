@@ -33,12 +33,9 @@ class IQiyi():
 
     def get_macid(self):
         '''获取macid,此值是通过mac地址经过算法变换而来,对同一设备不变'''
-        macid=''
         chars = 'abcdefghijklnmopqrstuvwxyz0123456789'
-        size = len(chars)
-        for i in xrange(32):
-            macid += list(chars)[randrange(size)]
-        return macid
+        macid = [choice(chars) for i in range(32)]
+        return ''.join(macid)
 
     def get_vf(self, url_params):
         '''计算关键参数vf'''
@@ -56,7 +53,8 @@ class IQiyi():
         tm = int(time.time() * 1000)
         key = 'd5fb4bd9d50c4be6948c97edd7254b0e'
         host = 'http://cache.m.iqiyi.com'
-        sc = hashlib.md5(str(tm) + key + vid).hexdigest()
+        t = str(tm) + key + vid
+        sc = hashlib.md5(t.encode('utf-8')).hexdigest()
         params = {
             'src': '76f90cbd92f94a2e925d83e8ccd22cb7',
             'sc': sc,

@@ -1,9 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import sys
 from json import loads
 import time
-from urllib import urlencode
+if sys.version[0]=='3':
+    from urllib.parse import urlencode, quote_plus, urlparse
+else:
+    from urllib import urlencode, quote_plus
+    from urlparse import urlparse
 import re
 from common import get_html, r1
 
@@ -64,7 +69,6 @@ class Sohu():
             'prod': 'h5n'
         }
         html = get_html(api + urlencode(req))
-        print loads(html)['servers']
         return loads(html)['servers'][0]['url']
 
 
@@ -103,7 +107,6 @@ class Sohu():
         data = info['data']
         title = data['tvName']
         size = sum(map(int, data['clipsBytes']))
-        print size
         urls = []
         assert len(data['clipsURL']) == len(data['clipsBytes']) == len(data['su'])
         for fileName, key, in zip(data['su'], data['ck']):

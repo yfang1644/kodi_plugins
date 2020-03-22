@@ -17,8 +17,6 @@ import re
 from qq import video_from_vid as video_from_qq
 from common import get_html
 from json import loads
-from bs4 import BeautifulSoup
-
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -107,17 +105,17 @@ def playvideo(cid, vid, name):
     if danmu == 'true':
         bilibili.parse_subtitle(cid)
         player.setSubtitle(bilibili._get_tmp_dir() + '/tmp.ass')
-        playlist.add(stack_url, list_item)
-        player.play(playlist)
-        #while(not xbmc.abortRequested):
-        xbmc.sleep(500)
-    else:
-        plugin.set_resolved_url(stack_url)
 
+    playlist.add(stack_url, list_item)
+    player.play(playlist)
+    #while(not xbmc.abortRequested):
+    xbmc.sleep(500)
+
+    #   plugin.set_resolved_url(stack_url)
 
 @plugin.route('/list_video/<aid>/')
 def list_video(aid):
-    plugin.set_content('videos')
+    plugin.set_content('TVShows')
     result = bilibili.get_av_list(aid)
 
     items = []
@@ -135,51 +133,63 @@ def list_video(aid):
     return items
 
 
-@plugin.route('/searchResult/<page>/<keyword>')
-def searchResult(page, keyword):
-    searchapi = 'https://search.bilibili.com/ajax_api/video?keyword=%s&page=%s&order=totalrank'
-    html = get_html(searchapi % (quote_plus(keyword), str(page)), decoded=False)
-    html = html.replace('\\"', '')
-    html = html.replace('\\t', '')
-    html = html.replace('\\n', '')
-
-    js = loads(html)
-    total = js['numResults']
-    total_page = js['numPages']
-    tree = BeautifulSoup(js['html'], 'html.parser')
-
-    videos = tree.find_all('li')
-    items = previous_page('searchResult', page, total_page, keyword=keyword)
-
-    for item in videos:
-        aid = item.i['data-aid']
-        thumb = item.img['data-src']
-        if thumb[0:2] == '//':
-            thumb = 'http:' + thumb
-        title = item.find('a', {'class': 'title'}).text
-        desc = item.find('div', {'class': 'des'})
-        if desc is not None:
-            desc = desc.text
-        genre = item.find('span', {'class': 'type'}).text
-        
-        info = {
-            'plot': desc,
-            'genre': genre
-            }
-        items.append(get_av_item(aid, label=title, thumbnail=thumb, info=info))
-    items += next_page('searchResult', page, total_page, keyword=keyword)
-
-    return items 
-    
-
 @plugin.route('/search')
 def search():
+    plugin.set_content('TVShows')
     keyboard = xbmc.Keyboard('', '请输入关键字 (片名/AV)')
     xbmc.sleep(1500)
     keyboard.doModal()
-    if keyboard.isConfirmed():
-        keyword = keyboard.getText()
-        return searchResult(page=1, keyword=keyword)
+    if not keyboard.isConfirmed():
+        return 
+    keyword = keyboard.getText()
+    search_api = 'https://search.bilibili.com/all?keyword={}&from_source=nav_search'
+
+    html = get_html(search_api.format(quote_plus(keyword)))
+    data = re.search('__INITIAL_STATE__\s*=\s*({.+?\});', html)
+    jsdata = loads(data.group(1))
+
+    key = 'getMixinFlowList-jump-keyword-' + keyword.decode('utf-8')
+    lists = jsdata['flow'][key]['result']
+
+    items = []
+    for x in lists:
+        for y in x['data']:
+            title = y.get('title')
+            if title is None: continue
+            title = title.replace('<em class="keyword">', '[COLOR FFDEB887]')
+            title = title.replace('</em>', '[/COLOR]')
+            cover = y.get('cover')
+            if cover is None:
+                cover = y.get('pic', '')
+            if cover[0:2] == '//': cover = 'https:' + cover 
+
+            link = y.get('goto_url')
+            if link is None:
+                link = y.get('url')
+            if link is None:
+                link = y.get('arcurl')
+            if link is None: continue
+            type = y.get('season_type_name')
+            if type is None:
+                type = y.get('typename', '')
+            type = '(' + type + ')'
+            aid = y.get('aid')
+            if aid:
+                items.append({
+                    'label': title + type,
+                    'path': url_for('list_video', aid=aid),
+                    'thumbnail': cover,
+                    'info': {'title': title, 'plot': y.get('description')}
+                })
+            else:
+                items.append({
+                    'label': title + type,
+                    'path': url_for('season', link=link),
+                    'thumbnail': cover,
+                    'info': {'title': title, 'plot': y.get('desc')}
+                })
+
+    return items
 
 
 @plugin.route('/season/<link>/')
@@ -189,12 +199,20 @@ def season(link):
     data = re.search('__INITIAL_STATE__\s*=\s*({.+?\});', html)
     jsdata = loads(data.group(1))
     
-    items = []
+    info = jsdata['mediaInfo']
+    title = info['title']
+    desc = info['evaluate']
+
+    items = [{
+        'label': '[COLOR FFDEB887]%s[/COLOR]' % title,
+        'path': url_for('stay'),
+        'info': {'title': title, 'plot': desc}
+    }]
     for item in jsdata['epList']:
         title = item.get('titleFormat')
         if title is None: title = item.get('title')
         cover = item['cover']
-        if cover[0:2] == '//': cover = 'https' + cover
+        if cover[0:2] == '//': cover = 'https:' + cover
         cid = item['cid']
         vid = item['vid']
         if vid == '': vid = 0
@@ -255,8 +273,11 @@ def category(name, page, filter):
     for item in data['data']['list']:
         title = item['title']
         extra = item['index_show']
-        badge = item.get(item['badge'], '')
-        if badge: badge = '[COLOR magenta]({})[/COLOR]'.format(badge)
+        badge = item.get('badge')
+        if badge:
+            badge = u'[COLOR magenta]({})[/COLOR]'.format(badge)
+        else:
+            badge = ''
         items.append({
             'label': title + '(' + extra + ')' + badge,
             'path': plugin.url_for('season', link=item['link']),

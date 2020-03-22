@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui, xbmc
-from xbmcgui import ListItem
 from json import loads
 import re
 from common import get_html
@@ -126,9 +125,13 @@ def playvideo(vid, name):
     urls = video_from_vid(vid, level=level)
     if len(urls) > 1:
         stackurl = 'stack://' + ' , '.join(urls)
-        list_item = ListItem(name)
+        playlist = xbmc.PlayList(1)
+        playlist.clear()
+        list_item = xbmcgui.ListItem(name)
         list_item.setInfo(type="video", infoLabels={"Title": name})
-        xbmc.Player().play(stackurl, list_item)
+        playlist.add(stackurl, list_item)
+        xbmc.Player().play(playlist)
+        xbmc.sleep(500)
     else:
         plugin.set_resolved_url(urls[0])
 

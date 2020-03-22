@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmc, xbmcgui
-from xbmcgui import ListItem
-from urllib import quote_plus
 import re
 import os
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
-from lib.iqiyi import video_from_vid
+from lib.iqiyi import video_from_vid, quote_plus
 
 ########################################################################
 # 爱奇艺 list.iqiyi.com
@@ -82,10 +80,13 @@ def playvideo(tvId, vid, title, pic):
         return
 
     if len(urls) > 1:
+        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+        playlist.clear()
         stackurl = 'stack://' + ' , '.join(urls)
         list_item = xbmcgui.ListItem(title, thumbnailImage=pic)
         list_item.setInfo('video', {'title': title})
-        xbmc.Player().play(stackurl, list_item)
+        playlist.add(stackurl, list_item)
+        xbmc.Player().play(playlist)
     else:
         plugin.set_resolved_url(urls[0])
 
