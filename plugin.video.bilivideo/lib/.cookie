@@ -1,0 +1,9 @@
+# Netscape HTTP Cookie File
+# http://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file!  Do not edit.
+
+.bilibili.com	TRUE	/	FALSE	1509245308	DedeUserID	198750789
+.bilibili.com	TRUE	/	FALSE	1509245308	DedeUserID__ckMd5	2ca427075de91396
+.bilibili.com	TRUE	/	FALSE	1509245308	SESSDATA	44259c14%2C1509245308%2C3287f83f
+.bilibili.com	TRUE	/	FALSE	1509245308	bili_jct	03c48bce623e2518e8152c8d4814d40a
+.bilibili.com	TRUE	/	FALSE	1538189163	sid	4j161bpl
