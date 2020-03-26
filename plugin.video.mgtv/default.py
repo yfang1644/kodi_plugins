@@ -4,10 +4,8 @@
 from xbmcswift2 import Plugin, xbmcgui
 from bs4 import BeautifulSoup
 from json import loads
-from urllib import quote_plus
-import re
 from common import get_html, r1
-from lib.mgtv import video_from_vid
+from lib.mgtv import video_from_vid, quote_plus
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -81,8 +79,8 @@ def search():
 @plugin.route('/changeList/<url>/')
 def changeList(url):
     html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'm-tag-type'})
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('div', {'class': 'm-tag-type'})
 
     surl = url.split('/')
     purl = surl[-1].split('-')
@@ -118,11 +116,10 @@ def changeList(url):
 def episodelist(url, id, page):
     if int(id) == 0:
         url = httphead(url)
-        print "XXXXXXXXXXXXXXXXXXX", url
         html = get_html(url)
-        l = re.compile('window.location = "(.+?)"').findall(html)
+        l = r1('window.location = "(.+?)"', html)
         if l:
-            url = httphead(l[0])
+            url = httphead(l)
         if url[-1] == '/':    # is a directory
             html = get_html(url)
             id = r1('vid:\s*(\d+)', html)
@@ -208,7 +205,7 @@ def mainlist(url, filter):
             exinfo = ''
 
         # pay info
-        pay = item.find('i', {'class': 'v-mark-v5'})
+        pay = item.find('i', {'class': 'mark-v'})
         if pay:
             pay = BANNER_FMT2 % ('(' + pay.text + ')')
         else:
@@ -263,6 +260,7 @@ def root():
             'path': url_for('mainlist',
                             url=url,
                             filter='0'),
+            'thumbnail': item.get('channelIcon'),
             'info': {'title': item['title'], 'plot': item['vclassName']}
         }
 

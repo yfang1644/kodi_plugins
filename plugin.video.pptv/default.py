@@ -1,18 +1,17 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui
-from xbmcgui import ListItem, Dialog
+import xbmc
+from xbmcgui import Dialog, ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
+import xbmcaddon
 from bs4 import BeautifulSoup
 import re
 from json import loads
 from common import get_html
-from lib.pptv import video_from_vid, urlencode
+from lib.pptv import video_from_vid, urlencode, parse_qsl
 
 # Plugin constants
-
-plugin = Plugin()
-url_for = plugin.url_for
 
 PPTV_LIST = 'http://list.pptv.com/'
 PPTV_TV_LIST = 'http://live.pptv.com/list/tv_list'
@@ -21,40 +20,37 @@ NEW = u'[COLOR 808000FF](新)[/COLOR]'
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
+        li = ListItem('上一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) - 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def next_page(endpoint, page, total_page, **kwargs):
     if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('下一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) + 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 
-@plugin.route('/playvideo/<vid>/<name>/<image>/')
-def playvideo(vid, name, image):
-    quality = int(plugin.addon.getSetting('movie_quality'))
-
-    urls = video_from_vid(vid, level=quality)
+def playvideo(params):
+    quality = int(xbmcaddon.Addon().getSetting('movie_quality'))
+    urls = video_from_vid(params['vid'], level=quality)
     stackurl = 'stack://' + ' , '.join(urls)
 
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
-    list_item = ListItem(name, thumbnailImage=image)
-    list_item.setInfo(type="video", infoLabels={"Title": name})
-    playlist.add(stackurl, li)
+    list_item = ListItem(params['name'], thumbnailImage=params['thumbnail'])
+    list_item.setInfo(type="video", infoLabels={"Title": params['name']})
+    playlist.add(stackurl, list_item)
     xbmc.Player().play(playlist)
     xbmc.sleep(500)
-    #plugin.set_resolved_url(stackurl)
 
 
-@plugin.route('/search')
-def search():
-    return []
+def search(params):
+    return
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
 
     keyboard.doModal()
@@ -65,15 +61,14 @@ def search():
             xbmc.executebuiltin('Container.Update(%s)' % u)
 
 
-@plugin.route('/select/<url>/')
-def select(url):
-    html = get_html(url)
+def select(params):
+    html = get_html(params['url'])
     # html has an extra </dt>
     html = re.sub('<\/dt>\n *<\/dt>', '<\/dt>', html)
-    tree = BeautifulSoup(html, 'html.parser')
-    filter = tree.find_all('div', {'class': 'sear-menu'})
+    soup = BeautifulSoup(html, 'html.parser')
+    filter = soup.findAll('div', {'class': 'sear-menu'})
 
-    filter = filter[0].find_all('dl')
+    filter = filter[0].findAll('dl')
     dialog = Dialog()
 
     for item in filter:
@@ -108,49 +103,47 @@ def select(url):
         sel = dialog.select(title, list)
         if sel >= 0 and sel != sel0:
             url = u[sel]
-            return videolist(url, 1)
+            req = {'url': url, 'page':1}
+            videolist(req)
 
 
-@plugin.route('/episodelist/<url>/')
-def episodelist(url):
-    plugin.set_content('TVShows')
-    html = get_html(url)
+def episodelist(params):
+    html = get_html(params['url'])
     playcfg = re.compile('var webcfg\s?=\s?({.+?);\n').findall(html)
     if playcfg:
         jsplay = loads(playcfg[0])
     else:
-        return []
+        return
 
-    items = []
     content = jsplay['share_content']
     for item in jsplay['playList']['data']['list']:
         vip = '' if int(item['vip']) == 0 else VIP
         new = NEW if item.get('isNew') else ''
-        items.append({
-            'label': item['title'] + vip + new,
-            'path': url_for('playvideo', vid=item['id'],
-                           name=item['title'].encode('utf-8'),
-                           image=item['capture'].encode('utf-8')),
-            'thumbnail': item['capture'],
-            'is_playable': True,
-            'info': {'title': item['title']},
-        })
+        li = ListItem(item['title']+vip+new, thumbnailImage=item['capture'])
+        req = {
+            'mode': 'playvideo',
+            'name': item['title'].encode('utf-8'),
+            'vid': item['id'],
+            'thumbnail': item['capture'].encode('utf-8')
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    return items
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/videolist/<url>/<page>/')
-def videolist(url, page):
-    plugin.set_content('TVShows')
-    items = [{
-        'label': '[COLOR green]分类过滤[/COLOR]',
-        'path': url_for('select', url=url)
-    }]
+def videolist(params):
+    page = int(params['page'])
+    url = params['url']
+    li = ListItem('[COLOR green]分类过滤[/COLOR]')
+    u = sys.argv[0] + '?mode=select&url=' + 'url'
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     p = get_html(url)
     c = re.compile('pageNum.*\/ (\d+)<\/p>').findall(p)
     total = c[0]
-    items += previous_page('videolist', page=page, total_page=total, url=url)
+    previous_page('videolist', page=page, total_page=total, url=url)
 
     c = re.compile('.*/(.*).html').findall(url)
     utype = c[0].split('_')
@@ -159,41 +152,67 @@ def videolist(url, page):
         req[utype[x]] = utype[x+1]
     data = urlencode(req)
     html = get_html(PPTV_LIST + 'channel_list.html?' + data)
-    tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('a', {'class': 'ui-list-ct'})
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('a', {'class': 'ui-list-ct'})
 
-    for item in soup:
+    for item in tree:
         text = item.find('span', {'class': 'msk-txt'})
         if text:
             text = '(' + text.text + ')'
         else:
             text = ''
-        items.append({
-            'label': item['title'] + text,
-            'path': url_for('episodelist', url=item['href']),
-            'thumbnail': item.img['data-src2'],
-        })
 
-    items += next_page('videolist', page=page, total_page=total, url=url)
-    return items
+        li = ListItem(item['title']+text, thumbnailImage=item.img['data-src2'])
+        req = {
+            'mode': 'episodelist',
+            'url': item['href']
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    next_page('videolist', page=page, total_page=total, url=url)
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/')
 def root():
     data = get_html(PPTV_LIST)
     soup = BeautifulSoup(data, 'html.parser')
-    menu = soup.find_all('div', {'class': 'detail_menu'})
-    tree = menu[0].find_all('li')
+    menu = soup.findAll('div', {'class': 'detail_menu'})
+    tree = menu[0].findAll('li')
     for item in tree:
         url = item.a['href']
         t = re.compile('type_(\d+)').findall(url)
         if len(t) < 1:
             continue
-        yield {
-            'label': item.a.text,
-            'path': url_for('videolist', url=url, page=1)
+        li = ListItem(item.a.text)
+        req = {
+            'mode': 'videolist',
+            'url': url,
+            'page': 1
         }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    endOfDirectory(int(sys.argv[1]))
 
 
-if __name__ == '__main__':
-    plugin.run()
+# main programs goes here #########################################
+runlist = {
+    'videolist': 'videolist(params)',
+    'episodelist': 'episodelist(params)',
+    'search': 'search(params)',
+    'select': 'select(params)',
+    'playvideo': 'playvideo(params)',
+
+}
+
+params = sys.argv[2][1:]
+params = dict(parse_qsl(params))
+
+mode = params.get('mode')
+if mode:
+    del (params['mode'])
+    exec(runlist[mode])
+else:
+    root()

@@ -10,6 +10,7 @@ else:
 from json import loads
 from common import get_html, match1
 
+origin = [10901, 4100201] # some VIP availablePLAYER_PLATFORMS = [11, 2, 1]
 PLAYER_PLATFORMS = [10901, 4100201] # some VIP availablePLAYER_PLATFORMS = [11, 2, 1]
 PLAYER_VERSION = '3.2.19.333'
 
@@ -57,6 +58,7 @@ class QQ():
 
             if 'msg' in data:
                 assert data['msg'] not in ('vid is wrong', 'vid status wrong'), 'wrong vid'
+                PLAYER_PLATFORMS.remove(PLAYER_PLATFORM)
                 continue
 
             if PLAYER_PLATFORMS and \
@@ -71,7 +73,6 @@ class QQ():
         assert 'msg' not in data, data['msg']
         video = data['vl']['vi'][0]
         fn = video['fn']
-        title = video['ti']
         td = float(video['td'])
         fvkey = video.get('fvkey')
         self.vip = video['drm']
@@ -142,6 +143,8 @@ class QQ():
             yield urls, size
 
     def video_from_vid(self, vid, **kwargs):
+        global PLAYER_PLATFORMS
+        PLAYER_PLATFORMS = origin[:]
         videos = {}
         for _ in range(2):
             for urls, size in self.get_streams_info(vid):

@@ -13,11 +13,6 @@ from lib.qq import video_from_url, video_from_vid, urlencode, quote_plus, parse_
 
 PAGESIZE = 20
 
-# Plugin constants
-__addon__     = xbmcaddon.Addon()
-__addonid__   = __addon__.getAddonInfo('id')
-__addonname__ = __addon__.getAddonInfo('name')
-
 BANNER_FMT = '[COLOR FFDEB887]【%s】[/COLOR]'
 
 HOST_URL = 'https://v.qq.com'
@@ -85,7 +80,7 @@ def select(params):
     mainlist(req)
 
 def playvideo(params):
-    sel = int(__addon__.getSetting('resolution'))
+    sel = int(xbmcaddon.Addon().getSetting('resolution'))
     if sel == 4:
         list = ['流畅(270P)', '高清(360P)', '超清(720P)', '蓝光(1080P)']
         sel = Dialog().select('清晰度选择', list)
@@ -101,10 +96,13 @@ def playvideo(params):
     stackurl = 'stack://' + ' , '.join(urls)
     title = params['title']
 
-    li = ListItem(title, thumbnailImage='')
+    li = ListItem(title, thumbnailImage=params['thumbnail'])
     li.setInfo(type='Video', infoLabels={'Title': title})
-
-    xbmc.Player().play(stackurl, li)
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    for url in urls:
+        playlist.add(url, li)
+    xbmc.Player().play(playlist)
 
 
 def search(params):
@@ -164,7 +162,8 @@ def search(params):
             req = {
                 'title': subtitle,
                 'mode': 'playvideo',
-                'url': href.encode('utf-8')
+                'url': href.encode('utf-8'),
+                'thumbnail': ''
             }
             u = sys.argv[0] + '?' + urlencode(req)
             addDirectoryItem(int(sys.argv[1]), u, li, False)

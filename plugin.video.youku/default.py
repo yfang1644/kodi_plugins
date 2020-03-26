@@ -1,11 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmcgui, xbmc
+import xbmc
+from xbmcgui import Dialog, ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
+import xbmcaddon
 from json import loads
 import re
 from common import get_html
-from lib.youku import video_from_vid, video_from_url, urlencode, quote_plus
+from lib.youku import video_from_vid, video_from_url, urlencode, quote_plus, parse_qsl
+
 
 HOST = 'http://tv.api.3g.youku.com'
 BASEIDS = {
@@ -19,9 +23,6 @@ BASEIDS = {
 }
 
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
-
-plugin = Plugin()
-url_for = plugin.url_for
 
 def httphead(url):
     if len(url) < 2:
@@ -105,39 +106,37 @@ category = [
 ############################################################################
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('上一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) - 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def next_page(endpoint, page, total_page, **kwargs):
     if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('下一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) + 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+def playvideo(params):
+    level = int(xbmcaddon.Addon().getSetting('resolution'))
+
+    urls = video_from_vid(params['vid'], level=level)
+    if not urls:
+        Dialog().ok(xbmcaddon.Addon().getAddonInfo('name'), '无法播放此视频')
+        return
+
+    stackurl = 'stack://' + ' , '.join(urls)
+    name = params['name']
+    li = ListItem(name, thumbnailImage=params['thumbnail'])
+    li.setInfo(type="video", infoLabels={"Title": name})
+    xbmc.Player().play(stackurl, li)
 
 
-@plugin.route('/playvideo/<vid>/<name>/')
-def playvideo(vid, name):
-    level = int(plugin.addon.getSetting('resolution'))
-
-    urls = video_from_vid(vid, level=level)
-    if len(urls) > 1:
-        stackurl = 'stack://' + ' , '.join(urls)
-        playlist = xbmc.PlayList(1)
-        playlist.clear()
-        list_item = xbmcgui.ListItem(name)
-        list_item.setInfo(type="video", infoLabels={"Title": name})
-        playlist.add(stackurl, list_item)
-        xbmc.Player().play(playlist)
-        xbmc.sleep(500)
-    else:
-        plugin.set_resolved_url(urls[0])
-
-
-@plugin.route('/select/<cid>/')
-def select(cid):
+def select(params):
+    cid = params['cid']
     for item in category:
         title = item.keys()[0]
         if str(item[title][1]) == cid:
@@ -145,15 +144,16 @@ def select(cid):
             g = item[title][2]
             break
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     sel = dialog.select('类型', g)
-    group = g[sel] if sel >= 0 else '0'
+    if sel >= 0:
+        params['group'] = g[sel]
 
-    return mainchannel(type=type, cid=cid, group=group, page=1)
+    mainlist(params)
 
-@plugin.route('/search')
-def search():
+
+def search(params):
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1500)
     keyboard.doModal()
@@ -199,91 +199,114 @@ def search():
     return items
 
 
-@plugin.route('/episodelist/<vid>/')
-def episodelist(vid):
-    plugin.set_content('TVShows')
+def episodelist(params):
+    vid = params['vid']
     url = 'http://v.youku.com/v_show/id_{0}.html'.format(vid)
-    page = get_html(url)
+    html = get_html(url)
 
-    m = re.search('__INITIAL_DATA__\s*=({.+?\});', page)
+    m = re.search('__INITIAL_DATA__\s*=({.+?\});', html)
     
     p = loads(m.group(1))
-    series = p['data']['data']['nodes'][0]['nodes'][2]['nodes']
+    try:
+        series = p['data']['data']['nodes'][0]['nodes'][2]['nodes']
+    except:
+        series = p['data']['data']['nodes'][0]['nodes'][1]['nodes']
     content = p['data']['data']['nodes'][0]['nodes'][0]['nodes'][0]['data']['desc']
     items = []
     for film in series:
         vid = film['data']['action']['value']
         title = film['data']['title'].encode('utf-8')
+        li = ListItem(title, thumbnailImage=film['data']['img'])
+        li.setInfo(type='video', infoLabels={'title': title, 'plot': content})
+        req = {
+            'mode': 'playvideo',
+            'vid': vid,
+            'name': title,
+            'thumbnail': film['data']['img']
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-        items.append({
-            'label': title,
-            'path': url_for('playvideo', vid=vid, name=title),
-            'thumbnail': film['data']['img'],
-            'is_playable': True,
-            'info': {'title': title, 'plot': content}
-        })
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
-    return items
 
-series = (97, 85, 100, 177, 87, 84, 98, 178, 86, 99) 
-
-@plugin.route('/mainchannel/<type>/<cid>/<group>/<page>/')
-def mainchannel(type, cid, group, page):
-    plugin.set_content('TVShows')
+def mainlist(params):
+    cid = params['cid']
+    type = params['type']
+    group = params.get('group', '')
+    page = params.get('page', 1)
+    previous_page('mainlist', page, 300, type=type, cid=cid, group=group)
+    c = '分类' + '|' + group if group else '分类'
+    li = ListItem('[COLOR yellow][{0}][/COLOR]'.format(c))
+    u = sys.argv[0] + '?mode=select&' + urlencode(params)
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+    
     api = 'https://list.youku.com/category/page?'
     req = {
         'type': type,
         'c': cid,
-        'p': page,
-        'g': '' if group == '0' else group
+        'p': params.get('page', 1),
+        'g': group
     }
 
     html = get_html(api + urlencode(req))
     data = loads(html)
 
-    items = previous_page('mainchannel', page, 300, type=type, cid=cid, group=group)
-    if group == '0': c = '分类'
-    else: c = '分类' + '|' + group
-    items.append({
-        'label': '[COLOR yellow][{0}][/COLOR]'.format(c),
-        'path': url_for('select', cid=cid)
-    })
+    series = (97, 85, 100, 177, 87, 84, 98, 178, 86, 99) 
     for item in data['data']:
-        items.append({
-            'label': item['title'] + '(' + item['summary'] +')',
+        li = ListItem(item['title'] + '(' + item['summary'] +')',
+                      thumbnailImage=httphead(item['img']))
+        li.setInfo(type='Video',
+                   infoLabels={'title': item['title'], 'plot': item.get('subTitle', '')})
+        req = {
+            'mode': 'episodelist' if int(cid) in series else 'playvideo',
+            'vid': item['videoId'],
             'thumbnail': httphead(item['img']),
-            'info': {'title': item['title'], 'plot': item.get('subTitle', '')}
-        })
-        if int(cid) in series:
-            items[-1]['path'] = url_for('episodelist', vid=item['videoId'])
-        else:
-            items[-1]['path'] = url_for('playvideo', vid=item['videoId'],
-                                        name=item['title'].encode('utf-8'))
-            items[-1]['is_playable'] = True
+            'name': item['title'].encode('utf-8')
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li,
+                         isFolder=True if int(cid) in series else False)
 
-    items += next_page('mainchannel', page, 300, type=type, cid=cid, group=group)
+    next_page('mainlist', page, 300, type=type, cid=cid, group=group)
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
-    return items
 
-@plugin.route('/')
-def index():
-    items = []
-    items.append({
-        'label': '[COLOR magenta][搜索][/COLOR]',
-        'path': url_for('search')
-    })
+def root():
+    li = ListItem('[COLOR magenta][搜索][/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     for item in category:
         title = item.keys()[0]
-        items.append({
-            'label': title,
-            'path': url_for('mainchannel',
-                            type=item[title][0],
-                            cid=item[title][1],
-                            group=0,
-                            page=1)
-        })
-    return items
+        li = ListItem(title)
+        req = {
+            'title': title,
+            'mode': 'mainlist',
+            'type': item[title][0],
+            'cid': item[title][1],
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+    endOfDirectory(int(sys.argv[1]))
 
+# main programs goes here #########################################
+runlist = {
+    'mainlist': 'mainlist(params)',
+    'episodelist': 'episodelist(params)',
+    'search': 'search(params)',
+    'select': 'select(params)',
+    'playvideo': 'playvideo(params)'
+}
 
-if __name__ == '__main__':
-    plugin.run()
+params = sys.argv[2][1:]
+params = dict(parse_qsl(params))
+
+mode = params.get('mode')
+if mode:
+    del (params['mode'])
+    exec(runlist[mode])
+else:
+    root()

@@ -8,16 +8,16 @@ import hashlib
 if sys.version[0] == '3':
     from urllib.parse import urlencode, quote_plus, urlparse
     from urllib.request import Request, urlopen
+    from urllib.request import build_opener, HTTPCookieProcessor, install_opener
 else:
     from urllib import urlencode, quote_plus
     from urlparse import urlparse
     from urllib2 import Request, urlopen
+    from urllib2 import build_opener, HTTPCookieProcessor, install_opener
 
-import urllib2
 import re
 import time
 import os
-import tempfile
 from random import random
 from xml.dom.minidom import parseString
 from cookielib import MozillaCookieJar
@@ -26,6 +26,9 @@ from bs4 import BeautifulSoup
 from bilibili_config import *
 from niconvert import create_website
 
+import xbmc
+__assfile__   = xbmc.translatePath("special://temp/tmp.ass")
+__captcha__   = xbmc.translatePath("special://temp/captcha.jpg")
 def url_locations(url):
     response = urlopen(Request(url))
     return response.url
@@ -69,19 +72,13 @@ class Bilibili():
             if key is not None:
                 self.is_login = True
                 self.mid = str(key)
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
-        urllib2.install_opener(opener)
+        opener = build_opener(HTTPCookieProcessor(self.cj))
+        install_opener(opener)
 
         try:
-            os.remove(self._get_tmp_dir() + '/tmp.ass')
+            os.remove(__assfile__)
         except:
             pass
-
-    def _get_tmp_dir(self):
-        try:
-            return tempfile.gettempdir()
-        except:
-            return ''
 
     def get_captcha(self, path = None):
         key = None
@@ -96,7 +93,7 @@ class Bilibili():
         result = get_html(LOGIN_CAPTCHA_URL.format(random()), decoded=False,
                     headers = {'Referer':'https://passport.bilibili.com/login'})
         if path is None:
-            path = tempfile.gettempdir() + '/captcha.jpg'
+            path = __captcha__
         with open(path, 'wb') as f:
             f.write(result)
         return path
@@ -348,7 +345,7 @@ class Bilibili():
                 bottom_margin=0,
                 tune_seconds=0
             )
-            f = open(self._get_tmp_dir() + '/tmp.ass', 'w')
+            f = open(__assfile__, 'w')
             f.write(text.encode('utf8'))
             f.close()
             return 'tmp.ass'

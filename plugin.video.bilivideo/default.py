@@ -1,7 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui
+import xbmc
+from xbmcgui import Dialog, ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
+import xbmcaddon
+
 from lib.bilibili import Bilibili
 from lib.subtitle import subtitle_offset
 from lib.bilivideo import video_from_vid
@@ -18,10 +22,9 @@ from qq import video_from_vid as video_from_qq
 from common import get_html
 from json import loads
 
-plugin = Plugin()
-url_for = plugin.url_for
-
 bilibili = Bilibili()
+
+__assfile__   = xbmc.translatePath("special://temp/tmp.ass")
 
 class BiliPlayer(xbmc.Player):
     def __init__(self):
@@ -50,92 +53,79 @@ player = BiliPlayer()
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('上一页 - {0}/{1}'.format(page, str(total_page)))
+        filter = kwargs['filter']
+        filter = dict(parse_qsl(filter))
+        kwargs.update(filter)
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) - 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def next_page(endpoint, page, total_page, **kwargs):
     if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
-
-def get_av_item(aid, **kwargs):
-    result = bilibili.get_av_list(aid)
-    if not result:
-        return {'label': '(空)', 'path': plugin.url_for('stay')}
-
-    item = dict(**kwargs)
-    if len(result) == 1:
-        vid = result[0].get('vid', '')
-        #item['icon'] = kwargs.get('thumbnail')
-        item['is_playable'] = True
-        if len(vid) > 0:
-            item['label'] += '(QQ)'
-        else:
-            vid = '0'
-        item['path'] = plugin.url_for('playvideo', cid=result[0]['cid'], vid=vid, name=item['label'].encode('utf-8'))
-        item['info'] = {'title': item['label']}
-    else:
-        item['path'] = plugin.url_for('list_video', aid=aid)
-    return item
+        li = ListItem('下一页 - {0}/{1}'.format(page, str(total_page)))
+        filter = kwargs['filter']
+        filter = dict(parse_qsl(filter))
+        kwargs.update(filter)
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) + 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 
-@plugin.route('/stay')
-def stay():
-    pass
+def playvideo(params):
+    name = params['name']
+    vid = params['vid']
+    cid = params['cid']
+    level = int(xbmcaddon.Addon().getSetting('resolution'))
 
-
-@plugin.route('/playvideo/<cid>/<vid>/<name>/')
-def playvideo(cid, vid, name):
-    level = int(plugin.addon.getSetting('resolution'))
     if vid != '0':
         urls = video_from_qq(vid, level=level)
     else:
         urls = video_from_vid(cid, level=level)
 
     stack_url = 'stack://' + ' , '.join(urls)
-    danmu = plugin.addon.getSetting('danmu')
+    danmu = xbmcaddon.Addon().getSetting('danmu')
 
-    playlist = xbmc.PlayList(1)
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
-    list_item = xbmcgui.ListItem(name)
+    list_item = ListItem(name)
     if danmu == 'true':
         bilibili.parse_subtitle(cid)
-        player.setSubtitle(bilibili._get_tmp_dir() + '/tmp.ass')
+        player.setSubtitle(__assfile__)
 
     playlist.add(stack_url, list_item)
     player.play(playlist)
     #while(not xbmc.abortRequested):
     xbmc.sleep(500)
 
-    #   plugin.set_resolved_url(stack_url)
 
-@plugin.route('/list_video/<aid>/')
-def list_video(aid):
-    plugin.set_content('TVShows')
+def list_video(params):
+    aid = params['aid']
     result = bilibili.get_av_list(aid)
 
-    items = []
     for x in result:
         vid = x.get('vid', '')
         if len(vid) < 1:
             vid = '0'
-        items.append({
-            'label': x['pagename'],
-            'path': plugin.url_for('playvideo', cid=x['cid'], vid=vid, name=x['pagename'].encode('utf-8')),
-            'is_playable': True,
-            'info': {'title': x['pagename'], 'type':'video'}
-        })
 
-    return items
+        li = ListItem(x['pagename'])
+        li.setInfo(type='Video', infoLabels={'title': x['pagename']})
+        req = {
+            'mode': 'playvideo',
+            'cid': x['cid'],
+            'vid': vid,
+            'name': x['pagename'].encode('utf-8')
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/search')
-def search():
-    plugin.set_content('TVShows')
+def search(params):
     keyboard = xbmc.Keyboard('', '请输入关键字 (片名/AV)')
     xbmc.sleep(1500)
     keyboard.doModal()
@@ -151,7 +141,6 @@ def search():
     key = 'getMixinFlowList-jump-keyword-' + keyword.decode('utf-8')
     lists = jsdata['flow'][key]['result']
 
-    items = []
     for x in lists:
         for y in x['data']:
             title = y.get('title')
@@ -174,27 +163,32 @@ def search():
                 type = y.get('typename', '')
             type = '(' + type + ')'
             aid = y.get('aid')
+            li = ListItem(title + type, thumbnailImage=cover)
             if aid:
-                items.append({
-                    'label': title + type,
-                    'path': url_for('list_video', aid=aid),
-                    'thumbnail': cover,
-                    'info': {'title': title, 'plot': y.get('description')}
-                })
+                li.setInfo(type='Video',
+                           infoLabels={'title':title, 'plot': y.get('description')})
+                req = {
+                    'mode': 'list_video',
+                    'aid': aid
+                }
+                u = sys.argv[0] + '?' + urlencode(req)
+                addDirectoryItem(int(sys.argv[1]), u, li, False)
             else:
-                items.append({
-                    'label': title + type,
-                    'path': url_for('season', link=link),
-                    'thumbnail': cover,
-                    'info': {'title': title, 'plot': y.get('desc')}
-                })
+                li.setInfo(type='Video',
+                           infoLabels={'title':title, 'plot': y.get('desc')})
+                req = {
+                    'mode': 'season',
+                    'link': link
+                }
+                u = sys.argv[0] + '?' + urlencode(req)
+                addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    return items
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/season/<link>/')
-def season(link):
-    plugin.set_content('TVShows')
+def season(params):
+    link = params['link']
     html = get_html(link)
     data = re.search('__INITIAL_STATE__\s*=\s*({.+?\});', html)
     jsdata = loads(data.group(1))
@@ -203,11 +197,11 @@ def season(link):
     title = info['title']
     desc = info['evaluate']
 
-    items = [{
-        'label': '[COLOR FFDEB887]%s[/COLOR]' % title,
-        'path': url_for('stay'),
-        'info': {'title': title, 'plot': desc}
-    }]
+    li = ListItem('[COLOR FFDEB887]%s[/COLOR]' % title)
+    li.setInfo(type='Video', infoLabels={'title': title, 'plot':desc})
+    u = sys.argv[0]
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
+
     for item in jsdata['epList']:
         title = item.get('titleFormat')
         if title is None: title = item.get('title')
@@ -217,26 +211,30 @@ def season(link):
         vid = item['vid']
         if vid == '': vid = 0
         title = title.encode('utf-8')
-        items.append({
-            'label': title,
-            'path': plugin.url_for('playvideo', cid=cid, vid=vid, name=title),
-            'thumbnail': cover,
-            'is_playable': True,
-            'info': {'title': title, 'plot': item['longTitle']}
-        })
+        li = ListItem(title, thumbnailImage=cover)
+        li.setInfo(type='Video',
+                   infoLabels={'title': title, 'plot': item['longTitle']})
+        req = {
+            'mode': 'playvideo',
+            'cid': cid,
+            'vid': vid,
+            'name': title,
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
-    return items
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/select/<name>/')
-def select(name):
+def select(params):
     url = 'https://www.bilibili.com/{}/index/'
-    html = get_html(url.format(name))
+    html = get_html(url.format(params['name']))
     data = re.search('__INITIAL_STATE__\s*=\s*({.+?\});', html)
     jsdata = loads(data.group(1))
 
     filters = {}
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
     for x in jsdata['filters']:
         title = x['title']
         key = x['key']
@@ -246,30 +244,37 @@ def select(name):
         sel = dialog.select(title, lst)
         if sel >=0: filters[key] = item[sel]
 
-    return category(name, page=1, filter=urlencode(filters))
+    filters['name'] = params['name']
+    filters['page'] = 1
+    category(filters)
 
 
-@plugin.route('/category/<name>/<page>/<filter>/')
-def category(name, page, filter):
-    plugin.set_content('TVShows')
+def category(params):
+    name = params['name']
+    page = params['page']
+    li = ListItem('[COLOR yellow][筛选过滤][/COLOR]')
+    req = {
+        'mode': 'select',
+        'name': name
+    }
+    u = sys.argv[0] + '?' + urlencode(req)
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     type = {'movie': 2, 'tv':5, 'documentary': 3}
-    req = dict(parse_qsl(filter))
-    req['page'] = page
+    req = params
+    del (req['name'])
     req['season_type'] = type[name]
     req['pagesize'] = 20
-    req['type'] = 1
+    req['type'] = 1    # unknow function, but required
     filter = urlencode(req)
     api = 'https://api.bilibili.com/pgc/season/index/result?'
     html = get_html(api + filter)
     data = loads(html)
 
-    items = [{'label': '[COLOR yellow][筛选过滤][/COLOR]',
-              'path': url_for('select', name=name)}]
-
     total= int(data['data']['total'])
     total_page = (total + 19) // 20
 
-    items += previous_page('category', page, total_page, name=name, filter=filter)
+    previous_page('category', page, total_page, name=name, filter=filter)
     for item in data['data']['list']:
         title = item['title']
         extra = item['index_show']
@@ -278,31 +283,53 @@ def category(name, page, filter):
             badge = u'[COLOR magenta]({})[/COLOR]'.format(badge)
         else:
             badge = ''
-        items.append({
-            'label': title + '(' + extra + ')' + badge,
-            'path': plugin.url_for('season', link=item['link']),
+        li = ListItem(title + '(' + extra + ')' + badge)
+        req = {
+            'mode': 'season',
+            'link': item['link'],
             'thumbnail': item['cover']
-        })
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    items += next_page('category', page, total_page, name=name, filter=filter)
-    return items
+    next_page('category', page, total_page, name=name, filter=filter)
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/')
 def root():
     CATEGORY = {'电影': 'movie', '电视剧': 'tv', '纪录片': 'documentary'}
+    li = ListItem('[COLOR magenta][搜索][/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    yield {
-        'label': '搜索...',
-        'path': url_for('search')
-    }
-    req = urlencode({'page':1})
     for item in CATEGORY:
-        yield {
-            'label': item,
-            'path': url_for('category', name=CATEGORY[item], page=1, filter=req)
+        li = ListItem(item)
+        req = {
+            'mode': 'category',
+            'name': CATEGORY[item],
+            'page': 1,
         }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+    endOfDirectory(int(sys.argv[1]))
 
+# main programs goes here #########################################
+runlist = {
+    'category': 'category(params)',
+    'season': 'season(params)',
+    'search': 'search(params)',
+    'select': 'select(params)',
+    'list_video': 'list_video(params)',
+    'playvideo': 'playvideo(params)'
+}
 
-if __name__ == '__main__':
-    plugin.run()
+params = sys.argv[2][1:]
+params = dict(parse_qsl(params))
+
+mode = params.get('mode')
+if mode:
+    del (params['mode'])
+    exec(runlist[mode])
+else:
+    root()

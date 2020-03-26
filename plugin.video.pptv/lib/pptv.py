@@ -5,9 +5,10 @@ import sys
 import re
 import time
 if sys.version[0]=='3':
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, parse_qsl
 else:
     from urllib import urlencode
+    from urlparse import parse_qsl
 from random import random
 import binascii
 from xml.dom.minidom import parseString

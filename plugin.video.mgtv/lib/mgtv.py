@@ -5,7 +5,7 @@ import sys
 import re
 from json import loads
 from os.path import dirname
-from random import randrange
+from random import choice
 if sys.version[0]=='3':
     from urllib.parse import urlsplit, quote_plus
     maketrans = bytes.maketrans
@@ -79,8 +79,7 @@ class MGTV():
         content = loads(html)
         streams = content['data']['stream']
         domains = content['data']['stream_domain']
-        index = randrange(len(domains))
-        domain = domains[index]
+        domain = choice(domains)
 
         level = kwargs.get('level', 0)
     
@@ -91,8 +90,7 @@ class MGTV():
         url = domain + url
         content = loads(get_html(url))
         url = content['info']
-
-        return re.compile("(.*m3u8)").findall(url)
+        return [url + '|Referer="https://www.mgtv.com"']
 
     def video_from_url(self, url, **kwargs):
         vid = self.vid_from_url(url)

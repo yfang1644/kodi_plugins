@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-from common import get_html
+from common import get_html, match1
 from json import loads
 import time
 import re
@@ -19,16 +19,6 @@ def get_location(url, headers={}):
     # urllib will follow redirections and it's too much code to tell urllib
     # not to do that
     return response.geturl()
-
-def match1(text, *patterns):
-    for pattern in patterns:
-        try:
-            match = re.search(pattern, text)
-        except(TypeError):
-            match = re.search(pattern, str(text))
-        if match:
-            return match.group(1)
-
 
 def matchall(text, patterns):
     ret = []

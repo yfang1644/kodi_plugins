@@ -5,10 +5,10 @@ import sys
 from json import loads
 import time
 if sys.version[0]=='3':
-    from urllib.parse import urlencode, quote_plus, urlparse
+    from urllib.parse import urlencode, quote_plus, urlparse, parse_qsl
 else:
     from urllib import urlencode, quote_plus
-    from urlparse import urlparse
+    from urlparse import urlparse, parse_qsl
 import re
 from common import get_html, r1
 

@@ -171,8 +171,8 @@ class Youku():
             size = int(s['size'])
             info[size] = urls
         videos = sorted(info)
-        level = kwargs.get('level', -1)
-        if level > len(videos): level = -1
+        level = kwargs.get('level', 0)
+        level = min(level, len(videos)-1)
         urls = info[videos[level]]
         return urls
 
