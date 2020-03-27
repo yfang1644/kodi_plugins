@@ -1,29 +1,29 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, xbmc, xbmcgui
+import xbmc
+from xbmcgui import Dialog, ListItem
+from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
+import xbmcaddon
 import re
 import os
 from json import loads
 from bs4 import BeautifulSoup
 from common import get_html, r1
-from lib.iqiyi import video_from_vid, quote_plus
+from lib.iqiyi import video_from_vid, video_from_url, quote_plus, parse_qsl, urlencode
 
 ########################################################################
 # 爱奇艺 list.iqiyi.com
 ########################################################################
 
-plugin = Plugin()
-url_for = plugin.url_for
 LIST_URL = 'http://list.iqiyi.com'
 PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&mode={}&pageNum={}&pageSize=30&without_qipu=1&is_purchase=0'
 
-PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?access_play_control_platform=14&channel_id={}&data_type=1&from=pcw_list&is_album_finished=&is_purchase=&key=&market_release_date_level=&mode={}&pageNum={}&pageSize=48&site=iqiyi&source_type=&three_category_id=15\;must&without_qipu=1'
+PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&data_type=1&from=pcw_list&is_album_finished=&is_purchase=&key=&market_release_date_level=&mode={}&pageNum={}&pageSize=30&site=iqiyi&source_type=&three_category_id=&without_qipu=1'
 
 ALBUM_API = 'https://pcw-api.iqiyi.com/albums/album/avlistinfo?aid={}&page=1&size=300'
 
-
-__profile__   = xbmc.translatePath(plugin.addon.getAddonInfo('profile'))
+__profile__   = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8'))
 
 BANNER_FMT =  '[COLOR FFDEB887][%s][/COLOR]'
@@ -42,17 +42,19 @@ def httphead(url):
 
 def previous_page(endpoint, page, total_page, **kwargs):
     if int(page) > 1:
-        page = str(int(page) - 1)
-        return [{'label': u'上一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('上一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) - 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def next_page(endpoint, page, total_page, **kwargs):
     if int(page) < int(total_page):
-        page = str(int(page) + 1)
-        return [{'label': u'下一页 - {0}/{1}'.format(page, str(total_page)), 'path': plugin.url_for(endpoint, page=page, **kwargs)}]
-    else:
-        return []
+        li = ListItem('下一页 - {0}/{1}'.format(page, str(total_page)))
+        kwargs['mode'] = endpoint
+        kwargs['page'] = int(page) + 1
+        u = sys.argv[0] + '?' + urlencode(kwargs)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def convertTImer(info):
     try:
@@ -64,45 +66,55 @@ def convertTImer(info):
         return info
 
 
-@plugin.route('/stay')
-def stay():
-    pass
-
-
-@plugin.route('/playvideo/<tvId>/<vid>/<title>/<pic>/')
-def playvideo(tvId, vid, title, pic):
-    sel = int(plugin.addon.getSetting('resolution'))
-    m3u8set = plugin.addon.getSetting('m3u8')
+def playvideo(params):
+    name = params['name']
+    thumbnail = params['thumbnail']
+    tvId = params['tvId']
+    vid = params['vid']
+    level = int(xbmcaddon.Addon().getSetting('resolution'))
+    m3u8set = xbmcaddon.Addon().getSetting('m3u8')
     playmode = True if m3u8set == 'true' else None
-    urls = video_from_vid(tvId, vid, level=sel, m3u8=playmode)
+    urls = video_from_vid(tvId, vid, level=level, m3u8=playmode)
     if urls is None:
-        xbmcgui.Dialog().ok(plugin.addon.getAddonInfo('name'), '无法播放此视频')
+        Dialog().ok(xbmcaddon.Addon().getAddonInfo('name'), '无法播放此视频')
         return
 
-    if len(urls) > 1:
-        playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
-        playlist.clear()
-        stackurl = 'stack://' + ' , '.join(urls)
-        list_item = xbmcgui.ListItem(title, thumbnailImage=pic)
-        list_item.setInfo('video', {'title': title})
-        playlist.add(stackurl, list_item)
-        xbmc.Player().play(playlist)
-    else:
-        plugin.set_resolved_url(urls[0])
+    playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
+    playlist.clear()
+    stackurl = 'stack://' + ' , '.join(urls)
+    list_item = ListItem(name, thumbnailImage=thumbnail)
+    list_item.setInfo('video', {'title': name})
+    playlist.add(stackurl, list_item)
+    xbmc.Player().play(playlist)
 
 
-@plugin.route('/reference/<tvId>/<vid>/<title>/<pic>/')
-def reference(tvId, vid, title, pic):
-    plugin.set_content('TVShows')
+def playurl(params):
+    url = params.pop('url')
+    link = get_html(url)
+    videoId = r1(r'#curid=.+_(.*)$', url) or \
+            r1(r'vid=([^&]+)', url) or \
+            r1(r'data-player-videoid="([^"]+)"', link) or \
+            r1(r'vid=(.+?)\&', link) or \
+            r1(r'param\[\'vid\'\]\s*=\s*"(.+?)"', link)
+    params['vid'] = videoId
+    playvideo(params)
+
+
+def reference(params):
+    tvId = params['tvId']
+    thumbnail = params['thumbnail']
     # recommend
-    items = []
-    items.append({
-        'label': BANNER_FMT % title,
-        'path': url_for('playvideo', tvId=tvId, vid=vid,
-                        title=title, pic=pic),
-        'is_playable': True,
-        'info': {'title': title}
-    })
+
+    li = ListItem(BANNER_FMT % params['name'], thumbnailImage=thumbnail)
+    req = {
+        'mode': 'playvideo',
+        'tvId': tvId,
+        'vid': params['vid'],
+        'name': params['name'],
+        'thumbnail': thumbnail
+    }
+    u = sys.argv[0] + '?' + urlencode(req)
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     url = 'http://mixer.video.iqiyi.com/jp/recommend/videos?referenceId=%s&area=swan&type=video' % tvId
     link = get_html(url)
@@ -111,23 +123,24 @@ def reference(tvId, vid, title, pic):
     videos = json_response['mixinVideos']
     for series in videos:
         if tvId == series['tvId']:
-            mode, playable = 'playvideo', True
+            mode, isFolder = 'playvideo', False
         else:
-            mode, playable = 'reference', False
+            mode, isFolder = 'reference', True
+        
+        li = ListItem(series['name'], thumbnailImage=series['imageUrl'])
+        li.setInfo(type='Video', infoLabels={'title': series['name'], 'plot': series['description'], 'duration': series['duration']})
+        req = {
+            'mode': mode,
+            'tvId': series.get('tvId'),
+            'vid': series.get('vid', 0),
+            'name': series['name'].encode('utf-8'),
+            'thumbnail': series['imageUrl']
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, isFolder)
 
-        items.append({
-            'label': series['name'],
-            'path': url_for(mode, tvId=series.get('tvId'),
-                            vid=series.get('vid', 0),
-                            title=series['name'].encode('utf-8'),
-                            pic=series['imageUrl']),
-            'thumbnail': series['imageUrl'],
-            'is_playable': playable,
-            'info': {'title': series['name'],
-                     'plot': series['description'],
-                     'duration': series['duration']}
-        })
-    return items
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
 def listType1(albumType, albumId):
@@ -135,24 +148,20 @@ def listType1(albumType, albumId):
     link = get_html(url)
     data = link[link.find('=')+1:]
     json_response = loads(data)
-    items = []
     if 'data' not in json_response:
         return []
 
     for item in json_response['data']:
-        items.append({
-            'label': item['videoName'] + item['tvYear'],
-            'path': url_for('playvideo',
-                            tvId=item['tvId'],
-                            vid=item['vid'],
-                            title=item['videoName'].encode('utf-8'),
-                            pic=item['aPicUrl']),
-            'thumbnail': item['aPicUrl'],
-            'is_playable': True,
-            'info': {'title': item['videoName']}
-        })
-
-    return items
+        li = ListItem(item['videoName'] + item['tvYear'], thumbnailImage=item['aPicUrl'])
+        req = {
+            'mode': 'playvideo',
+            'tvId': item['tvId'],
+            'vid': item['vid'],
+            'name': item['videoName'].encode('utf-8'),
+            'thumbnail': item['aPicUrl']
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
 
 def listType2(albumId, page):
@@ -160,46 +169,45 @@ def listType2(albumId, page):
     link = get_html(url)
     data = link[link.find('=')+1:]
     json_response = loads(data)
-    items = []
     try:
         totalpages = json_response['data']['pgt']
     except:
-        return items
+        return
 
     currpage = int(page)
 
     for item in json_response['data']['vlist']:
-        items.append({
-            'label': item['vn'] + ' ' + item['vt'],
-            'path': url_for('playvideo',
-                            tvId=item['id'],
-                            vid=item['vid'],
-                            title=item['vn'].encode('utf-8'),
-                            pic=item['vpic']),
-            'thumbnail': item['vpic'],
-            'is_playable': True,
-            'info': {'title': item['vn'], 'plot': item['desc'], 'duration': item['timeLength']}
-        })
+        li = ListItem(item['vn']+' '+item['vt'], thumbnailImage=item['vpic'])
+        li.setInfo(type='Video', infoLabels={'title': item['vn'], 'plot': item['desc'], 'duration': item['timeLength']})
+        req = {
+            'mode': 'playvideo',
+            'tvId': item['id'],
+            'vid': item['vid'],
+            'name': item['vn'].encode('utf-8'),
+            'thumbnail': item['vpic']
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
 
+    req = {
+        'mode': 'episodelist',
+        'albumId': albumId
+    }
     if currpage > 1:
-        items.append({
-            'label': '上一页',
-            'path': url_for('episodelist', albumId=albumId, page=currpage-1),
-        })
+        li = ListItem('上一页')
+        req['page'] = currpage - 1
     if currpage < totalpages:
-        items.append({
-            'label': '下一页',
-            'path': url_for('episodelist', albumId=albumId, page=currpage+1),
-        })
-
-    return items
+        li = ListItem('下一页')
+        req['page'] = currpage + 1
+    u = sys.argv[0] + '?' + urlencode(req)
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 
-@plugin.route('/episodelist/<albumId>/<page>/')
-def episodelist(albumId, page):
-    plugin.set_content('TVShows')
+def episodelist(params):
+    albumId = params['albumId']
+    page = params['page']
     url = 'http://cache.video.qiyi.com/a/%s' % albumId
-    items = []
+
     link = get_html(url)
     data = link[link.find('=')+1:]
     json_response = loads(data)
@@ -215,65 +223,74 @@ def episodelist(albumId, page):
     title = item['tvName'].encode('utf-8')
     isSeries = item['isSeries']
     if isSeries == 0:
-        items.append({
-            'label': BANNER_FMT % title,
-            'path': url_for('playvideo', tvId=tvId, vid=vid, title=title,
-                           pic=item.get('tvPictureUrl','0')),
-            'thumbnail': item.get('tvPictureUrl', ''),
-            'is_playable': True,
-            'info': {'title': title, 'plot': item['tvDesc']}
-        })
+        img = item.get('tvPictureUrl', '')
+        li = ListItem(BANNER_FMT % title, thumbnailImage=img)
+        li.setInfo(type='Video', infoLabels={'title': title, 'plot': item['tvDesc']})
+        req = {
+            'mode': 'playvideo',
+            'tvId': tvId,
+            'vid': vid,
+            'name': title,
+            'thumbnail': img
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
     else:
-        item1 = listType1(albumType, albumId)
-        items += item1
-        if not item1:
-           items += listType2(albumId, page)
+        listType1(albumType, albumId)
+        listType2(albumId, page)
 
     # recommend
-    items += reference(tvId, vid, title, 'xxxx')
-    if len(items) > 1 and items[0]['label'] == items[1]['label']:
-        del items[1]
-    return items
+    req = {
+        'tvId': tvId,
+        'vid': vid,
+        'name': title,
+        'thumbnail': ''
+    }
+    reference(req)
 
 
-@plugin.route('/playfound/<url>/<title>/<pic>/')
-def playfound(url, title, pic):
+def playfound(params):
+    url = params['url']
+    thumbnail = params['thumbnail']
+    name = params['name']
     items = []
-    if not url.startswith('http'):
-        return []
+    if url[0:4] != 'http':
+        return
 
     link = get_html(url)
     tvId = r1(r'param\[\'tvid\'\]\s*=\s*"(.+)"', link)
     vid = r1(r'param\[\'vid\'\]\s*=\s*"(.+)"', link)
     if tvId is not None and vid is not None:
-        items = [{
-            'label': title,
-            'path': url_for('playvideo', tvId=tvId, vid=vid,
-                            title=title, pic=pic),
-            'is_playable': True,
-            'info': {'title': title}
-        }]
+        li = ListItem(title, thumbnailImage=thumbnail)
+        req = {
+            'mode': 'playvideo',
+            'tvId': tvId,
+            'vid': vid,
+            'name': name,
+            'thumbnail': thumbnail
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, False)
     else:
         albumId = r1('albumid="(.+?)"', link)
         if albumId is not None:
-            items = episodelist(albumId, 1)
-    return items
+            episodelist({'albumId': albumId, 'page':1})
 
 
-@plugin.route('/filter/<url>/')
-def filter(url):
+def filter(params):
+    url = params['url']
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    filter = tree.find_all('div', {'class': 'mod_sear_list'})
+    filter = tree.findAll('div', {'class': 'mod_sear_list'})
 
     surl = url.split('/')
     lurl = surl[-1].split('-')
 
-    dialog = xbmcgui.Dialog()
+    dialog = Dialog()
 
     for item in filter[1:]:
         title = item.h3.text
-        si = item.find_all('li')
+        si = item.findAll('li')
         list = []
         for x in si:
             if x.get('class') and 'selected' in x.get('class'):
@@ -296,20 +313,18 @@ def filter(url):
 
     surl[-1] = '-'.join(lurl)
     url = '/'.join(surl)
-    return videolist(httphead(url))
+    videolist({'url': httphead(url)})
 
 
 ###########################################################################
 # search in http://so.iqiyi.com/so/q_%s?source=hot
 ############################################################################
-@plugin.route('/search/')
-def search():
-    items = []
+def search(params):
     keyboard = xbmc.Keyboard('', '请输入搜索内容')
     xbmc.sleep(1000)
     keyboard.doModal()
     if not keyboard.isConfirmed():
-        return []
+        return
 
     keyword = keyboard.getText()
     key = quote_plus(keyword)
@@ -317,25 +332,21 @@ def search():
     link = get_html(url)
 
     if link is None:
-        items.append({
-            'label':' 抱歉，没有找到[COLOR yellow] ' + keyword + ' [/COLOR]的相关视频',
-            'path': url_for('stay')
-        })
-        return items
+        li =  ListItem('抱歉，没有找到[COLOR yellow] ' + keyword + ' [/COLOR]的相关视频')
+        addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
+        return
 
-    plugin.set_content('TVShows')
-    items.append({
-        'label': '[COLOR yellow]当前搜索:(' + keyword + ')[/COLOR]',
-        'path': url_for('stay')
-    })
+    li =  ListItem('[COLOR yellow]当前搜索:(' + keyword + ')[/COLOR]')
+    addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
 
     # fetch and build the video series episode list
-    content = BeautifulSoup(link, 'html.parser')
-    soup = content.find_all('ul', {'class': 'mod_result_list'})
-    for item in soup:
-        lists = item.find_all('li', {'class': 'list_item'})
+    soup = BeautifulSoup(link, 'html.parser')
+    tree = soup.findAll('ul', {'class': 'mod_result_list'})
+    for item in tree:
+        lists = item.findAll('li', {'class': 'list_item'})
         for series in lists:
             img = series.img.get('src', '')
+            img = httphead(img)
             title = series.img.get('title') or series.a.get('title')
             if title is None:
                 continue
@@ -344,58 +355,58 @@ def search():
                 info = text.text
             except:
                 info = ''
-            site = series.find_all('em', {'class': 'vm-inline'})
+            site = series.findAll('em', {'class': 'vm-inline'})
             for t in site:
                 title += ' |' + t.text
-            items.append({
-                'label': title,
-                'path': url_for('playfound',
-                                url=httphead(series.a['href']),
-                                title=title.encode('utf-8'),
-                                pic=httphead(img)),
-                'thumbnail': httphead(img),
-                'info': {'title': title, 'plot': info}
-            })
 
-            album = series.find_all('li', {'class': 'album_item'})
+            li = ListItem(title, thumbnailImage=img)
+            li.setInfo(type='Video', infoLabels={'title': title, 'plot': info})
+            req = {
+                'mode': 'playfound',
+                'url': httphead(series.a['href']),
+                'name': title.encode('utf-8'),
+                'thumbnail': img
+            }
+            u = sys.argv[0] + '?' + urlencode(req)
+            addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+            album = series.findAll('li', {'class': 'album_item'})
             for page in album:
                 title = page.a.get('title', '')
-                items.append({
-                    'label': '--' + title,
-                    'path': url_for('playfound',
-                                    url=page.a.get('href'),
-                                    title=title.encode('utf-8'),
-                                    pic=img),
-                    'thumbnail': img,
-                    'info': {'title': title}
-                })
-    return items
+                li = ListItem('--' + title, thumbnailImage=img)
+                req = {
+                    'mode': 'playfound',
+                    'url': page.a.get('href'),
+                    'name': title.encode('utf-8'),
+                    'thumbnail': img
+                }
+                u = sys.argv[0] + '?' + urlencode(req)
+                addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
-@plugin.route('/videolist/<url>/')
-def videolist(url):
-    plugin.set_content('TVShows')
+def videolist(params):
     html = get_html(url)
     html = re.sub('\t|\r|\n', ' ', html)
-    tree = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
 
     ul = url.split('/')[-1]
     page = ul.split('-')[14]
     if page == '':
         page = '1'
 
-    items = []
-    items.append({
-        'label': '[第%s页](分类过滤)' % page.encode('utf-8'),
-        'path': url_for('filter', url=url)
-    })
 
-    items.append({
-        'label': BANNER_FMT % '排序方式',
-        'path': url_for('stay')
-    })
-    soup = tree.find_all('div', {'class': 'sort-result-l'})
-    arrange = soup[0].find_all('a')
+    li = ListItem('[第%s页](分类过滤)' % page.encode('utf-8'))
+    u = sys.argv[0] + '?mode=filter&url=' + url
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+    
+    li = ListItem(BANNER_FMT % '排序方式')
+    addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
+
+    tree = soup.findAll('div', {'class': 'sort-result-l'})
+    arrange = tree[0].findAll('a')
     for sort in arrange:
         title = sort.text.strip()
         select = sort.get('class', '')
@@ -403,13 +414,12 @@ def videolist(url):
             title = INDENT_FMT1 % title
         else:
             title = INDENT_FMT0 % title
-        items.append({
-            'label': title,
-            'path': url_for('videolist', url=httphead(sort['href']))
-        })
+        li = ListItem(title)
+        u = sys.argv[0] + '?mode=videolist&url=' + httphead(sort['href'])
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    soup = tree.find_all('div', {'class': 'site-piclist_pic'})
-    for item in soup:
+    tree = soup.findAll('div', {'class': 'site-piclist_pic'})
+    for item in tree:
         href = item.a.get('href')
         img = item.img.get('src', '')
         title = item.a.get('title', '')
@@ -439,69 +449,100 @@ def videolist(url):
         else:
             infoLabels={'title': title, 'duration': info}
 
-        items.append({
-            'label': title + extrainfo.strip(),
-            'path': url_for('episodelist', albumId=albumId, page=1),
-            'thumbnail': httphead(img),
-            'info': infoLabels,
-        })
+        li = ListItem(title + extrainfo.strip(), thumbnailImage=httphead(img))
+        li.setInfo(type='Video', infoLabels=infoLabels)
+        req = {
+            'mode': 'episodelist',
+            'albumId': albumId,
+            'page': 1
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    items.append({
-        'label':INDENT_FMT0 % ('分页'),
-        'path': url_for('stay')
-    })
+    li = ListItem(INDENT_FMT0 % '分页')
+    addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
 
-    pages = tree.find_all('div', {'class': 'mod-page'})
-    pages = pages[0].find_all('a')
+    pages = soup.findAll('div', {'class': 'mod-page'})
+    pages = pages[0].findAll('a')
     for page in pages:
-        items.append({
-            'label': page.text,
-            'path': url_for('videolist', url=httphead(page['href']))
-        })
-    return items
+        li = ListItem(page.txt)
+        u = sys.argv[0] + '?mode=videolist&url=' + httphead(page['href'])
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
 
 
 orderlist=[{"id":24,"name":"综合排序"},
            {"id":11,"name":"热播榜"},
            {"id":4,"name":"新上线"}]
 
-@plugin.route('/category/<order>/<cid>/<page>/')
-def category(order, cid, page):
-    plugin.set_content('TVShows')
+def category(params):
+    order = params['order']
+    cid = params['cid']
+    page = params['page']
     items = []
     for x in orderlist:
         if int(x['id']) == int(order):
             style = '[COLOR red]{}[/COLOR]'.format(x['name'])
         else:
             style = '[COLOR yellow]{}[/COLOR]'.format(x['name'])
-        items.append({
-            'label': style,
-            'path': url_for('category', order=x['id'], cid=cid, page=page)
-        })
+        li = ListItem(style)
+        req = {
+            'mode': 'category',
+            'order': x['id'],
+            'cid': cid,
+            'page': page
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     api = PCW_API.format(cid, order, page)
+    if cid == '16':
+        api = api.replace('data_type=1', 'data_type=2')
     jdata = loads(get_html(api))
-    items += previous_page('category', page, 300, order=order, cid=cid)
+    total_page = jdata['data']['pageTotal']
+
+    previous_page('category', page, total_page, order=order, cid=cid)
     for item in jdata['data']['list']:
-        albumId=item.get('albumId')
+        albumId = item.get('albumId')
+        tvId = item.get('tvId')
+        duration = item.get('duration', 0)
+        duration = convertTImer(duration)
+        li = ListItem(item['name'], thumbnailImage=item['imageUrl'])
+        li.setInfo(type='Video', infoLabels={'title': item['name'],'plot':item.get('description'), 'duration': duration})
         if albumId:
-            items.append({
-                'label': item['name'],
-                'path': url_for('episodelist', albumId=albumId, page=1),
-                'thumbnail': item['imageUrl'],
-                'info': {'title': item['name'], 'plot': item.get('description')}
-            })
+            req = {
+                'mode': 'episodelist',
+                'albumId': albumId,
+                'page': 1
+            }
+            isFolder = True
+        elif tvId:
+            req = {
+                'mode': 'playurl',
+                'tvId': tvId,
+                'url': item['playUrl'],
+                'name': item['name'].encode('utf-8'),
+                'thumbnail': item['imageUrl']
+            }
+            isFolder = False
         else:
-            items.append({
-                'label': item['name'],
-                'path': url_for('playfound', url=item['playUrl'],
-                                title=item['name'].encode('utf-8'),
-                                pic=item['imageUrl']),
-                'thumbnail': item['imageUrl'],
-                'info': {'title': item['name'], 'plot': item.get('description')}
-            })
-    items += next_page('category', page, 300, order=order, cid=cid)
-    return items
+            req = {
+                'mode': 'playfound',
+                'url': item['playUrl'],
+                'name': item['name'].encode('utf-8'),
+                'thumbnail': item['imageUrl']
+            }
+            isFolder = True
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, isFolder)
+
+    next_page('category', page, total_page, order=order, cid=cid)
+
+    setContent(int(sys.argv[1]), 'tvshows')
+    endOfDirectory(int(sys.argv[1]))
+
 
 channellist=[{"cid":2,"name":"电视剧"},
              {"cid":1,"name":"电影"},
@@ -531,20 +572,43 @@ channellist=[{"cid":2,"name":"电视剧"},
              {"cid":31,"name":"脱口秀"},
              {"cid":32,"name":"健康"}]
 
-
-@plugin.route('/')
-def index():
-    yield {
-        'label': '[COLOR yellow] 【爱奇艺 - 搜索】[/COLOR]',
-        'path': url_for('search')
-    }
+def root():
+    li = ListItem('[COLOR yellow] 【爱奇艺 - 搜索】[/COLOR]')
+    u = sys.argv[0] + '?mode=search'
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     for channel in channellist:
-        yield {
-            'label': channel['name'],
-            'path': url_for('category', order=24, cid=channel['cid'], page=1)
+        li = ListItem(channel['name'])
+        req = {
+            'mode': 'category',
+            'order': 24,
+            'cid': channel['cid'],
+            'page': 1
         }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
+
+    endOfDirectory(int(sys.argv[1]))
 
 
-if __name__ == '__main__':
-    plugin.run()
+# main programs goes here #########################################
+runlist = {
+    'category': 'category(params)',
+    'episodelist': 'episodelist(params)',
+    'playfound': 'playfound(params)',
+    'reference': 'reference(params)',
+    'search': 'search(params)',
+    'filter': 'filter(params)',
+    'playurl': 'playurl(params)',
+    'playvideo': 'playvideo(params)'
+}
+
+params = sys.argv[2][1:]
+params = dict(parse_qsl(params))
+
+mode = params.get('mode')
+if mode:
+    del (params['mode'])
+    exec(runlist[mode])
+else:
+    root()

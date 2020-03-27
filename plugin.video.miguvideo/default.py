@@ -192,12 +192,10 @@ def categorylist(index, type, area, year, pack, cont, Chu, page):
         'mediaChu': '' if Chu=='0' else Chu,
         'ct': 101,
     }
-
     html = get_html(cateAPI + urlencode(req))
     data = loads(html)
-    total = int(data.get('resultNum', 0))
-    total_page = (total + pagesize - 1) // pagesize
-                         
+    total_page = int(data.get('totalPage', 30))
+
     items = previous_page('categorylist', page, total_page, index=index,
                           type=type, area=area, year=year,
                           pack=pack, cont=cont, Chu=Chu)

@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 import sys
-if sys.version[0] == '3':
-    from urllib.parse import urlencode
-else:
-    from urllib import urlencode
 import hashlib
 import time
 from random import randrange
 from json import loads
 from common import get_html, r1
-
+if sys.version[0]=='3':
+    from urllib.parse import urlencode, quote_plus, parse_qsl
+else:
+    from urllib import urlencode, quote_plus
+    from urlparse import parse_qsl
 
 class IQiyi():
     name = '爱奇艺 (Iqiyi)'
