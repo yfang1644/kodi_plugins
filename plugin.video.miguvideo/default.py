@@ -91,7 +91,7 @@ category = [
     }
     ]
 
-cateAPI = 'https://jadeite.migu.cn/search/v3/category?'
+cateAPI = 'https://webapi.miguvideo.com/gateway/search/v3/category?'
 urlAPI = 'https://webapi.miguvideo.com/gateway/playurl/v3/play/playurl?contId=%s&rateType=1,2,3,4'
 seriesAPI = 'https://www.miguvideo.com/gateway/program/v2/cont/content-info/'
 
@@ -202,8 +202,13 @@ def categorylist(index, type, area, year, pack, cont, Chu, page):
                           type=type, area=area, year=year,
                           pack=pack, cont=cont, Chu=Chu)
 
+    group = ''
+    if type != '全部': group += type
+    if area != '全部': group += '|' + area
+    if year != '全部': group += '|' + year
+    group = '分类 (' + group + ')' if group else '分类'
     items.append({
-        'label': '[COLOR yellow][分类][/COLOR]',
+        'label': '[COLOR yellow][{0}][/COLOR]'.format(group),
         'path': url_for('filter', index=index)
     })
 
