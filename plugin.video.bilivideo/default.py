@@ -78,6 +78,7 @@ def playvideo(params):
     name = params['name']
     vid = params['vid']
     cid = params['cid']
+    thumbnail = params.get('thumbnail', '')
     level = int(xbmcaddon.Addon().getSetting('resolution'))
 
     if vid != '0':
@@ -90,7 +91,8 @@ def playvideo(params):
 
     playlist = xbmc.PlayList(xbmc.PLAYLIST_VIDEO)
     playlist.clear()
-    list_item = ListItem(name)
+    list_item = ListItem(name, thumbnailImage=thumbnail)
+    list_item.setInfo(type='Video', infoLabels={'title': name})
     if danmu == 'true':
         bilibili.parse_subtitle(cid)
         player.setSubtitle(__assfile__)
@@ -111,7 +113,6 @@ def list_video(params):
             vid = '0'
 
         li = ListItem(x['pagename'])
-        li.setInfo(type='Video', infoLabels={'title': x['pagename']})
         req = {
             'mode': 'playvideo',
             'cid': x['cid'],
@@ -219,6 +220,7 @@ def season(params):
             'cid': cid,
             'vid': vid,
             'name': title,
+            'thumbnail': cover
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, False)
@@ -283,11 +285,10 @@ def category(params):
             badge = u'[COLOR magenta]({})[/COLOR]'.format(badge)
         else:
             badge = ''
-        li = ListItem(title + '(' + extra + ')' + badge)
+        li = ListItem(title + '(' + extra + ')' + badge, thumbnailImage=item['cover'])
         req = {
             'mode': 'season',
             'link': item['link'],
-            'thumbnail': item['cover']
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, True)

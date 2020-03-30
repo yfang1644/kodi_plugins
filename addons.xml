@@ -241,6 +241,30 @@
     </extension>
 </addon>
 
+<addon id="plugin.video.meiju"
+    name="美剧"
+    version="1.0.0"
+    provider-name="yfang1644">
+    <requires>
+        <import addon="script.module.xbmcswift2" version="2.4.0"/>
+        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
+        <import addon="script.module.geturl" version="1.0.0"/>
+    </requires>
+    <extension
+        point="xbmc.python.pluginsource" library="default.py">
+        <provides>video</provides>
+    </extension>
+    <extension point="xbmc.addon.metadata">
+        <summary lang="en">meijumao video plugin</summary>
+        <summary lang="zh">搜罗网络美剧</summary>
+        <description lang="en">online video from yyetss(not yyets) and ttkmj, etc</description>
+        <description lang="zh">网上美剧视频</description>
+        <platform>all</platform>
+        <forum></forum>
+        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.meiju</source>
+        </extension>
+</addon>
+
 <addon id="plugin.audio.kugoufm"
 	name="酷狗电台(KugouFM)"
     version="1.0.1"
@@ -258,26 +282,6 @@
         <description lang="zh">酷狗电台频道,数十个音乐电台为你精心打造,带你邂逅喜爱的音乐,享受随意听音乐的精彩。</description>
         <source>https://github.com/yfang1644/kodi_plugins/plugin.audio.kugoufm</source>
 		<email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-    </extension>
-</addon>
-
-<addon id="plugin.video.5ivdo"
-    name="5ivdo(5ivdo)"
-    version="1.2.0"
-    provider-name="5ivdo,yfang1644">
-    <requires>
-    </requires> 
-    <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">5ivdo video plugin</summary>
-        <summary lang="zh">我爱VDO</summary>
-        <description lang="en">online video from 5ivdo.com</description>
-        <description lang="zh">在线视频聚合，主站[http://www.5ivdo.com]。基于XBMC运行，能够支持主要视频网站和网络电视台内容的在线播放，更多站点支持敬请期待。本站作为资源导航，只为个人服务，商业用途勿扰。你所体验的所有视频内容，版权归属相应网站，应对他们的工作心存感激。有任何意见或建议请加入QQ群[197687378]，或者关注官方微博[http://weibo.com/5ivdo]。让我们为创造更好的XBMC体验而努力！</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.5ivdo</source>
-        <email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
 </addon>
@@ -547,30 +551,6 @@
     </extension>
 </addon>
 
-<addon id="plugin.video.youku2"
-    name="优酷视频2(YouKu2)" version="1.0.3"
-    provider-name="yfang1644">
-    <requires>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.geturl" version="1.0.0"/>
-        <import addon="plugin.video.youku" version="1.1.0"/>
-    </requires>
-    <extension point="xbmc.python.pluginsource" library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <language></language>
-        <summary lang="en">YouKu Video (plain version)</summary>
-        <summary lang="zh">优酷视频插件(平铺版)</summary>
-        <description lang="en">YouKu is china's largest video sharing site.</description>
-        <description lang="zh">优酷视频</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.youku2</source>
-		<email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-  </extension>
-</addon>
-
 <addon id="plugin.video.youkutv"
     name="YouKu TV" version="1.8.0"
     provider-name="catro, yfang1644">
@@ -593,33 +573,6 @@
   </extension>
 </addon>
 
-<addon id="plugin.video.tudou"
-    name="土豆(Tudou)"
-    version="1.1.0"
-    provider-name="yfang1644">
-    <requires>
-        <import addon="script.module.xbmcswift2" version="2.4.0"/>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.geturl" version="1.0.0"/>
-        <import addon="plugin.video.youku" version="1.1.0"/>
-    </requires>
-    <extension
-        point="xbmc.python.pluginsource"
-        library="default.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.python.module" library="lib"/>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">Tudou video plugin</summary>
-        <summary lang="zh">土豆在线视频</summary>
-        <description lang="en">Online videos from www.tudou.com</description>
-        <description lang="zh">每个人都是生活的导演</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.tudou</source>
-		<email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-    </extension>
-</addon>
-
 <addon id="plugin.audio.baiduradio"
     name="百度电台联盟(BaiduRadio)"
     version="1.0.1"
@@ -636,25 +589,6 @@
 		<email>yfang1644@gmail.com</email>
         <platform>all</platform>
     </extension>
-</addon>
-
-<addon
-    id="plugin.video.asia-tv"
-    version="2.0.5"
-    name="亚洲电视(Asia TVs)"
-    provider-name="米老康,yfang1644">
-    <extension point="xbmc.python.pluginsource" library="addondev1.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary>TV Channels in Asian Laguages</summary>
-        <summary lang="zh">亚洲电视(Asia TVs)</summary>
-        <description>亚洲电视</description>
-        <description lang="zh">亚洲电视(Asia TVs)</description>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.asia-tv</source>
-        <email>yfang1644@gmail.com</email>
-        <platform>all</platform>
-  </extension>
 </addon>
 
 <addon id="plugin.video.cntv-video"
@@ -723,31 +657,6 @@
         <summary lang="en">Common caching api for xbmc plugins.</summary>
     </extension>
     <extension library="lib" point="xbmc.python.module" />
-</addon>
-
-<addon id="plugin.video.meijumao"
-    name="美剧猫(meijumao)"
-    version="1.0.0"
-    provider-name="BirdZhang">
-    <requires>
-        <import addon="script.module.beautifulsoup4" version="4.3.2"/>
-        <import addon="script.module.geturl" version="1.0.0"/>
-    </requires>
-    <extension
-        point="xbmc.python.pluginsource"
-        library="addon.py">
-        <provides>video</provides>
-    </extension>
-    <extension point="xbmc.addon.metadata">
-        <summary lang="en">meijumao video plugin</summary>
-        <summary lang="zh">美剧猫插件</summary>
-        <description lang="en">online video from www.meijumao.net</description>
-        <description lang="zh">美剧猫</description>
-        <platform>all</platform>
-        <website><![CDATA[https://github.com/0312birdzhang/plugin.video.meijumao]]></website>
-        <source>https://github.com/yfang1644/kodi_plugins/plugin.video.meijumao</source>
-        <forum></forum>
-        </extension>
 </addon>
 
 <addon id="plugin.video.bilibili"

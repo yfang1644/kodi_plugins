@@ -67,7 +67,7 @@ class BiliBase():
 
         videos = sorted(self.prepareurl)
         level = kwargs.get('level', 0)
-        level = min(len(videos), level)
+        level = min(len(videos)-1, level)
 
         return self.prepareurl[videos[level]]
 
