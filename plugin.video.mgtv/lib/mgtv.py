@@ -44,7 +44,7 @@ class MGTV():
     def get_mgtv_real_url(self, m3u_url, **kwargs):
         """str->list of str
         Give you the real URLs."""
-        split = urlparse.urlsplit(m3u_url)
+        split = urlsplit(m3u_url)
 
         base_url = "{scheme}://{netloc}{path}/".format(scheme=split[0],
                                                        netloc=split[1],

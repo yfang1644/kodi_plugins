@@ -10,11 +10,6 @@ from lib.mgtv import video_from_vid, quote_plus
 plugin = Plugin()
 url_for = plugin.url_for
 
-# Plugin constants
-__addonid__   = plugin.addon.getAddonInfo('id')
-__addonname__ = plugin.addon.getAddonInfo('name')
-__cwd__       = plugin.addon.getAddonInfo('path')
-
 BANNER_FMT = '[COLOR FFDEB887]%s[/COLOR]'
 BANNER_FMT2 = '[COLOR FFDE0087]%s[/COLOR]'
 INDENT_FMT0 = '[COLOR FFDEB887]   %s[/COLOR]'
@@ -60,7 +55,7 @@ def search():
     url = p_url + quote_plus(keyword)
     html = get_html(url)
     tree = BeautifulSoup(html, 'html.parser')
-    soup = tree.find_all('div', {'class': 'result-content'})
+    soup = tree.findAll('div', {'class': 'result-content'})
     items = []
     for x in soup:
         try:
@@ -82,34 +77,23 @@ def changeList(url):
     soup = BeautifulSoup(html, 'html.parser')
     tree = soup.findAll('div', {'class': 'm-tag-type'})
 
-    surl = url.split('/')
-    purl = surl[-1].split('-')
-
     dialog = xbmcgui.Dialog()
 
-    filter = ''
-    for iclass in soup:
-        title = iclass.find('h5', {'class': 'u-title'}).text
-        si = iclass.find_all('a')
-        list = []
-        for subitem in si:
-            list.append(subitem.text)
-        sel = dialog.select(title, list)
+    item = tree[0]
+    title = item.find('h5', {'class': 'u-title'}).text
+    si = item.findAll('a')
 
-        if sel < 0:
-            continue
+    content = [x.text for x in si]
+    sel = dialog.select(title, content)
+    if sel >= 0:
+        urlstr = str(si[sel])
+        surl = r1("'(/.+?)'", urlstr)
+        if surl:
+            url = surl
+        filter = si[sel].text.encode('utf-8')
 
-        filter += u'|' + title + u'(' + si[sel].text + u')'
-        seurl = si[sel]['onclick'].split('/')[-1]
-        seurl = seurl.split('-')
-
-        for i in range(0, len(purl)):
-            if seurl[i] != '':
-                purl[i] = seurl[i]
-
-    surl[-1] = '-'.join(purl)
-    url = '/'.join(surl)
-    mainlist(url, filter)
+    url = httphead(url)
+    return mainlist(url, filter)
 
 
 @plugin.route('/episodelist/<url>/<id>/<page>/')
@@ -184,17 +168,17 @@ def mainlist(url, filter):
     plugin.set_content('TVShows')
     filtitle = '' if filter == '0' else filter
     items = [{
-        'label': BANNER_FMT % (u'[分类过滤]' + filtitle),
+        'label': BANNER_FMT % ('[分类过滤]' + filtitle),
         'path': url_for('changeList', url=url)
     }]
 
     html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
+    soup = BeautifulSoup(html, 'html.parser')
 
-    soups = tree.find_all('div', {'class': 'm-result-list'})
+    tree = soup.findAll('div', {'class': 'm-result-list'})
 
-    soup= soups[0].find_all('li', {'class': 'm-result-list-item'})
-    for item in soup:
+    tree = tree[0].findAll('li', {'class': 'm-result-list-item'})
+    for item in tree:
         t = item.find('a', {'class': 'u-title'})
         title = t.text
         href = t['href']
@@ -222,25 +206,24 @@ def mainlist(url, filter):
         })
 
     # multiple pages
-    setpage = tree.find_all('div', {'class': 'w-pages'})
+    setpage = soup.findAll('div', {'class': 'w-pages'})
     try:
-        pages = setpage[0].find_all('li')
-        for page in pages:
-            try:
-                title = page.a['title']
-            except:
-                continue
-            href = page.a['href']
-            if href == 'javascript:;':
-                continue
-            else:
-                href = httphead(href)
-            items.append({
-                'label': BANNER_FMT % title,
-                'path': url_for('mainlist', url=href, filter=filter)
-            })
+        pages = setpage[0].findAll('li')
     except:
-        pass
+        return items
+
+    for page in pages:
+        title = page.a.get('title', '')
+        href = page.a.get('href')
+        print "XXXXXXXXXXXXXXXXX", href
+        if href == 'javascript:;' or title == '':
+            continue
+        href = httphead(href)
+        items.append({
+            'label': BANNER_FMT % title,
+            'path': url_for('mainlist', url=href, filter=filter)
+        })
+
     return items
 
 @plugin.route('/')

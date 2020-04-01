@@ -1,10 +1,18 @@
 ﻿#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+import sys
 from xbmcswift2 import Plugin
 from common import get_html, r1
 from json import loads
 import random
+if sys.version[0] == '3':
+    from html import unescape
+else:
+    import HTMLParser
+    def unescape(s):
+        html_parser = HTMLParser.HTMLParser()
+        return html_parser.unescape(s)
 
 HOST = 'https://www.huya.com/'
 playurl = 'https://al.hls.huya.com/huyalive'
@@ -54,7 +62,7 @@ def playvideo(room):
     sHlsAntiCode = stream_info['sHlsAntiCode']
     hls_url = u'{0}/{1}.{2}?{3}'.format(sHlsUrl, sStreamName, sHlsUrlSuffix, sHlsAntiCode)
 
-    plugin.set_resolved_url(hls_url)
+    plugin.set_resolved_url(unescape(hls_url))
 
 
 @plugin.route('/categorylist/<dataid>/<page>/')

@@ -49,13 +49,22 @@ def ttcategory(url):
     tree = soup.findAll('li', {'class': 'subject-item'})
     items = []
     for item in tree:
+        try:
+            info = u'[COLOR pink]({})[/COLOR]'.format(item.span.text)
+        except:
+            info = ''
         items.append({
-            'label': item.img['title'],
+            'label': item.img['title'] + info,
             'path': url_for('ttepisodes' ,url=item.a['href']),
-            'thumbnail': item.img['data-src']
+            'thumbnail': item.img['data-src'],
+            'info': {'title': item.img['title'], 'plot': item.p.text}
         })
         
     # 分页
+    items.append({
+        'label': BANNER.format('分页'),
+        'path': url_for('stay')
+    })
     tree = soup.findAll('div', {'class': 'page_navi'})
     pages = tree[0].findAll('a')
     for page in pages:
@@ -110,6 +119,8 @@ def yyepisodes(url):
     soup = BeautifulSoup(html, 'html.parser')
     tree = soup.findAll('div', {'class':'tab_set_info'})
 
+    info = r1('<meta name="description.+?content="([^"]+)"', html)
+
     items = []
     for sect in tree:
         if u'相关推荐' in sect.text:
@@ -144,7 +155,7 @@ def yyepisodes(url):
                     'label': item.text,
                     'path': url_for('yyplay', url=href),
                     'is_playable': True,
-                    'info': {'title': item.text}
+                    'info': {'title': item.text, 'plot': info}
                 })
 
     return items
@@ -159,11 +170,11 @@ def yycategory(url):
     years = tree[0].findAll('li')
     items = []
 
+    # 年份
     items.append({
         'label': BANNER.format('年份'),
         'path': url_for('stay')
     })
-    # 年份
     for item in years[1:]:
         title = item.text
         try:
@@ -176,6 +187,7 @@ def yycategory(url):
             'path': url_for('yycategory', url=href)
         })
     
+    # 剧集
     items.append({
         'label': BANNER.format('剧集'),
         'path': url_for('stay')
@@ -188,13 +200,14 @@ def yycategory(url):
         try:
             info = u'[COLOR pink]({})[/COLOR]'.format(item.span.text)
         except:
-            info = 'XXX'
+            info = ''
         items.append({
             'label': title + info,
             'path': url_for('yyepisodes', url=href),
             'thumbnail': img
         })
 
+    # 分页
     items.append({
         'label': BANNER.format('分页'),
         'path': url_for('stay')
@@ -219,7 +232,7 @@ def yyetss():
     soup = BeautifulSoup(html, 'html.parser')
     tree = soup.findAll('li')
     items = []
-    for item in tree[2:-1]:
+    for item in tree[2:-2]:
         url = item.a['href']
         if url[0] == '/': url = YYETSS + url
         items.append({
