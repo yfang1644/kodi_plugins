@@ -18,7 +18,7 @@ http://223.110.241.139:6610/gitv/live1/G_NJSB/G_NJSB
 #EXTINF:-1 tvg-country="CN" tvg-id="cctv1" tvg-name="CCTV1" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV1.png" group-title="中央台", CCTV1综合
 http://223.110.242.130:6610/gitv/live1/G_CCTV-1-HQ/index.m3u8
 #EXTINF:-1 tvg-country="CN" tvg-id="cctv2" tvg-name="CCTV2" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV2.png" group-title="中央台" ,CCTV2财经
-http://ott.js.chinamobile.com/PLTV/3/224/3221227207/index.m3u8
+http://223.110.241.139:6610/gitv/live1/G_CCTV-2-HD/G_CCTV-2-HD/
 #EXTINF:-1 tvg-language="Chinese" tvg-country="CN" tvg-id="cctv3" tvg-name="CCTV3" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV3.png" group-title="中央台" ,CCTV3综艺
 http://223.110.242.130:6610/gitv/live1/G_CCTV-3-HQ/index.m3u8
 #EXTINF:-1 tvg-country="CN" tvg-id="cctv4" tvg-name="CCTV4" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV4.png" group-title="中央台" ,CCTV4国际
@@ -43,12 +43,12 @@ http://223.110.242.130:6610/gitv/live1/G_CCTV-11-HQ/index.m3u8
 http://ott.js.chinamobile.com/PLTV/3/224/3221225556/index.m3u8
 #EXTINF:-1 tvg-name="CCTV13" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV13.png" group-title="中央台" ,CCTV13新闻
 http://223.110.242.130:6610/gitv/live1/G_CCTV-13-HQ/index.m3u8
-#EXTINF:-1tvg-name="CCTV14" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV14.png" group-title="中央台" ,CCTV14少儿
+#EXTINF:-1 tvg-name="CCTV14" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV14.png" group-title="中央台" ,CCTV14少儿
 http://ott.js.chinamobile.com/PLTV/3/224/3221227201/index.m3u8
 #EXTINF:-1 tvg-name="CCTV15" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV15.png" group-title="中央台" ,CCTV15音乐
 http://otttv.bj.chinamobile.com/PLTV/88888888/224/3221226317/1.m3u8
 #EXTINF:-1 tvg-name="CCTV17" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV17.png" group-title="中央台" ,CCTV17农业农村
-http://otttv.bj.chinamobile.com/PLTV/88888888/224/3221226318/1.m3u8
+http://223.110.241.139:6610/gitv/live1/G_CCTV-17-HD/
 #EXTINF:-1 tvg-name="风云音乐" group-title="中央台" ,CCTV风云音乐
 http://223.99.186.132:6410/shandong_cabletv.live.zte.com/223.99.253.7:8081/00/SNM/CHANNEL00000613/index.m3u8
 #EXTINF:-1 tvg-name="CGTN1" group-title="中央台" ,CGTN1(英文)
@@ -65,6 +65,14 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221227030/index.m3u8
 http://ott.js.chinamobile.com/PLTV/3/224/3221227043/index.m3u8
 #EXTINF:-1 group-title="中央台" ,CCTV怀旧剧场
 http://223.99.186.132:6410/shandong_cabletv.live.zte.com/223.99.253.7:8081/00/SNM/CHANNEL00000622/index.m3u8
+#EXTINF:-1 tvg-name="中国教育1台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中国教育1台.png" group-title="中央台" ,中国教育1台
+http://223.110.241.139:6610/gitv/live1/G_CETV-1/
+#EXTINF:-1 tvg-name="中国教育2台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中国教育2台.png" group-title="中央台" ,中国教育2台
+http://223.110.241.139:6610/gitv/live1/G_CETV-2/
+#EXTINF:-1 tvg-name="中国教育3台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中国教育3台.png" group-title="中央台" ,中国教育3台
+http://223.110.241.139:6610/gitv/live1/G_CETV-3/
+#EXTINF:-1 tvg-name="中国教育4台" group-title="中央台" ,中国教育4台
+http://223.110.241.139:6610/gitv/live1/G_CETV-4/
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225634/index.m3u8
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视(HD)
@@ -145,8 +153,6 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221225591/index.m3u8
 http://ott.js.chinamobile.com/PLTV/3/224/3221227393/index.m3u8
 #EXTINF:-1 tvg-name="浙江卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/zhejiang.png" group-title="地方电视台" ,浙江卫视HD
 http://ott.js.chinamobile.com/PLTV/3/224/3221225544/index.m3u8
-#EXTINF:-1 ,CETV-1
-http://ott.js.chinamobile.com/PLTV/3/224/3221225622/index.m3u8
 #EXTINF:-1 ,凤凰香港
 http://ott.js.chinamobile.com/PLTV/3/224/3221226975/index.m3u8
 #EXTINF:-1 ,凤凰资讯HD
@@ -187,10 +193,6 @@ http://dlhls.live.cnlive.com:1935/cdn/izongyi/playlist.m3u8
 http://drsh196ivjwe8.cloudfront.net/hls/cnai/03.m3u8
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视
 http://121.31.30.90:8085/ysten-business/live/anhuistv/1.m3u8
-#EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视FHD
-http://112.50.243.7/PLTV/88888888/224/3221225945/1.m3u8
-#EXTINF:-1 ,CETV-1
-http://112.50.243.7/PLTV/88888888/224/3221225869/1.m3u8
 #EXTINF:-1 tvg-name="北京卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/beijing.png" group-title="地方电视台" ,北京卫视
 http://cctvalih5ca.v.myalicdn.com/wstv/btv1_2/index.m3u8
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,BTV文艺

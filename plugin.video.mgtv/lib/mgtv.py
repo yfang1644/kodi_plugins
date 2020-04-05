@@ -23,6 +23,7 @@ import uuid
 import time
 
 class MGTV():
+    url = 'https://www.mgtv.com'
     def generate_did_tk2(self):
         did = str(uuid.uuid4())
         s = 'pno=1030|ver=0.3.0301|did={0}|clit={1}'.format(did, int(time.time()))
@@ -90,9 +91,10 @@ class MGTV():
         url = domain + url
         content = loads(get_html(url))
         url = content['info']
-        return [url + '|Referer="https://www.mgtv.com"']
+        return [url + '|Referer=' + self.url]
 
     def video_from_url(self, url, **kwargs):
+        self.url = url
         vid = self.vid_from_url(url)
         m3u_url = self.video_from_vid(vid, **kwargs)
         return m3u_url

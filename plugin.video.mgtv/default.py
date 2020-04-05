@@ -5,7 +5,7 @@ from xbmcswift2 import Plugin, xbmcgui
 from bs4 import BeautifulSoup
 from json import loads
 from common import get_html, r1
-from lib.mgtv import video_from_vid, quote_plus
+from lib.mgtv import video_from_vid, video_from_url, quote_plus
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -18,25 +18,23 @@ INDENT_FMT1 = '[COLOR FFDEB8FF]   %s[/COLOR]'
 LIST_URL = 'http://list.mgtv.com'
 HOST_URL = 'https://www.mgtv.com'
 
-RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
-
-
 def httphead(url):
     if len(url) < 2:
         return url
     if url[:2] == '//':
         url = 'https:' + url
     elif url[0] == '/':
-        url = LIST_URL + url
+        url = HOST_URL + url
 
     return url
 
 
-@plugin.route('/playvideo/<vid>/')
-def playvideo(vid):
+@plugin.route('/playvideo/<url>/')
+def playvideo(url):
     level = int(plugin.addon.getSetting('resolution'))
 
-    m3u_url = video_from_vid(vid, level=level)
+    #m3u_url = video_from_vid(vid, level=level)
+    m3u_url = video_from_url(httphead(url), level=level)
     stackurl = 'stack://' + ' , '.join(m3u_url) if len(m3u_url) > 1 else m3u_url[0]
     plugin.set_resolved_url(stackurl)
 
@@ -65,7 +63,7 @@ def search():
         items.append({
             'label': x.img['alt'],
             'path': url_for('episodelist', url=x.a['href'], id=vid, page=1),
-            'thumbnail': httphead(x.img['src']),
+            'thumbnail': x.img['src'],
         })
 
     return items
@@ -92,7 +90,10 @@ def changeList(url):
             url = surl
         filter = si[sel].text.encode('utf-8')
 
-    url = httphead(url)
+    if url[0:2] == '//':
+        url = 'http:' + url
+    elif url[0] == '/':
+        url = LIST_URL + url
     return mainlist(url, filter)
 
 
@@ -109,21 +110,29 @@ def episodelist(url, id, page):
             id = r1('vid:\s*(\d+)', html)
         else:
             id = r1('(\d+).html', url)
+            html = get_html(url)
+    else:
+        url = httphead(url)
+        if url[-1] == '/':
+            html = get_html(url)
+            url = r1('window.location = "(.+?)"', html)
+        html = get_html(httphead(url))
+
+    desc = r1('story:"(.+?)"', html)
 
     plugin.set_content('TVShows')
     episode_api = 'http://pcweb.api.mgtv.com/movie/list'   # ???
-    episode_api = 'http://pcweb.api.mgtv.com/episode/list'
-    episode_api += '?video_id=%s&page=%d'
+    episode_api = 'http://pcweb.api.mgtv.com/episode/list?video_id={}&page={}&size=50'
     page = int(page)
 
-    html = get_html(episode_api % (id, page))
+    html = get_html(episode_api.format(id, page))
     jsdata = loads(html)
 
     data = jsdata['data']
-    list = data.get('list', []) + data.get('short', [])
     total_page = data.get('total_page', 1)
 
-    for series in list:
+    lists = data.get('list', [])
+    for series in lists:
         title = series['t1'] + ' ' + series['t2']
         if series['isnew'] == '1':
             title = title + u'(新)'
@@ -132,34 +141,53 @@ def episodelist(url, id, page):
 
         vip = series.get('isvip', 0)
         pay = '(VIP)' if vip == '1' else ''
-
+        d = series.get('time', '0:0')
+        duration = 0
+        for t in d.split(':'):
+            duration = duration*60 + int(t)
         yield {
             'label': title + pay,
-            'path': url_for('playvideo', vid=series['video_id']),
+            #'path': url_for('playvideo', vid=series['video_id']),
+            'path': url_for('playvideo', url=series['url']),
             'is_playable': True,
-            'thumbnail': httphead(series['img']),
-            'info': {'title': title}
+            'thumbnail': series['img'],
+            'info': {'title': title, 'duration': duration, 'plot': desc}
         }
 
     if page > 1:
         yield {
             'label': BANNER_FMT % u'上一页',
-            'path': url_for('episodelist', url=url, id=0, page=page-1)
+            'path': url_for('episodelist', url=url, id=id, page=page-1)
         }
     if page < total_page:
         yield {
             'label': BANNER_FMT % u'下一页',
-            'path': url_for('episodelist', url=url, id=0, page=page+1)
+            'path': url_for('episodelist', url=url, id=id, page=page+1)
         }
 
+    lists = data.get('short', [])
+    if lists and (page == total_page):
+        for series in lists:
+            d = series.get('t2', '0:0')
+            duration = 0
+            for t in d.split(':'):
+                duration = duration*60 + int(t)
+            yield {
+                'label': series['t1'],
+                #'path': url_for('playvideo', vid=series['video_id']),
+                'path': url_for('playvideo', url=series['url']),
+                'is_playable': True,
+                'thumbnail': series['img'],
+                'info': {'title': title, 'duration': duration}
+            }
+
     related = data.get('related')
-    if related:
+    if related and (page == total_page):
         title = related['t1'] + ' ' + related['t2']
-        href = httphead(related['url'])
         yield {
             'label': BANNER_FMT2 % title,
-            'path': url_for('episodelist', url=href, id=0, page=1),
-            'thumbnail': httphead(related['img']),
+            'path': url_for('episodelist', url=related['url'], id=0, page=1),
+            'thumbnail': related['img'],
             'info': {'title': title}
         }
 
@@ -200,7 +228,7 @@ def mainlist(url, filter):
         info = info.replace('\t', '')
         items.append({
             'label': title + exinfo + pay,
-            'path': url_for('episodelist', url=href, id=0, page=1),
+            'path': url_for('episodelist', url=t['href'], id=0, page=1),
             'thumbnail': httphead(item.img['src']),
             'info': {'title': title, 'plot': info}
         })
@@ -215,10 +243,12 @@ def mainlist(url, filter):
     for page in pages:
         title = page.a.get('title', '')
         href = page.a.get('href')
-        print "XXXXXXXXXXXXXXXXX", href
         if href == 'javascript:;' or title == '':
             continue
-        href = httphead(href)
+        if href[0:2] == '//':
+            href = 'http:' + href
+        elif href[0] == '/':
+            href = LIST_URL + href
         items.append({
             'label': BANNER_FMT % title,
             'path': url_for('mainlist', url=href, filter=filter)

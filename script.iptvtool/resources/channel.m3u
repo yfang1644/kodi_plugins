@@ -47,12 +47,12 @@ http://223.110.242.130:6610/gitv/live1/G_CCTV-11-HQ/index.m3u8
 http://ott.js.chinamobile.com/PLTV/3/224/3221225556/index.m3u8
 #EXTINF:-1 tvg-name="CCTV13" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV13.png" group-title="中央台" ,CCTV13新闻
 http://223.110.242.130:6610/gitv/live1/G_CCTV-13-HQ/
-#EXTINF:-1tvg-name="CCTV14" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV14.png" group-title="中央台" ,CCTV14少儿
+#EXTINF:-1 tvg-name="CCTV14" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV14.png" group-title="中央台" ,CCTV14少儿
 http://ott.js.chinamobile.com/PLTV/3/224/3221227201/
 #EXTINF:-1 tvg-name="CCTV15" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV15.png" group-title="中央台" ,CCTV15音乐
 http://otttv.bj.chinamobile.com/PLTV/88888888/224/3221226317/1.m3u8
 #EXTINF:-1 tvg-name="CCTV17" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV17.png" group-title="中央台" ,CCTV17农业农村
-http://otttv.bj.chinamobile.com/PLTV/88888888/224/3221226318/1.m3u8
+http://223.110.241.139:6610/gitv/live1/G_CCTV-17-HD/
 #EXTINF:-1 tvg-name="风云音乐" group-title="中央台" ,CCTV风云音乐
 http://223.99.186.132:6410/shandong_cabletv.live.zte.com/223.99.253.7:8081/00/SNM/CHANNEL00000613/index.m3u8
 #EXTINF:-1 tvg-name="CGTN1" group-title="中央台" ,CGTN1(英文)
@@ -71,6 +71,14 @@ http://39.135.15.70:6610/PLTV/88888888/224/3221225702/1/'
 http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000094
 #EXTINF:-1 tvg-name="怀旧剧场" group-title="中央台" ,CCTV怀旧剧场
 http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000089
+#EXTINF:-1 tvg-name="中国教育1台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中>国教育1台.png" group-title="中央台" ,中国教育1台
+http://223.110.241.139:6610/gitv/live1/G_CETV-1/
+#EXTINF:-1 tvg-name="中国教育2台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中>国教育2台.png" group-title="中央台" ,中国教育2台
+http://223.110.241.139:6610/gitv/live1/G_CETV-2/
+#EXTINF:-1 tvg-name="中国教育3台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中>国教育3台.png" group-title="中央台" ,中国教育3台
+http://223.110.241.139:6610/gitv/live1/G_CETV-3/
+#EXTINF:-1 tvg-name="中国教育4台" group-title="中央台" ,中国教育4台
+http://223.110.241.139:6610/gitv/live1/G_CETV-4/
 #EXTINF:-1 tvg-name="安徽卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/anhui.png" group-title="地方电视台" ,安徽卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225634/index.m3u8
 #EXTINF:-1 tvg-name="安徽公共频道" group-title="地方电视台" ,安徽公共频道
@@ -269,8 +277,6 @@ http://ali.m.l.cztv.com/channels/lantian/channel09/720p.m3u8
 http://ali.m.l.cztv.com/channels/lantian/channel11/720p.m3u8
 #EXTINF:-1 group-title="地方电视台" ,浙江数码时代
 http://ali.m.l.cztv.com/channels/lantian/channel12/720p.m3u8
-#EXTINF:-1 ,CETV-1
-http://ott.js.chinamobile.com/PLTV/3/224/3221225622/index.m3u8
 #EXTINF:-1 tvg-name="凤凰香港" tvg-logo="http://epg.51zmt.top:8000/tb1/gt/fenghuangxianggang.png" group-title="地方电视台" ,凤凰香港
 http://ott.js.chinamobile.com/PLTV/3/224/3221226975/index.m3u8
 #EXTINF:-1 tvg-name="凤凰资讯" tvg-logo="http://epg.51zmt.top:8000/tb1/gt/fenghuangzixun.png" group-title="地方电视台" ,凤凰资讯
@@ -283,7 +289,7 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221226029/index.m3u8
 http://103.89.176.45:8278/Channel8/playlist.m3u8
 #EXTINF:-1 ,CHANNEL U
 http://103.89.176.45:8278/ChannelU/playlist.m3u8
-#EXTINF:-1 tvg-name="CHC高清电影" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/CHC3.jpg" group-title="地方",CHC高清电影
+#EXTINF:-1 tvg-name="CHC高清电影" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/CHC3.jpg" group-title="其他",CHC高清电影
 http://ivi.bupt.edu.cn/hls/chchd.m3u8
 #EXTINF:-1 ,TVB-8
 http://tvbilive14-i.akamaihd.net/hls/live/496344/CTVB8/index.m3u8
@@ -295,8 +301,6 @@ http://dlhls.live.cnlive.com:1935/cdn/eyule/playlist.m3u8
 http://dlhls.live.cnlive.com:1935/cdn/izongyi/playlist.m3u8
 #EXTINF:-1 ,亞洲新聞
 http://drsh196ivjwe8.cloudfront.net/hls/cnai/03.m3u8
-#EXTINF:-1 ,CETV-1
-http://112.50.243.7/PLTV/88888888/224/3221225869/1.m3u8
 #EXTINF:-1 group-title="中央台" ,CCTV-国防军事
 rtmp://ivi.bupt.edu.cn/livetv/gfjstv
 #EXTINF:-1 tvg-name="怀旧剧场" group-title="中央台" ,CCTV怀旧剧场
@@ -635,17 +639,11 @@ http://ts1.ijntv.cn/yshd/hd/live.m3u8
 http://live.cjyun.org/video/s10008-hbys2018/index.m3u8
 #EXTINF:-1 group-title="地方电视台" ,福州影视频道
 http://live.zohi.tv/video/s10001-yspd-2/index.m3u8
-#EXTINF:-1 group-title="电影轮播" ,美国电影轮播
-http://js.hls.huya.com/huyalive/30765679-2478268764-10644083292078342144-2847699106-10057-A-0-1_1200.m3u8
-#EXTINF:-1 group-title="电影轮播" ,科幻电影
-http://aldirect.hls.huya.com/huyalive/28466698-2689656864-11551988268341919744-2847699194-10057-A-0-1_1200.m3u8
-#EXTINF:-1 group-title="电影轮播" ,赌博电影
-http://js.hls.huya.com/huyalive/29106097-2689446042-11551082794746642432-2789253870-10057-A-0-1_1200.m3u8
-#EXTINF:-1 group-title="电影轮播" ,赌神全集
+#EXTINF:-1 group-title="其他" ,赌神全集
 http://flv3.quanmin.tv/live/3766_2031799856.flv
-#EXTINF:-1 group-title="电影轮播" ,亚洲影院
+#EXTINF:-1 group-title="其他" ,亚洲影院
 http://hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228365/42613673.smil/index.m3u8?fmt=ts2hls
-#EXTINF:-1 group-title="电影轮播" ,欧美影院
+#EXTINF:-1 group-title="其他" ,欧美影院
 http://hwltc.tv.cdn.zj.chinamobile.com/PLTV/88888888/224/3221228384/42613784.smil/index.m3u8?fmt=ts2hls
 #EXTINF:-1 group-title="爱奇艺轮播" ,经典港片
 http://baiducdnct.inter.iqiyi.com/tslive/c15_lb_jingdianguangpian_1080p_t10/c15_lb_jingdianguangpian_1080p_t10.m3u8

@@ -17,16 +17,13 @@ from lib.iqiyi import video_from_vid, video_from_url, quote_plus, parse_qsl, url
 ########################################################################
 
 LIST_URL = 'http://list.iqiyi.com'
-PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&mode={}&pageNum={}&pageSize=30&without_qipu=1&is_purchase=0'
-
-PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?channel_id={}&data_type=1&from=pcw_list&is_album_finished=&is_purchase=&key=&market_release_date_level=&mode={}&pageNum={}&pageSize=30&site=iqiyi&source_type=&three_category_id=&without_qipu=1'
 
 ALBUM_API = 'https://pcw-api.iqiyi.com/albums/album/avlistinfo?aid={}&page=1&size=300'
 
 __profile__   = xbmc.translatePath(xbmcaddon.Addon().getAddonInfo('profile'))
 __m3u8__      = xbmc.translatePath(os.path.join(__profile__, 'temp.m3u8'))
 
-BANNER_FMT =  '[COLOR FFDEB887][%s][/COLOR]'
+BANNER_FMT =  '[COLOR FFDEB887] (%s) [/COLOR]'
 INDENT_FMT0 = '[COLOR   red]    %s[/COLOR]'
 INDENT_FMT1 = '[COLOR green]    %s[/COLOR]'
 RESOLUTION = {'sd': '标清', 'hd': '高清', 'shd': '超清', 'fhd': '全高清'}
@@ -40,20 +37,20 @@ def httphead(url):
 
     return url
 
-def previous_page(endpoint, page, total_page, **kwargs):
+def previous_page(endpoint, page, total_page, params):
     if int(page) > 1:
         li = ListItem('上一页 - {0}/{1}'.format(page, str(total_page)))
-        kwargs['mode'] = endpoint
-        kwargs['page'] = int(page) - 1
-        u = sys.argv[0] + '?' + urlencode(kwargs)
+        params['mode'] = endpoint
+        params['page'] = int(page) - 1
+        u = sys.argv[0] + '?' + urlencode(params)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-def next_page(endpoint, page, total_page, **kwargs):
+def next_page(endpoint, page, total_page, params):
     if int(page) < int(total_page):
         li = ListItem('下一页 - {0}/{1}'.format(page, str(total_page)))
-        kwargs['mode'] = endpoint
-        kwargs['page'] = int(page) + 1
-        u = sys.argv[0] + '?' + urlencode(kwargs)
+        params['mode'] = endpoint
+        params['page'] = int(page) + 1
+        u = sys.argv[0] + '?' + urlencode(params)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
 
 def convertTImer(info):
@@ -253,7 +250,6 @@ def playfound(params):
     url = params['url']
     thumbnail = params['thumbnail']
     name = params['name']
-    items = []
     if url[0:4] != 'http':
         return
 
@@ -275,45 +271,6 @@ def playfound(params):
         albumId = r1('albumid="(.+?)"', link)
         if albumId is not None:
             episodelist({'albumId': albumId, 'page':1})
-
-
-def filter(params):
-    url = params['url']
-    html = get_html(url)
-    tree = BeautifulSoup(html, 'html.parser')
-    filter = tree.findAll('div', {'class': 'mod_sear_list'})
-
-    surl = url.split('/')
-    lurl = surl[-1].split('-')
-
-    dialog = Dialog()
-
-    for item in filter[1:]:
-        title = item.h3.text
-        si = item.findAll('li')
-        list = []
-        for x in si:
-            if x.get('class') and 'selected' in x.get('class'):
-                list.append('[COLOR FFF0F000]' + x.text + '[/COLOR]')
-            else:
-                list.append(x.text)
-
-        sel = dialog.select(title, list)
-
-        if sel < 0:
-            continue
-
-        selurl = si[sel].a['href'].split('/')
-        selurl = selurl[-1].split('-')
-        if len(selurl) < 10:
-            continue
-        for i in xrange(len(selurl)):
-            if (selurl[i] != '') and (selurl[i] != lurl[i]):
-                lurl[i] = selurl[i]
-
-    surl[-1] = '-'.join(lurl)
-    url = '/'.join(surl)
-    videolist({'url': httphead(url)})
 
 
 ###########################################################################
@@ -387,90 +344,28 @@ def search(params):
     endOfDirectory(int(sys.argv[1]))
 
 
-def videolist(params):
-    html = get_html(url)
-    html = re.sub('\t|\r|\n', ' ', html)
-    soup = BeautifulSoup(html, 'html.parser')
+def filter(params):
+    chninfo = 'https://pcw-api.iqiyi.com/search/category/categoryinfo?brand=IQIYI&channel_id={}&locale=zh'
+    cid = params['cid']
+    html = get_html(chninfo.format(cid))
+    data = loads(html)
 
-    ul = url.split('/')[-1]
-    page = ul.split('-')[14]
-    if page == '':
-        page = '1'
+    dialog = Dialog()
 
+    f = []
+    tn = ''
+    for item in data['data']:
+        lst = [x['name'] for x in item['child']]
+        lst.insert(0, '全部')
+        sel = dialog.select(item['name'], lst)
 
-    li = ListItem('[第%s页](分类过滤)' % page.encode('utf-8'))
-    u = sys.argv[0] + '?mode=filter&url=' + url
-    addDirectoryItem(int(sys.argv[1]), u, li, True)
-    
-    li = ListItem(BANNER_FMT % '排序方式')
-    addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
-
-    tree = soup.findAll('div', {'class': 'sort-result-l'})
-    arrange = tree[0].findAll('a')
-    for sort in arrange:
-        title = sort.text.strip()
-        select = sort.get('class', '')
-        if 'selected' in select:
-            title = INDENT_FMT1 % title
-        else:
-            title = INDENT_FMT0 % title
-        li = ListItem(title)
-        u = sys.argv[0] + '?mode=videolist&url=' + httphead(sort['href'])
-        addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    tree = soup.findAll('div', {'class': 'site-piclist_pic'})
-    for item in tree:
-        href = item.a.get('href')
-        img = item.img.get('src', '')
-        title = item.a.get('title', '')
-        try:
-            info = item.find('span', {'class': 'icon-vInfo'}).text
-        except:
-            info = ''
-        info = convertTImer(info)
-        try:
-            vip = item.find('span', {'class': 'icon-vip-zx'}).text
-            vip = '|[COLOR FF809000]' + vip + '[/COLOR]'
-        except:
-            vip = ''
-        try:
-            pay = item.find('span', {'class': 'icon-vip-quan'}).text
-            pay = '|[COLOR FF809000]' + pay + '[/COLOR]'
-        except:
-            pay = ''
-        albumId = item.a.get('data-qidanadd-albumid')
-        if albumId is None:
-            albumId = item.a.get('data-qidanadd-tvid', 'X')
-        extrainfo = vip + pay
-        if isinstance(info, str):
-            extrainfo = info + extrainfo
-        if isinstance(info, str):
-            infoLabels={'title': title, 'plot': info}
-        else:
-            infoLabels={'title': title, 'duration': info}
-
-        li = ListItem(title + extrainfo.strip(), thumbnailImage=httphead(img))
-        li.setInfo(type='Video', infoLabels=infoLabels)
-        req = {
-            'mode': 'episodelist',
-            'albumId': albumId,
-            'page': 1
-        }
-        u = sys.argv[0] + '?' + urlencode(req)
-        addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    li = ListItem(INDENT_FMT0 % '分页')
-    addDirectoryItem(int(sys.argv[1]), sys.argv[0], li, True)
-
-    pages = soup.findAll('div', {'class': 'mod-page'})
-    pages = pages[0].findAll('a')
-    for page in pages:
-        li = ListItem(page.txt)
-        u = sys.argv[0] + '?mode=videolist&url=' + httphead(page['href'])
-        addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    setContent(int(sys.argv[1]), 'tvshows')
-    endOfDirectory(int(sys.argv[1]))
+        if sel > 0:
+            f += [str(item['child'][sel-1]['id']) + ';must']
+            tn += '|' + item['child'][sel-1]['name']
+    params['type'] = ','.join(f)
+    params['page'] = '1'
+    params['typename'] = tn.encode('utf-8')
+    category(params)
 
 
 orderlist=[{"id":24,"name":"综合排序"},
@@ -481,7 +376,13 @@ def category(params):
     order = params['order']
     cid = params['cid']
     page = params['page']
-    items = []
+    type = params.get('type', '')
+    typename = params.get('typename', '')
+
+    li = ListItem('[COLOR FFDEB887][分类过滤  %s][/COLOR]' % typename)
+    u = sys.argv[0] + '?mode=filter&' + urlencode(params)
+    addDirectoryItem(int(sys.argv[1]), u, li, True)
+
     for x in orderlist:
         if int(x['id']) == int(order):
             style = '[COLOR red]{}[/COLOR]'.format(x['name'])
@@ -492,24 +393,46 @@ def category(params):
             'mode': 'category',
             'order': x['id'],
             'cid': cid,
-            'page': page
+            'page': page,
+            'type': type,
+            'typename': typename
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    api = PCW_API.format(cid, order, page)
-    if cid == '16':
-        api = api.replace('data_type=1', 'data_type=2')
+    PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?'
+    req = {
+        'access_play_control_platform': 14,
+        'channel_id': cid,
+        'data_type': 2 if cid=='16' else 1,
+        'from': 'pcw_list',
+        'is_album_finished': '',
+        'is_purchase': '',
+        'key': '',
+        'market_release_date_level': '',
+        'mode': order,
+        'pageNum': page,
+        'pageSize': 30,
+        'site': 'iqiyi',
+        'source_type': '',
+        'three_category_id': type,
+        'without_qipu': 1
+    }
+
+    api = PCW_API + urlencode(req)
     jdata = loads(get_html(api))
     total_page = jdata['data']['pageTotal']
 
-    previous_page('category', page, total_page, order=order, cid=cid)
+    previous_page('category', page, total_page, params=params)
     for item in jdata['data']['list']:
         albumId = item.get('albumId')
         tvId = item.get('tvId')
+        extra = item.get('videoCount', '')
+        if extra:
+            extra =  BANNER_FMT % extra
         duration = item.get('duration', 0)
         duration = convertTImer(duration)
-        li = ListItem(item['name'], thumbnailImage=item['imageUrl'])
+        li = ListItem(item['name'] + extra, thumbnailImage=item['imageUrl'])
         li.setInfo(type='Video', infoLabels={'title': item['name'],'plot':item.get('description'), 'duration': duration})
         if albumId:
             req = {
@@ -538,7 +461,7 @@ def category(params):
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, isFolder)
 
-    next_page('category', page, total_page, order=order, cid=cid)
+    next_page('category', page, total_page, params=params)
 
     setContent(int(sys.argv[1]), 'tvshows')
     endOfDirectory(int(sys.argv[1]))
@@ -583,7 +506,7 @@ def root():
             'mode': 'category',
             'order': 24,
             'cid': channel['cid'],
-            'page': 1
+            'page': 1,
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
