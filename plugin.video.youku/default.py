@@ -226,18 +226,22 @@ def mainlist(params):
     api = 'https://list.youku.com/category/page?'
     req = params.copy()
     req['p'] = page
+    req.pop('title')
     html = get_html(api + urlencode(req))
     data = loads(html)
 
     series = (97, 85, 100, 177, 87, 84, 98, 178, 86, 99) 
     for item in data['data']:
+        vid = item.get('videoId')
+        if not vid:
+            continue
         li = ListItem(item['title'] + '(' + item['summary'] +')',
                       thumbnailImage=httphead(item['img']))
         li.setInfo(type='Video',
                    infoLabels={'title': item['title'], 'plot': item.get('subTitle', '')})
         req = {
             'mode': 'episodelist' if int(cid) in series else 'playvideo',
-            'vid': item['videoId'],
+            'vid': vid,
             'thumbnail': httphead(item['img']),
             'name': item['title'].encode('utf-8')
         }

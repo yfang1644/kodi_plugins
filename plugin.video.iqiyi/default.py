@@ -5,7 +5,6 @@ import xbmc
 from xbmcgui import Dialog, ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
 import xbmcaddon
-import re
 import os
 from json import loads
 from bs4 import BeautifulSoup
@@ -16,7 +15,7 @@ from lib.iqiyi import video_from_vid, video_from_url, quote_plus, parse_qsl, url
 # 爱奇艺 list.iqiyi.com
 ########################################################################
 
-LIST_URL = 'http://list.iqiyi.com'
+LIST_URL = 'https://list.iqiyi.com'
 
 ALBUM_API = 'https://pcw-api.iqiyi.com/albums/album/avlistinfo?aid={}&page=1&size=300'
 
@@ -345,60 +344,61 @@ def search(params):
 
 
 def filter(params):
-    chninfo = 'https://pcw-api.iqiyi.com/search/category/categoryinfo?brand=IQIYI&channel_id={}&locale=zh'
+    url = 'https://list.iqiyi.com/www/{}/-------------24-1-1-iqiyi--.html'
+    #chninfo = 'https://pcw-api.iqiyi.com/search/category/categoryinfo?brand=IQIYI&channel_id={}&locale=zh'
     cid = params['cid']
-    html = get_html(chninfo.format(cid))
-    data = loads(html)
+    html = get_html(url.format(cid))
 
     dialog = Dialog()
 
+    m = r1("category-list='(\[.+?\])'", html)
+    data = loads(m)
+
     f = []
     tn = ''
-    for item in data['data']:
+    for item in data:
         lst = [x['name'] for x in item['child']]
         lst.insert(0, '全部')
         sel = dialog.select(item['name'], lst)
-
         if sel > 0:
             f += [str(item['child'][sel-1]['id']) + ';must']
             tn += '|' + item['child'][sel-1]['name']
+
+    m = r1("my-year='(\{.+?\})'", html)
+    data = loads(m)
+
+    lst = [x['name'] for x in data['list']]
+    sel = dialog.select('年份', lst)
+    if sel >= 0:
+        params['year'] = data['list'][sel]['id']
+        tn += '|' + data['list'][sel]['name']
+
+    m = r1("order-list='(\[.+?\])'", html)
+    data = loads(m)
+
+    lst = [x['name'] for x in data]
+    sel = dialog.select('排序', lst)
+    sel = max(sel, 0)
+    params['order'] = data[sel]['id']
+    tn += '|' + data[sel]['name']
+    
     params['type'] = ','.join(f)
     params['page'] = '1'
     params['typename'] = tn.encode('utf-8')
     category(params)
 
 
-orderlist=[{"id":24,"name":"综合排序"},
-           {"id":11,"name":"热播榜"},
-           {"id":4,"name":"新上线"}]
-
 def category(params):
-    order = params['order']
+    order = params.get('order', 24)    # 综合排序
     cid = params['cid']
-    page = params['page']
+    year = params.get('year', '')
+    page = params.get('page', 1)
     type = params.get('type', '')
     typename = params.get('typename', '')
 
     li = ListItem('[COLOR FFDEB887][分类过滤  %s][/COLOR]' % typename)
     u = sys.argv[0] + '?mode=filter&' + urlencode(params)
     addDirectoryItem(int(sys.argv[1]), u, li, True)
-
-    for x in orderlist:
-        if int(x['id']) == int(order):
-            style = '[COLOR red]{}[/COLOR]'.format(x['name'])
-        else:
-            style = '[COLOR yellow]{}[/COLOR]'.format(x['name'])
-        li = ListItem(style)
-        req = {
-            'mode': 'category',
-            'order': x['id'],
-            'cid': cid,
-            'page': page,
-            'type': type,
-            'typename': typename
-        }
-        u = sys.argv[0] + '?' + urlencode(req)
-        addDirectoryItem(int(sys.argv[1]), u, li, True)
 
     PCW_API = 'https://pcw-api.iqiyi.com/search/video/videolists?'
     req = {
@@ -409,7 +409,7 @@ def category(params):
         'is_album_finished': '',
         'is_purchase': '',
         'key': '',
-        'market_release_date_level': '',
+        'market_release_date_level': year,
         'mode': order,
         'pageNum': page,
         'pageSize': 30,
@@ -467,46 +467,19 @@ def category(params):
     endOfDirectory(int(sys.argv[1]))
 
 
-channellist=[{"cid":2,"name":"电视剧"},
-             {"cid":1,"name":"电影"},
-             {"cid":6,"name":"综艺"},
-             {"cid":4,"name":"动漫"},
-             {"cid":3,"name":"纪录片"},
-             {"cid":8,"name":"游戏"},
-             {"cid":25,"name":"资讯"},
-             {"cid":7,"name":"娱乐"},
-             {"cid":24,"name":"财经"},
-             {"cid":16,"name":"网络电影"},
-             {"cid":10,"name":"片花"},
-             {"cid":5,"name":"音乐"},
-             {"cid":28,"name":"军事"},
-             {"cid":12,"name":"教育"},
-             {"cid":17,"name":"体育"},
-             {"cid":15,"name":"儿童"},
-             {"cid":9,"name":"旅游"},
-             {"cid":13,"name":"时尚"},
-             {"cid":21,"name":"生活"},
-             {"cid":26,"name":"汽车"},
-             {"cid":22,"name":"搞笑"},
-             {"cid":20,"name":"广告"},
-             {"cid":27,"name":"原创"},
-             {"cid":29,"name":"母婴"},
-             {"cid":30,"name":"科技"},
-             {"cid":31,"name":"脱口秀"},
-             {"cid":32,"name":"健康"}]
-
 def root():
     li = ListItem('[COLOR yellow] 【爱奇艺 - 搜索】[/COLOR]')
     u = sys.argv[0] + '?mode=search'
     addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-    for channel in channellist:
+    html = get_html(LIST_URL)
+    m = r1("channel-list='(\[.+?\])'", html)
+    channels = loads(m)
+    for channel in channels:
         li = ListItem(channel['name'])
         req = {
             'mode': 'category',
-            'order': 24,
             'cid': channel['cid'],
-            'page': 1,
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
