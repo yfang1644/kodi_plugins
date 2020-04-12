@@ -92,7 +92,7 @@ def get_html(url,
 
     # Decode the response body
     if decoded:
-        match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(data)
+        match = re.compile('<meta http-equiv=["]?[Cc]ontent-[Tt]ype["]? content="text/html;[\s]?charset=(.+?)"').findall(str(data))
         if match:
             charset = match[0]
             data = data.decode(charset)

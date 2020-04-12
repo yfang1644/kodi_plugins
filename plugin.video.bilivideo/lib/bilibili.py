@@ -362,7 +362,6 @@ class Bilibili():
         chksum = hashlib.md5(compact_bytes(params_str + SECRETKEY, 'utf-8')).hexdigest()
 
         purl = '{}?{}&sign={}'.format(api_url, params_str, chksum)
-        print "XXXXXXXXXXXXXXXXX",purl
         html = get_html(purl)
 
         m = hashlib.md5()

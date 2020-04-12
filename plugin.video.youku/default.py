@@ -189,20 +189,38 @@ def episodelist(params):
     except:
         series = p['data']['data']['nodes'][0]['nodes'][1]['nodes']
     content = p['data']['data']['nodes'][0]['nodes'][0]['nodes'][0]['data']['desc']
-    items = []
-    for film in series:
-        vid = film['data']['action']['value']
-        title = film['data']['title'].encode('utf-8')
-        li = ListItem(title, thumbnailImage=film['data']['img'])
+    showid = p['showId']
+    IDS = urlencode(BASEIDS)
+    api = HOST + '/layout/smarttv/shows/{}/series?{}'.format(showid, IDS)
+    data = get_html(api)
+    series = loads(data)
+
+    for item in series['results']:
+        title = item['title'].encode('utf-8')
+        li = ListItem(title, thumbnailImage=item['img'])
         li.setInfo(type='video', infoLabels={'title': title, 'plot': content})
         req = {
             'mode': 'playvideo',
-            'vid': vid,
+            'vid': item['videoid'],
             'name': title,
-            'thumbnail': film['data']['img']
+            'thumbnail': item['img']
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    #for film in series:
+    #    vid = film['data']['action']['value']
+    #    title = film['data']['title'].encode('utf-8')
+    #    li = ListItem(title, thumbnailImage=film['data']['img'])
+    #    li.setInfo(type='video', infoLabels={'title': title, 'plot': content})
+    #    req = {
+    #        'mode': 'playvideo',
+    #        'vid': vid,
+    #        'name': title,
+    #        'thumbnail': film['data']['img']
+    #    }
+    #    u = sys.argv[0] + '?' + urlencode(req)
+    #    addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     setContent(int(sys.argv[1]), 'tvshows')
     endOfDirectory(int(sys.argv[1]))
@@ -226,7 +244,7 @@ def mainlist(params):
     api = 'https://list.youku.com/category/page?'
     req = params.copy()
     req['p'] = page
-    req.pop('title')
+    #req.pop('title')
     html = get_html(api + urlencode(req))
     data = loads(html)
 
@@ -264,7 +282,7 @@ def root():
         li = ListItem(title)
         req = {
             'mode': 'mainlist',
-            'title': title,
+            #'title': title,
             'type': item[title][0],
             'c': item[title][1],
         }

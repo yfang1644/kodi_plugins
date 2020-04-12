@@ -635,8 +635,6 @@ http://stream1.hnntv.cn/ysjpd/sd/live.m3u8
 http://weblive.hebtv.com/live/hbys_bq/index.m3u8
 #EXTINF:-1 ,济南影视
 http://ts1.ijntv.cn/yshd/hd/live.m3u8
-#EXTINF:-1 group-title="地方电视台" ,湖北影视
-http://live.cjyun.org/video/s10008-hbys2018/index.m3u8
 #EXTINF:-1 group-title="地方电视台" ,福州影视频道
 http://live.zohi.tv/video/s10001-yspd-2/index.m3u8
 #EXTINF:-1 group-title="其他" ,赌神全集

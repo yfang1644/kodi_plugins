@@ -90,10 +90,6 @@ def changeList(url):
             url = surl
         filter = si[sel].text.encode('utf-8')
 
-    if url[0:2] == '//':
-        url = 'http:' + url
-    elif url[0] == '/':
-        url = LIST_URL + url
     return mainlist(url, filter)
 
 
@@ -165,7 +161,7 @@ def episodelist(url, id, page):
             'path': url_for('episodelist', url=url, id=id, page=page+1)
         }
 
-    lists = data.get('short', [])
+    lists = data.get('short')
     if lists and (page == total_page):
         for series in lists:
             d = series.get('t2', '0:0')
@@ -193,6 +189,10 @@ def episodelist(url, id, page):
 
 @plugin.route('/mainlist/<url>/<filter>/')
 def mainlist(url, filter):
+    if url[:2] == '//':
+        utl = 'http:' + url
+    elif url[0] == '/':
+        url = LIST_URL + url
     plugin.set_content('TVShows')
     filtitle = '' if filter == '0' else filter
     items = [{
@@ -203,9 +203,9 @@ def mainlist(url, filter):
     html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
 
-    tree = soup.findAll('div', {'class': 'm-result-list'})
+    tree = soup.find('div', {'class': 'm-result-list'})
 
-    tree = tree[0].findAll('li', {'class': 'm-result-list-item'})
+    tree = tree.findAll('li', {'class': 'm-result-list-item'})
     for item in tree:
         t = item.find('a', {'class': 'u-title'})
         title = t.text
@@ -234,9 +234,9 @@ def mainlist(url, filter):
         })
 
     # multiple pages
-    setpage = soup.findAll('div', {'class': 'w-pages'})
+    setpage = soup.find('div', {'class': 'w-pages'})
     try:
-        pages = setpage[0].findAll('li')
+        pages = setpage.findAll('li')
     except:
         return items
 
@@ -245,10 +245,6 @@ def mainlist(url, filter):
         href = page.a.get('href')
         if href == 'javascript:;' or title == '':
             continue
-        if href[0:2] == '//':
-            href = 'http:' + href
-        elif href[0] == '/':
-            href = LIST_URL + href
         items.append({
             'label': BANNER_FMT % title,
             'path': url_for('mainlist', url=href, filter=filter)
@@ -267,7 +263,7 @@ def root():
     jsdata = loads(get_html(mainAPI))
 
     for item in jsdata['data'][1:]:
-        url = LIST_URL + '/-------------.html?channelId=' + item['pageType']
+        url = '/-------------.html?channelId=' + item['pageType']
         yield {
             'label': item['title'],
             'path': url_for('mainlist',

@@ -243,7 +243,7 @@
 
 <addon id="plugin.video.meiju"
     name="美剧"
-    version="1.0.0"
+    version="1.0.2"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.xbmcswift2" version="2.4.0"/>
@@ -531,7 +531,7 @@
 
 <addon id="plugin.video.youku"
     name="优酷视频"
-    version="2.0.3"
+    version="2.0.4"
     provider-name="yfang1644">
     <requires>
         <import addon="script.module.geturl" version="2.0.0"/>
@@ -854,7 +854,7 @@
 <addon id="script.module.geturl"
     name="CHVideo getURL"
     provider-name="yfang1644"
-    version="2.0.0">
+    version="2.0.1">
   <requires>
     <import addon="xbmc.python" version="2.24.0" />
   </requires>

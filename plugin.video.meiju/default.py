@@ -1,12 +1,16 @@
 #!/usr/bin/python
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
-from xbmcswift2 import Plugin, ListItem, xbmc
+from xbmcswift2 import Plugin, ListItem, xbmcgui
 from bs4 import BeautifulSoup
+import re
 from common import get_html, r1
+from json import loads
+import time
 
 YYETSS = 'http://www.yyetss.com/'
 TTKMJ = 'https://www.ttkmj.org/'
+MEIJUXIA = 'http://www.meijuxia.vip'
 BANNER = '[COLOR FFDEB887]{}[/COLOR]'
 
 plugin = Plugin()
@@ -15,6 +19,94 @@ url_for = plugin.url_for
 @plugin.route('/stay/')
 def stay():
     pass
+
+
+
+
+@plugin.route('/xiaplay/<url>/')
+def xiaplay(url):
+    html = get_html(url)
+    m = r1('cms_player\s*=\s*({.+?\});', html)
+    urlinfo = loads(m)
+    u = urlinfo['url']
+    print "XXXXXXXXXXXXXXXXXXX",u
+    t = int(time.time())
+    #u = re.sub('sign=\d+', 'sign='+str(t), u)
+    playurl = urlinfo['jiexi'] + u
+    playurl = get_html(playurl)
+    print playurl.encode('utf-8')
+
+    print "XXXXXXXXXXXXXXXXXX", playurl+'?t='+t
+    plugin.set_resolved_url(playurl + '?t=' + t)
+
+
+@plugin.route('/xiafilter/<url>/')
+def xiafilter(url):
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+
+
+@plugin.route('/xiaepisode/<url>/')
+def xiaepisode(url):
+    plugin.set_content('TVShows')
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('div', {'class': 'tab-content'})
+    items = []
+    
+    lists = tree[0].findAll('li')
+    for item in lists:
+        items.append({
+            'label': item.text,
+            'path': url_for('xiaplay', url=MEIJUXIA+item.a['href']),
+            'is_playable': True,
+            'info': {'title': item.text}
+        })
+    return items
+
+
+@plugin.route('/xiacatagory/<url>/')
+def xiacatagory(url=None):
+    if url is None:
+        url = MEIJUXIA + '/list-select-id-2-type--area--year--star--state--order-addtime.html'
+    items = []
+
+    items.append({
+        'label': '[COLOR yellow] 分类过滤[/COLOR]]',
+        'path': url_for('xiafilter', url=url)
+    })
+
+    plugin.set_content('TVShows')
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+    tree = soup.findAll('ul', {'class': 'list-unstyled'})
+
+    lists = tree[0].findAll('li')
+    for item in lists:
+        url = MEIJUXIA + item.a['href']
+        title = item.img['alt']
+        info = item.span.text
+        info = info.replace('\n', '')
+        info = info.replace('\t', '')
+        info = info.replace(' ', '')
+        items.append({
+            'label': title + '('+ info + ')',
+            'path': url_for('xiaepisode', url=url),
+            'thumbnail': item.img['data-original'],
+        })
+
+    pages = soup.findAll('a', {'class': 'page-link'})
+    for page in pages:
+        items.append({
+            'label': page.text,
+            'path': url_for('xiacatagory', url=MEIJUXIA + page['href'])
+        })
+    return items
+
+
+@plugin.route('/meijuxia/')
+def meijuxia():
+    return xiacatagory(None)
 
 @plugin.route('/ttepisodes/<url>/')
 def ttepisodes(url):
@@ -161,37 +253,56 @@ def yyepisodes(url):
     return items
 
 
-@plugin.route('/yycategory/<url>/')
-def yycategory(url):
-    plugin.set_content('TVShows')
+@plugin.route('/yyfilter/<url>/')
+def yyfilter(url): 
+    dialog = xbmcgui.Dialog()
+    
     html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
+
+    tree = soup.findAll('ul', {'class': 'navbar-nav'})
+    titles = tree[0].findAll('li')
+    lst = [x.text for x in titles[2:-1]]
+    sel = dialog.select('分类', lst)
+    sel = max(0, sel)
+    href = titles[2+sel].a['href']
+    hs = href.split('-')
+    cate = hs[1]
+
     tree = soup.findAll('ul', {'class':'list-inline'})
-    years = tree[0].findAll('li')
+    titles = tree[0].findAll('li')
+    lst = [x.text for x in titles[1:]]
+    sel = dialog.select('年份', lst)
+    sel = max(0, sel)
+    href = titles[1+sel].a['href']
+    hs = href.split('-')
+    year = hs[2]
+    return yycategory(cate, year, 1)
+
+
+@plugin.route('/yycategory/<cate>/<year>/<page>/')
+def yycategory(cate, year, page):
+    plugin.set_content('TVShows')
     items = []
 
-    # 年份
+    url = YYETSS + 'list-{}-{}-{}.html'.format(cate, year, page)
+    html = get_html(url)
+    soup = BeautifulSoup(html, 'html.parser')
+
+    tree = soup.findAll('ul', {'class': 'navbar-nav'})
+    titles = tree[0].findAll('li')
+    cname = ''
+    for x in titles[2:-1]:
+        if cate in x.a['href']:
+            cname = x.text.encode('utf-8')
+            break
+
     items.append({
-        'label': BANNER.format('年份'),
-        'path': url_for('stay')
+        'label': '分类 [COLOR yellow][{}-{}][/COLOR]'.format(cname, year),
+        'path': url_for('yyfilter', url=url)
     })
-    for item in years[1:]:
-        title = item.text
-        try:
-            href = item.a['href']
-        except:
-            href = url
-        if href[0] == '/': href = YYETSS + href
-        items.append({
-            'label': title,
-            'path': url_for('yycategory', url=href)
-        })
-    
-    # 剧集
-    items.append({
-        'label': BANNER.format('剧集'),
-        'path': url_for('stay')
-    })
+
+
     tree = soup.findAll('div', {'class':'c-list-box'})
     for item in tree:
         title = item.a['title']
@@ -207,37 +318,23 @@ def yycategory(url):
             'thumbnail': img
         })
 
+    tree = soup.findAll('ul', {'class':'pagination'})
+    if not tree:
+        return items
     # 分页
     items.append({
         'label': BANNER.format('分页'),
         'path': url_for('stay')
     })
-    tree = soup.findAll('ul', {'class':'pagination'})
     pages = tree[0].findAll('li')
     for item in pages:
         title = item.text
         href = item.a['href']
+        page = r1('-(\d+).html', href)
         if href[0] == '/': href = YYETSS + href
         items.append({
             'label': title,
-            'path': url_for('yycategory', url=href)
-        })
-
-    return items
-
-
-@plugin.route('/yyetss/')
-def yyetss(): 
-    html = get_html(YYETSS)
-    soup = BeautifulSoup(html, 'html.parser')
-    tree = soup.findAll('li')
-    items = []
-    for item in tree[2:-2]:
-        url = item.a['href']
-        if url[0] == '/': url = YYETSS + url
-        items.append({
-            'label': item.text,
-            'path': url_for('yycategory', url=url)
+            'path': url_for('yycategory', cate=cate, year=year, page=page)
         })
 
     return items
@@ -248,13 +345,17 @@ def yyetss():
 def index():
     yield {
         'label': '人人影视',
-        'path': url_for('yyetss')
+        'path': url_for('yycategory', cate='lishi', year='all', page=1)
     }
-
     yield {
         'label': '天天看美剧',
         'path': url_for('ttkmj')
     }
+    #yield {
+    #    'label': '美剧侠',
+    #    'path': url_for('meijuxia')
+    #}
+
 
 if __name__ == '__main__':
     plugin.run()
