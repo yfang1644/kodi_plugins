@@ -21,8 +21,6 @@ def stay():
     pass
 
 
-
-
 @plugin.route('/xiaplay/<url>/')
 def xiaplay(url):
     html = get_html(url)
@@ -120,7 +118,8 @@ def ttepisodes(url):
         pl = part.findAll('a')
         items.append({
             'label': BANNER.format('源组'),
-            'path': url_for('stay')
+            'path': url_for('stay'),
+            'is_playable': True
         })
         for item in pl:
             items.append({
@@ -155,7 +154,8 @@ def ttcategory(url):
     # 分页
     items.append({
         'label': BANNER.format('分页'),
-        'path': url_for('stay')
+        'path': url_for('stay'),
+        'is_playable': True
     })
     tree = soup.findAll('div', {'class': 'page_navi'})
     pages = tree[0].findAll('a')
@@ -218,7 +218,8 @@ def yyepisodes(url):
         if u'相关推荐' in sect.text:
             items.append({
                 'label': BANNER.format('相关推荐'),
-                'path': url_for('stay')
+                'path': url_for('stay'),
+                'is_playable': True
             })
 
             refers = sect.findAll('li')
@@ -234,7 +235,8 @@ def yyepisodes(url):
         else:
             items.append({
                 'label': BANNER.format('源组'),
-                'path': url_for('stay')
+                'path': url_for('stay'),
+                'is_playable': True
             })
             section = sect.findAll('li')
             for item in section:

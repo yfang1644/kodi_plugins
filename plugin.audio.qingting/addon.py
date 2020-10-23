@@ -1,12 +1,13 @@
-﻿# -*- coding: utf-8 -*-
+﻿#!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 from xbmcswift2 import Plugin, xbmcgui
-from urllib import urlencode
-import urllib2
+if sys.version[0]=='3':
+    from urllib.parse import urlencode
+else:
+    from urllib import urlencode
 from json import loads, dumps
-
-userAgent = 'Opera/9.80 (Android 2.3.4; Linux; Opera Mobi/build-1107180945; U; en-GB) Presto/2.8.149 Version/11.10'
-headers = {'User-Agent': userAgent}
+from common import get_html
 
 plugin = Plugin()
 url_for = plugin.url_for
@@ -14,13 +15,6 @@ url_for = plugin.url_for
 HOST = 'http://www.qingting.fm'
 PAGESIZE = 12
 BANNER_FMT = '[COLOR gold][%s][/COLOR]'
-
-def get_html(url):
-    req = urllib2.Request(url, headers=headers)
-    response = urllib2.urlopen(req)
-    httpdata = response.read()
-    response.close()
-    return loads(httpdata)
 
 
 def previous_page(endpoint, page, total_page, **kwargs):
@@ -48,8 +42,8 @@ def stay():
 def pagelist(id):
     plugin.set_content('music')
     pageAPI = 'http://i.qingting.fm/wapi/channels/{}/programs/page/1/pagesize/1000'
-    js = get_html(pageAPI.format(id))
-
+    html = get_html(pageAPI.format(id))
+    js = loads(html)
     for item in js['data']:
         thisitem = {
             'label': item['name'],
@@ -64,34 +58,33 @@ def pagelist(id):
         yield thisitem
 
 
-@plugin.route('/Regions/<type>/<id><page>')
-def Regions(type, id, page):
+@plugin.route('/Regions/<type>/')
+def Regions(type):
     data = loads(type)
 
     dialog = xbmcgui.Dialog()
     catlist = [x['title'] for x in data]
     sel = dialog.select('分类', catlist)
-    if sel >= 0:
-        return radiopage(data[sel]['id'], page=1)
-    else:
-        return radiopage(data[0]['id'], page=1)
+    if sel < 0: sel = 0
+    return radiopage(data[sel]['id'], page=1)
 
 
 @plugin.route('/radiopage/<id>/<page>')
 def radiopage(id, page):
     radioPage = 'http://rapi.qingting.fm/categories'
-    js = get_html(radioPage)
+    html = get_html(radioPage)
 
+    js = loads(html)
     area = js['Data']['regions'] + js['Data']['regions_map']
     type = js['Data']['channel_categories'] + js['Data']['program_categories']
     items = [
         {
             'label': u'地区',
-            'path': url_for('Regions', type=dumps(area), id=id, page=page),
+            'path': url_for('Regions', type=dumps(area))
         },
         {
             'label': u'类型',
-            'path': url_for('Regions', type=dumps(type), id=id, page=page)
+            'path': url_for('Regions', type=dumps(type))
         }
     ]
 
@@ -102,8 +95,8 @@ def radiopage(id, page):
     }
 
     regionAPI = 'http://rapi.qingting.fm/categories/{}/channels?'
-    js = get_html(regionAPI.format(id) + urlencode(req))
-    js = js['Data']
+    html = get_html(regionAPI.format(id) + urlencode(req))
+    js = loads(html)['Data']
     
     total_page = (js['total'] + PAGESIZE - 1) // PAGESIZE
     items += previous_page('radiopage', page, total_page, id=id)
@@ -165,7 +158,8 @@ def categories(id, attrs, page):
         'curpage': page
     }
     cateAPI = 'http://i.qingting.fm/capi/neo-channel-filter?'
-    js = get_html(cateAPI + urlencode(req))
+    html = get_html(cateAPI + urlencode(req))
+    js = loads(html)
     total_page = (int(js['total']) + PAGESIZE - 1) // PAGESIZE
     js = js['data']
 
@@ -220,8 +214,8 @@ def categories(id, attrs, page):
 @plugin.route('/XXcategories/<id>')
 def XXcategories(id):
     cateAPI = 'http://i.qingting.fm/capi/neo-channel-filter?'
-    js = get_html(cateAPI)
-
+    html = get_html(cateAPI)
+    js = loads(html)
     for item in js['data']['categories']:
         yield {
             'label': item['name'],

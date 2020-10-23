@@ -63,33 +63,31 @@ channelList = [{'央视频道':
            {'NewTV军事评论':'http://223.110.242.130:6610/cntv/live1/junshipl/junshipl'}
           ]},
          {'央视数字频道':
-          [{'CIBN电影导视':'http://cinb1.peoplevideo.cn/hls/vCIBNDYDS/1800/vCIBNDYDS.m3u8'},
-           {'CIBN电影':'http://cinb1.peoplevideo.cn/hls/vCIBNDYPD/1800/vCIBNDYPD.m3u8'},
-           {'CIBN微电影':'http://cinb1.peoplevideo.cn/hls/vCIBNWDYPD/1800/vCIBNWDYPD.m3u8'},
-           {'CIBN精品影院':'http://cinb1.peoplevideo.cn/hls/vCIBNJPYY/1800/vCIBNJPYY.m3u8'},
-           {'CIBN情感影院':'http://cinb1.peoplevideo.cn/hls/vCIBNQGYY/1800/vCIBNQGYY.m3u8'},
-           {'CIBN喜剧影院':'http://cinb1.peoplevideo.cn/hls/vCIBNHSYX/1800/vCIBNHSYX.m3u8'},
-           {'CIBN动作影院':'http://cibn.peoplevideo.cn/hls/vCIBNDZYY/1800/vCIBNDZYY.m3u8'},
-           {'CIBN古装剧场':'http://cinb1.peoplevideo.cn/hls/vCIBNZYPD/1800/vCIBNZYPD.m3u8'},
-           {'CIBN经典剧场':'http://cibn.peoplevideo.cn/hls/vCIBNJCJD/1800/vCIBNJCJD.m3u8'},
-           {'CIBN骄阳剧场':'http://cinb1.peoplevideo.cn/hls/vCIBNJDJC/1800/vCIBNJDJC.m3u8'},
-           {'CIBN好莱坞':'http://cibn.peoplevideo.cn/hls/vCIBNHLWPD/1800/vCIBNHLWPD.m3u8'},
-           {'CIBN汉学院':'http://cinb1.peoplevideo.cn/hls/vCIBNHXYPD/1800/vCIBNHXYPD.m3u8'},
-           {'CIBN生活':'http://cinb1.peoplevideo.cn/hls/vCIBNGWPD/1800/vCIBNGWPD.m3u8'},
-           {'CIBN军事':'http://cinb1.peoplevideo.cn/hls/vCIBNGZJC/1800/vCIBNGZJC.m3u8'},
-           {'CIBN教育':'http://cinb1.peoplevideo.cn/hls/vCIBNJYPD/1800/vCIBNJYPD.m3u8'},
-           {'CIBN汽车':'http://cinb1.peoplevideo.cn/hls/vCIBNQCPD/1800/vCIBNQCPD.m3u8'},
-           {'CIBN文化中国':'http://cinb1.peoplevideo.cn/hls/vCIBNCWHPD/1800/vCIBNCWHPD.m3u8'},
-           {'CIBN流金岁月':'http://cibn.peoplevideo.cn/hls/vCIBNSCPD/1800/vCIBNSCPD.m3u8'},
-           {'CIBN纪录片':'http://cinb1.peoplevideo.cn/hls/vCIBNJLPD/1800/vCIBNJLPD.m3u8'},
-           {'CIBN艺术院线':'http://cinb1.peoplevideo.cn/hls/vCIBNTEADJ/1800/vCIBNTEADJ.m3u8'},
-           {'CIBN院线大片':'http://cibn.peoplevideo.cn/hls/vCIBNHYPD/1800/vCIBNHYPD.m3u8'},
-           {'CIBN嗨播':'http://cinb1.peoplevideo.cn/hls/vCIBNYYPD/1800/vCIBNYYPD.m3u8'},
-           {'CIBN炫佳动漫':'http://cinb1.peoplevideo.cn/hls/vCIBNDMPD/1800/vCIBNDMPD.m3u8'},
-           {'CIBN风尚运动':'http://cibn.peoplevideo.cn/hls/vCIBNDSJC/1800/vCIBNDSJC.m3u8'},
-           {'CIBN真人秀':'http://cibn.peoplevideo.cn/hls/vCIBNZRSW/1800/vCIBNZRSW.m3u8'},
-           {'CIBN童学世界':'http://cinb1.peoplevideo.cn/hls/vCIBNRBJC/1800/vCIBNRBJC.m3u8'},
-           {'CIBN综合':'http://cibn.peoplevideo.cn/hls/vCIBNXQDPD/1800/vCIBNXQDPD.m3u8'},
+          [{'CIBN军事':'http://live1.nty.tv189.com/tm-yg1gzjc-512k.m3u8'},
+           {'CIBN财经':'http://live1.nty.tv189.com/tm-yg1sfyx-512k.m3u8'},
+           {'CIBN古装剧场':'http://live1.nty.tv189.com/tm-yg1zypd-512k.m3u8'},
+           {'CIBN旅游':'http://live1.nty.tv189.com/tm-yg1lypd-512k.m3u8'},
+           {'CIBN喜剧影院':'http://live1.nty.tv189.com/tm-yg1xjyy-1200k.m3u8'},
+           {'CIBN电影导视':'http://live1.nty.tv189.com/tm-yg1dyds-1200k.m3u8
+           {'CIBN华语影院':'http://live1.nty.tv189.com/tm-yg1hyyy-1200k.m3u8'},
+           {'CIBN流金岁月':'http://live1.nty.tv189.com/tm-yg1scpd-1200k.m3u8'},
+           {'CIBN电影':'http://live1.nty.tv189.com/tm-yg1dypd-1200k.m3u8'},
+           {'CIBN精品影院':'http://live1.nty.tv189.com/tm-yg1jpyy-1200k.m3u8'},
+           {'CIBN微电影':'http://live1.nty.tv189.com/tm-yg1wdypd-1200k.m3u8'},
+           {'CIBN童学世界':'http://live1.nty.tv189.com/tm-yg1rbjc-1200k.m3u8'},
+           {'CIBN健康':'http://live1.nty.tv189.com/tm-yg1jkpd-512k.m3u8'},
+           {'CIBN骄阳剧场':'http://live1.nty.tv189.com/tm-yg1jyjc-1200k.m3u8'},
+           {'CIBN嗨播':'http://live1.nty.tv189.com/tm-yg1yypd-512k.m3u8'},
+           {'CIBN嗨播-经典音乐':'http://live1.nty.tv189.com/tm-yg1jdyy-800k.m3u8'},
+           {'CIBN嗨播-音乐综艺':'http://live1.nty.tv189.com/tm-yg1yyzy-800k.m3u8'},
+           {'CIBN嗨播-流行榜单':'http://live1.nty.tv189.com/tm-yg1lxbd-800k.m3u8'},
+           {'CIBN嗨播-音乐大师课':'http://live1.nty.tv189.com/tm-yg1yydks-800k.m3u8'},
+           {'CIBN嗨播-女团专场':'http://live1.nty.tv189.com/tm-yg1ntzc-800k.m3u8'},
+           {'CIBN嗨播-原创音乐':'http://live1.nty.tv189.com/tm-yg1ycyy-800k.m3u8'},
+           {'CIBN嗨播-MV':'http://live1.nty.tv189.com/tm-yg1mv-800k.m3u8'},
+           {'CHC华诚影视':'http://live1.nty.tv189.com/tm-cridyty-800k.m3u8'},
+           {'CRI精选剧场':'http://live1.nty.tv189.com/tm-cridsjty-800k.m3u8'},
+           {'SIZE体育赛事':'http://live1.nty.tv189.com/rs-sizedj02/live.m3u8'},
            {'CBN风尚生活':'http://www.dszbdq.cn/diao/gz.php?id=bd5a65f3eef22bf93ac0169b64ffbd7e'},
            {'CBN每日影院':'http://www.dszbdq.cn/diao/gz.php?id=ad1795ad29a4b83dffb88a592bd157e2'},
            {'CBN幸福剧场':'http://www.dszbdq.cn/diao/gz.php?id=245ba3ebf5e9e61dc1999ff32a95d349'},
@@ -152,7 +150,9 @@ channelList = [{'央视频道':
           ]},
          {'上海':
           [{'东方卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221227208/index.m3u8'},
-           {'上海纪实':'http://ott.js.chinamobile.com/PLTV/3/224/3221227420/index.m3u8'}
+           {'上海纪实':'http://ott.js.chinamobile.com/PLTV/3/224/3221227420/index.m3u8'},
+           {'上海lcs':'http://117.156.28.21/PLTV/88888888/224/3221225639/index.m3u8'},
+           {'上海影视':'http://117.156.28.21/PLTV/88888888/224/3221225654/index.m3u8'},
           ]},
          {'天津':
           [{'天津卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221227212/index.m3u8'},
@@ -354,13 +354,18 @@ channelList = [{'央视频道':
          [{'宁夏卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225628/index.m3u8'}
          ]},
          {'青海':
-          [{'青海卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225580/index.m3u8'}
+          [{'青海卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225783/index.m3u8'}
           ]},
          {'西藏':
           [{'西藏卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225579/index.m3u8'}
           ]},
          {'甘肃':
-          [{'甘肃卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225590/index.m3u8'}
+          [{'甘肃卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225590/index.m3u8'},
+
+           {'甘肃都市': 'http://117.156.28.119/270000001111/1110000068/index.m3u8'},
+           {'甘肃影视': 'http://117.156.28.119/270000001111/1110000067/index.m3u8'},
+           {'甘肃经济': 'http://117.156.28.119/270000001111/1110000070/index.m3u8'},
+           {'甘肃少儿': 'http://117.156.28.119/270000001111/1110000071/index.m3u8'},
           ]},
          {'内蒙古':
           [{'内蒙古卫视':'http://ott.js.chinamobile.com/PLTV/3/224/3221225836/index.m3u8'}

@@ -118,7 +118,10 @@ def reference(params):
     json_response = loads(data)
     videos = json_response['mixinVideos']
     for series in videos:
-        if tvId == series['tvId']:
+        albumId = series.get('albumId')
+        if albumId:
+            mode, isFolder = 'episodelist', True
+        elif tvId == series['tvId']:
             mode, isFolder = 'playvideo', False
         else:
             mode, isFolder = 'reference', True
@@ -218,8 +221,8 @@ def episodelist(params):
     vid = item['vid']
     title = item['tvName'].encode('utf-8')
     isSeries = item['isSeries']
+    img = item.get('tvPictureUrl', '')
     if isSeries == 0:
-        img = item.get('tvPictureUrl', '')
         li = ListItem(BANNER_FMT % title, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'title': title, 'plot': item['tvDesc']})
         req = {
@@ -240,7 +243,7 @@ def episodelist(params):
         'tvId': tvId,
         'vid': vid,
         'name': title,
-        'thumbnail': ''
+        'thumbnail': img
     }
     reference(req)
 

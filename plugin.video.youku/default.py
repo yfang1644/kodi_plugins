@@ -10,7 +10,6 @@ from bs4 import BeautifulSoup
 from common import get_html, r1
 from lib.youku import video_from_vid, video_from_url, urlencode, quote_plus, parse_qsl
 
-
 HOST = 'http://tv.api.3g.youku.com'
 BASEIDS = {
     'pid': '0ce22bfd5ef5d2c5',
@@ -27,7 +26,7 @@ BANNER_FMT = '[COLOR gold][%s][/COLOR]'
 def httphead(url):
     if len(url) < 2:
         return url
-    if url[0:2] == '//':
+    if url[:2] == '//':
         url = 'https:' + url
     elif url[0] == '/':
         url = 'https://list.youku.com' + url
@@ -87,10 +86,13 @@ def playvideo(params):
 
     urls = video_from_vid(params['vid'], level=level)
     if not urls:
-        Dialog().ok(xbmcaddon.Addon().getAddonInfo('name'), '无法播放此视频')
+        Dialog().ok(xbmcaddon.Addon().getAddonInfo('name'), '视频未解析')
         return
 
-    stackurl = 'stack://' + ' , '.join(urls)
+    if len(urls) > 1:
+        stackurl = 'stack://' + ' , '.join(urls)
+    else:
+        stackurl = urls[0]
     name = params['name']
     li = ListItem(name, thumbnailImage=params['thumbnail'])
     li.setInfo(type="video", infoLabels={"Title": name})
@@ -133,23 +135,25 @@ def search(params):
     key = quote_plus(keyword)
 
     searchapi = HOST + '/layout/smarttv/showsearch?'
-    req = {'video_type':1, 'keyword': keyword}
-    req.update(BASEIDS)
-    link = get_html(searchapi + urlencode(req))
-    results = loads(link)['results']
+    # urlencode(quote_plus(keyword)) differ from quote_plus(keyword)
+    # sometimes search nothing
+    req = 'copyright_status=1&video_type=1&keyword=' + key
+    html = get_html(searchapi + req + '&' + urlencode(BASEIDS))
+    data = loads(html)
 
-    for item in results:
+    for item in data['results']:
         li = ListItem(item['showname'], thumbnailImage=item['show_vthumburl_hd'])
         req = {
             'mode': 'episodelist',
-            'vid': item['showid']
+            'showid': item['showid'],
+            'thumbnail': item['show_vthumburl_hd'],
+            'name': item['showname'].encode('utf-8')
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, True)
 
-
     searchapi = HOST + '/openapi-wireless/videos/search/{}?'
-    req = {'pz': 500}
+    req = {'pz': 200, 'pg': 1, 'seconds': 0, 'seconds_end': 0, 'ob': 0}
     req.update(BASEIDS)
 
     link = get_html(searchapi.format(key) + urlencode(req))
@@ -161,13 +165,15 @@ def search(params):
         for t in item['duration'].split(':'):
             duration = duration*60 + int(t)
 
-        li = ListItem(item['title'], thumbnailImage=item['img'])
+        title = item['title'].encode('utf-8')
+        li = ListItem(title, thumbnailImage=item['img'])
         li.setInfo(type='Video',
-                   infoLabels={'title': item['title'], 'plot': item['desc'], 'duration': duration})
+                   infoLabels={'title': title, 'plot': item['desc'], 'duration': duration})
         req = {
             'mode': 'playvideo',
-            'vid': item['videoId'],
-            'name': item['title'],
+            'vid': item['videoid'],
+            'thumbnail': item['img'],
+            'name': title
         }
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, False)
@@ -177,19 +183,30 @@ def search(params):
 
 
 def episodelist(params):
-    vid = params['vid']
-    url = 'http://v.youku.com/v_show/id_{0}.html'.format(vid)
-    html = get_html(url)
+    vid = params.get('vid')
+    if vid:
+        url = 'http://v.youku.com/v_show/id_{0}.html'.format(vid)
+        html = get_html(url)
 
-    m = r1('__INITIAL_DATA__\s*=({.+?\});', html)
+        m = r1('__INITIAL_DATA__\s*=({.+?\});', html)
     
-    p = loads(m)
-    try:
-        series = p['data']['data']['nodes'][0]['nodes'][2]['nodes']
-    except:
-        series = p['data']['data']['nodes'][0]['nodes'][1]['nodes']
-    content = p['data']['data']['nodes'][0]['nodes'][0]['nodes'][0]['data']['desc']
-    showid = p['showId']
+        p = loads(m)
+        #try:
+        #    series = p['data']['data']['nodes'][0]['nodes'][2]['nodes']
+        #except:
+        #    series = p['data']['data']['nodes'][0]['nodes'][1]['nodes']
+        #content = p['data']['data']['nodes'][0]['nodes'][0]['nodes'][0]['data']['desc']
+        showid = p['showId']
+    else:
+        showid = params['showid']
+
+    api = HOST + '/layout/smarttv/play/detail?'
+    req = {'id': showid}
+    req.update(BASEIDS)
+    html = get_html(api + urlencode(req))
+    data = loads(html)
+    content = data['detail']['desc']
+
     IDS = urlencode(BASEIDS)
     api = HOST + '/layout/smarttv/shows/{}/series?{}'.format(showid, IDS)
     data = get_html(api)
@@ -208,6 +225,29 @@ def episodelist(params):
         u = sys.argv[0] + '?' + urlencode(req)
         addDirectoryItem(int(sys.argv[1]), u, li, False)
 
+    li = ListItem(BANNER_FMT % '相关影视')
+    u = sys.argv[0]
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
+
+    api = HOST + '/common/shows/relate?'
+    req = {'id': showid}
+    req.update(BASEIDS)
+    html = get_html(api + urlencode(req))
+    relate = loads(html)
+
+    for item in relate['results']:
+        title = item['showname'].encode('utf-8')
+        info = item['stripe_bottom'].encode('utf-8')
+        info = '[COLOR blue](' + info + ')[/COLOR]'
+        li = ListItem(title + info, thumbnailImage=item['img'])
+        req = {
+            'mode': 'episodelist',
+            'showid': item['showid'],
+            'thumbnail': httphead(item['img_hd']),
+            'name': title,
+        }
+        u = sys.argv[0] + '?' + urlencode(req)
+        addDirectoryItem(int(sys.argv[1]), u, li, True)
     #for film in series:
     #    vid = film['data']['action']['value']
     #    title = film['data']['title'].encode('utf-8')
@@ -252,11 +292,25 @@ def mainlist(params):
     for item in data['data']:
         vid = item.get('videoId')
         if not vid:
-            continue
-        li = ListItem(item['title'] + '(' + item['summary'] +')',
-                      thumbnailImage=httphead(item['img']))
+            link = item.get('videoLink', '')
+            vid = r1('/id_(.+?).html', link)
+            if not vid: continue
+        duration = 0
+        info = item['summary']
+        try:
+            for t in info.split(':'):
+                duration = duration*60 + int(t)
+            info = ''
+        except:
+            pass
+        mark = item.get('rightTagText', '')
+        if info or mark:
+            info = '[COLOR blue](%s)  %s[/COLOR]' % (info, mark)
+        li = ListItem(item['title']+info, thumbnailImage=httphead(item['img']))
         li.setInfo(type='Video',
-                   infoLabels={'title': item['title'], 'plot': item.get('subTitle', '')})
+                   infoLabels={'title': item['title'],
+                               'plot': item.get('subTitle', ''),
+                               'duration': duration})
         req = {
             'mode': 'episodelist' if int(cid) in series else 'playvideo',
             'vid': vid,

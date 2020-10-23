@@ -154,10 +154,15 @@ def next_page(endpoint, page, total_page, **kwargs):
     else:
         return []
 
+
+@plugin.route('/stay')
+def stay():
+    pass
+
 def get_av_item(aid, **kwargs):
     result = bilibili.get_av_list(aid)
     if not result:
-        return {'label': '(空)', 'path': plugin.url_for('stay')}
+        return {'label': '(空)', 'path': plugin.url_for('stay'), 'is_playable': True}
 
     item = dict(**kwargs)
     if len(result) == 1:
@@ -173,11 +178,6 @@ def get_av_item(aid, **kwargs):
     else:
         item['path'] = plugin.url_for('list_video', aid=aid)
     return item
-
-
-@plugin.route('/stay')
-def stay():
-    pass
 
 
 @plugin.route('/playmovie/<cid>/<vid>/<name>/')

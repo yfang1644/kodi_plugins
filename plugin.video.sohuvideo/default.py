@@ -5,10 +5,9 @@ import xbmc
 from xbmcgui import Dialog, ListItem
 from xbmcplugin import addDirectoryItem, endOfDirectory, setContent
 import xbmcaddon
-import re
 from json import loads
 from bs4 import BeautifulSoup
-from common import get_html
+from common import get_html, r1
 from lib.sohu import video_from_url, urlparse, quote_plus, parse_qsl, urlencode
 from iqiyi import video_from_url as video_from_iqiyi
 from qq import video_from_url as video_from_qq
@@ -73,15 +72,16 @@ def playvideo_other(params):
 
 
 def select(params):
-    html = get_html(params['url'])
+    url = params['url']
+    html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
     filter = soup.findAll('dl', {'class': 'cfix'})
 
     dialog = Dialog()
 
     surl = url.split('/')
-    lurl = re.compile('(.+?).html').findall(surl[-1])
-    lurl = lurl[0].split('_')
+    lurl = r1('(.+?).html', surl[-1])
+    lurl = lurl.split('_')
 
     for item in filter:
         title = item.dt.text.strip()
@@ -99,8 +99,8 @@ def select(params):
             continue
 
         selurl = si[sel]['href'].split('/')
-        selurl = re.compile('(.+?).html').findall(selurl[-1])
-        selurl = selurl[0].split('_')
+        selurl = r1('(.+?).html', selurl[-1])
+        selurl = selurl.split('_')
         for i in xrange(1, 14):
             if selurl[i] != 'p%d' % i:
                 lurl[i] = selurl[i]
@@ -168,12 +168,13 @@ def othersite(link):
 def episodelist1(params):
     link = get_html(params['url'])
 
-    match0 = re.compile('var playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
-    match0 += re.compile('var PLAYLIST_ID\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
+    match0 = r1('var playlistId\s*=\s*["|\'](.+?)["|\'];', link)
+    match1 = r1('var PLAYLIST_ID\s*=\s*["|\'](.+?)["|\'];', link)
 
-    if len(match0) > 0:
-        if match0[0] != '0':
-            sohuvideolist(match0[0])
+    match = [match0, match1]
+    if len(match) > 0:
+        if match[0] != '0':
+            sohuvideolist(match[0])
         else:
             othersite(link)
     else:
@@ -208,9 +209,9 @@ def episodelist2(params):
 
     listapi = 'http://my.tv.sohu.com/play/getvideolist.do?playlistid=%s&pagesize=30&order=1'
 
-    match0 = re.compile('playlistId\s*=\s*["|\'](.+?)["|\'];', re.DOTALL).findall(link)
+    match0 = r1('playlistId\s*=\s*["|\'](.+?)["|\'];', link)
 
-    link = get_html(listapi % match0[0])
+    link = get_html(listapi % match0)
     videos = loads(link)['videos']
 
     for item in videos:
@@ -304,8 +305,8 @@ def videolist(params):
     soup = BeautifulSoup(html, 'html.parser')
 
     surl = url.split('/')
-    lurl = re.compile('(.+?).html').findall(surl[-1])
-    lurl = lurl[0].split('_')
+    lurl = r1('(.+?).html', surl[-1])
+    lurl = lurl.split('_')
     p10 = lurl[10]
     page = int(p10[3:]) if len(p10) > 3 else 1
 
@@ -359,7 +360,7 @@ def videolist(params):
         else:
             mode = 'playvideo'
 
-        li = ListItem(title + ' ' + mask + extra)
+        li = ListItem(title + ' ' + mask + extra, thumbnailImage=img)
         li.setInfo(type='Video', infoLabels={'title': title, 'plot': info})
         req = {
             'mode': mode,
@@ -372,7 +373,7 @@ def videolist(params):
 
     li = ListItem(INDENT_FMT0 % '分页')
     u = sys.argv[0]
-    addDirectoryItem(int(sys.argv[1]), u, li, True)
+    addDirectoryItem(int(sys.argv[1]), u, li, False)
 
     pages = soup.findAll('div', {'class': 'ssPages area'})
     pages = [] if len(pages) == 0 else pages[0].findAll('a')

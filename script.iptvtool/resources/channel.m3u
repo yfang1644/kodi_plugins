@@ -29,7 +29,7 @@ http://cctvalih5ca.v.myalicdn.com/live/cctveurope_2/index.m3u8
 http://cctvalih5ca.v.myalicdn.com/live/cctvamerica_2/index.m3u8
 #EXTINF:-1 tvg-name="CCTV5" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV5.png" group-title="中央台" ,CCTV5体育
 http://223.110.242.130:6610/gitv/live1/G_CCTV-5-HQ/
-#EXTINF:-1 tvg-name="CCTV5PLUS" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV5+.png" group-title="中央台" ,CCTV5+赛事
+#EXTINF:-1 tvg-name="CCTV5+" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV5+.png" group-title="中央台" ,CCTV5+赛事
 http://223.110.242.130:6610/gitv/live1/G_CCTV-5PLUS-HQ/
 #EXTINF:-1 tvg-name="CCTV6" tvg-logo="http://epg.51zmt.top:8000/tb1/CCTV/CCTV6.png" group-title="中央台" ,CCTV6电影
 http://223.110.242.130:6610/gitv/live1/G_CCTV-6-HQ/
@@ -68,9 +68,13 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221227043/index.m3u8
 #EXTINF:-1 tvg-name="第一剧场" group-title="中央台" ,CCTV第一剧场
 http://39.135.15.70:6610/PLTV/88888888/224/3221225702/1/'
 #EXTINF:-1 tvg-name="风云剧场" group-title="中央台" ,CCTV风云剧场
-http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000094
+rtmp://58.200.131.2:1935/livetv/fyjctv
 #EXTINF:-1 tvg-name="怀旧剧场" group-title="中央台" ,CCTV怀旧剧场
-http://httpdvb.slave.homed.hrtn.net/playurl?playtype=live&protocol=hls&accesstoken=R5D22D2B7U309E0093K7735BBEDIAC2DC601PBM3187915V10453Z6B7EDWE3620470C71&&playtoken=&programid=4200000089
+rtmp://58.200.131.2:1935/livetv/hjjctv
+#EXTINF:-1 tvg-name="国防军事" group-title="中央台" ,CCTV国防军事
+rtmp://58.200.131.2:1935/livetv/gfjstv
+#EXTINF:-1 tvg-name="女性时尚" group-title="中央台" ,CCTV女性时尚
+http://stream.guihet.com/migu/index.php?id=623338081
 #EXTINF:-1 tvg-name="中国教育1台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中>国教育1台.png" group-title="中央台" ,中国教育1台
 http://223.110.241.139:6610/gitv/live1/G_CETV-1/
 #EXTINF:-1 tvg-name="中国教育2台" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/中>国教育2台.png" group-title="中央台" ,中国教育2台
@@ -121,6 +125,14 @@ http://ott.js.chinamobile.com/PLTV/3/224/3221227208/index.m3u8
 http://ott.js.chinamobile.com/PLTV/4/224/3221225816/index.m3u8
 #EXTINF:-1 tvg-name="甘肃卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/gansu.png" group-title="地方电视台" ,甘肃卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225590/index.m3u8
+#EXTINF:-1 tvg-name="甘肃都市" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/gansu.png" group-title="地方电视台" ,甘肃都市
+http://117.156.28.119/270000001111/1110000068/index.m3u8
+#EXTINF:-1 tvg-name="甘肃影视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/gansu.png" group-title="地方电视台" ,甘肃影视
+http://117.156.28.119/270000001111/1110000067/index.m3u8
+#EXTINF:-1 tvg-name="甘肃经济" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/gansu.png" group-title="地方电视台" ,甘肃经济
+http://117.156.28.119/270000001111/1110000070/index.m3u8
+#EXTINF:-1 tvg-name="甘肃少儿" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/gansu.png" group-title="地方电视台" ,甘肃少儿
+http://117.156.28.119/270000001111/1110000071/index.m3u8
 #EXTINF:-1 tvg-name="贵州卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/guizhou.png" group-title="地方电视台" ,贵州卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225540/index.m3u8
 #EXTINF:-1 tvg-name="河北卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/hebei.png" group-title="地方电视台" ,河北卫视
@@ -238,7 +250,7 @@ http://cctvtxyh5ca.liveplay.myqcloud.com/wstv/shenzhen_2/index.m3u8
 #EXTINF:-1 tvg-name="广西卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/guangxi.png" group-title="地方电视台" ,广西卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225554/index.m3u8
 #EXTINF:-1 tvg-name="青海卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/qinghai.png" group-title="地方电视台" ,青海卫视
-http://ott.js.chinamobile.com/PLTV/3/224/3221225580/index.m3u8
+http://ott.js.chinamobile.com/PLTV/3/224/3221225783/index.m3u8
 #EXTINF:-1 tvg-name="内蒙古卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/neimeng.png" group-title="地方电视台" ,内蒙古卫视
 http://ott.js.chinamobile.com/PLTV/3/224/3221225836/index.m3u8
 #EXTINF:-1 tvg-name="宁夏卫视" tvg-logo="http://epg.51zmt.top:8000/tb1/ws/ningxia.png" group-title="地方电视台" ,宁夏卫视
@@ -291,6 +303,40 @@ http://103.89.176.45:8278/Channel8/playlist.m3u8
 http://103.89.176.45:8278/ChannelU/playlist.m3u8
 #EXTINF:-1 tvg-name="CHC高清电影" tvg-logo="http://epg.51zmt.top:8000/tb1/qt/CHC3.jpg" group-title="其他",CHC高清电影
 http://ivi.bupt.edu.cn/hls/chchd.m3u8
+#EXTINF:-1, group-title="其他", 中天娱乐
+http://192.154.103.75:8080/ZZ_zhongtianyule/ZZ_zhongtianyule.m3u8
+#EXTINF:-1, group-title="其他", 华视
+http://192.154.103.75:8080/ZZ_huashi/ZZ_huashi.m3u8
+#EXTINF:-1, group-title="其他", 中视
+http://192.154.103.75:8080/ZZ_zhongshi/ZZ_zhongshi.m3u8
+#EXTINF:-1, group-title="其他", 八大综合
+http://192.154.103.75:8080/ZZ_zhongtianyazhou/ZZ_zhongtianyazhou.m3u8
+#EXTINF:-1, group-title="其他", 好莱坞电影
+http://192.154.103.75:8080/ZZ_haolaiwu/ZZ_haolaiwu.m3u8
+#EXTINF:-1, group-title="其他", 龙祥时代
+http://192.154.103.75:8080/ZZ_shidai/ZZ_shidai.m3u8
+#EXTINF:-1, group-title="其他", 华纳电影
+http://192.154.103.75:8080/ZZ_huanadianying/ZZ_huanadianying.m3u8
+#EXTINF:-1, group-title="其他", FOX动作电影
+http://192.154.103.75:8080/ZZ_foxaction/ZZ_foxaction.m3u8
+#EXTINF:-1, group-title="其他", 中天新闻
+http://192.154.103.75:8080/ZZ_zhongtiannews/ZZ_zhongtiannews.m3u8
+#EXTINF:-1, group-title="其他", 中天娱乐
+http://192.154.103.75:8080/ZZ_zhongtianyule/ZZ_zhongtianyule.m3u8
+#EXTINF:-1, group-title="其他", 中天综合
+http://192.154.103.75:8080/ZZ_zhongtianzonghe/ZZ_zhongtianzonghe.m3u8
+#EXTINF:-1, group-title="其他", 中天综合
+年代新闻,http://192.154.103.75:8080/ZZ_niandaixinwen/ZZ_niandianxinwen.m3u8
+#EXTINF:-1, group-title="其他", 中天综合
+国家地理HD,http://192.154.103.75:8080/ZZ_hbo/ZZ_hbo.m3u8
+#EXTINF:-1, group-title="其他", 中天综合
+动物星球(HD),http://192.154.103.75:8080/ZZ_dongwuxingqiu/ZZ_dongwuxingqiu.m3u8
+#EXTINF:-1, group-title="其他", 东森电影
+http://192.154.103.75:8080/ZZ_dongsendianying/ZZ_dongsendianying.m3u8
+#EXTINF:-1, group-title="其他", 东森洋片
+http://192.154.103.75:8080/ZZ_dongsenyangpian/ZZ_dongsenyangpian.m3u8
+#EXTINF:-1, group-title="其他", 东森新闻
+http://192.154.103.75:8080/ZZ_dongsenxinwen/ZZ_dongsenxinwen.m3u8
 #EXTINF:-1 ,TVB-8
 http://tvbilive14-i.akamaihd.net/hls/live/496344/CTVB8/index.m3u8
 #EXTINF:-1 ,TVB-财经资讯台
@@ -445,6 +491,12 @@ rtmp://live-rtmp.lotustv.duolaibo.cn/lotustv/5562e9e4d409d24c9600075c
 http://live-cdn.xzxwhcb.com/hls/sn88wrar.m3u8
 #EXTINF:-1 ,今日俄罗斯记录
 http://secure-streams.akamaized.net/rt-doc/index2500.m3u8
+#EXTINF:-1 tvg-logo="http://static.iptv-epg.com/gb/BBCNews.uk.png" group-title="其他",BBC News
+http://51.52.156.22:8888/http/004
+#EXTINF:-1 tvg-logo="http://static.iptv-epg.com/gb/BBCWorldNews.uk.png" group-title="其他",BBC World News
+http://220.158.149.28:8180/live/TV00000000000000000112@HHZT
+#EXTINF:-1 tvg-logo="https://yournewsnet.com/wp-content/uploads/2018/11/NNLogo.jpg" group-title="其他",News Net
+https://bozztv.com/36bay2/gin-newsnet/index.m3u8
 #EXTINF:-1 group-title="其他" ,HBO
 http://218.202.220.2:5000/nn_live.ts?id=HBO
 #EXTINF:-1 group-title="其他" ,星空卫视

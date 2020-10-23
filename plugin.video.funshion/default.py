@@ -67,6 +67,7 @@ def filter(url):
     surl = url.split('/')
     purl = surl[-2].split('.')
 
+    ctype = []
     for x in purl:
         if x[0] == 'c':
             ctype = x
@@ -119,11 +120,11 @@ def relatedList(url):
     for x in relates:
         items.append({
             'label': BANNER_FMT % x['name'],
-            'path': url_for('stay')
+            'path': url_for('stay'),
+            'is_playable': True
         })
         for y in x['contents']:
             pic = y['poster'] if y['poster'] else y['still']
-            info = {}
             dur = y.get('duration', '0:0')
             duration = 0
             for t in dur.split(':'):
