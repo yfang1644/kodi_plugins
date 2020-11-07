@@ -8,7 +8,7 @@ from common import get_html, r1
 from json import loads
 import time
 
-YYETSS = 'http://www.yyetss.com/'
+YYETSS = 'http://www.yyetss.com'
 TTKMJ = 'https://www.ttkmj.org/'
 MEIJUXIA = 'http://www.meijuxia.vip'
 BANNER = '[COLOR FFDEB887]{}[/COLOR]'
@@ -207,6 +207,7 @@ def yyplay(url):
 @plugin.route('/yyepisodes/<url>/')
 def yyepisodes(url):
     plugin.set_content('TVShows')
+    if url[0] == '/': url = YYETSS + url
     html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
     tree = soup.findAll('div', {'class':'tab_set_info'})
@@ -273,10 +274,11 @@ def yyfilter(url):
 
     tree = soup.findAll('ul', {'class':'list-inline'})
     titles = tree[0].findAll('li')
-    lst = [x.text for x in titles[1:]]
+    names = titles[1].findAll('a')
+    lst = [x.text for x in names[:]]
     sel = dialog.select('年份', lst)
     sel = max(0, sel)
-    href = titles[1+sel].a['href']
+    href = names[sel]['href']
     hs = href.split('-')
     year = hs[2]
     return yycategory(cate, year, 1)
@@ -287,7 +289,7 @@ def yycategory(cate, year, page):
     plugin.set_content('TVShows')
     items = []
 
-    url = YYETSS + 'list-{}-{}-{}.html'.format(cate, year, page)
+    url = YYETSS + '/list-{}-{}-{}.html'.format(cate, year, page)
     html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -326,7 +328,8 @@ def yycategory(cate, year, page):
     # 分页
     items.append({
         'label': BANNER.format('分页'),
-        'path': url_for('stay')
+        'path': url_for('stay'),
+        'is_playable': True
     })
     pages = tree[0].findAll('li')
     for item in pages:
